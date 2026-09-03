@@ -35,6 +35,8 @@ export default function FarmerDashboard() {
         setLoading(false)
         return
       }
+      console.log('FARMER USER:', user.email)
+console.log('FARMER ROLE:', data.role)
 
       // Farmer illa
       if (data.role !== 'farmer') {

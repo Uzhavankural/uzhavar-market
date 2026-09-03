@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
 export default function Home() {
+  const router = useRouter()
+
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -126,16 +129,19 @@ export default function Home() {
 
       {/* Categories */}
       <section
-  id="categories"
-  className="section"
-  style={styles.section}
->
+        id="categories"
+        className="section"
+        style={styles.section}
+      >
 
         <h2 style={styles.sectionTitle}>
           Shop by Category
         </h2>
 
-        <div className="category-grid" style={styles.categoryGrid}>
+        <div
+          className="category-grid"
+          style={styles.categoryGrid}
+        >
 
           {/* All Products */}
           <button
@@ -211,10 +217,10 @@ export default function Home() {
 
       {/* Products */}
       <section
-  id="products"
-  className="section"
-  style={styles.section}
->
+        id="products"
+        className="section"
+        style={styles.section}
+      >
 
         <div style={styles.productHeader}>
 
@@ -239,13 +245,24 @@ export default function Home() {
 
         ) : (
 
-          <div className="product-grid" style={styles.productGrid}>
+          <div
+            className="product-grid"
+            style={styles.productGrid}
+          >
 
             {filteredProducts.map((product) => (
 
               <div
                 key={product.id}
-                style={styles.productCard}
+                style={{
+                  ...styles.productCard,
+                  cursor: 'pointer',
+                }}
+                onClick={() =>
+                  router.push(
+                    `/products/${product.id}`
+                  )
+                }
               >
 
                 {/* Image */}
@@ -288,8 +305,11 @@ export default function Home() {
                   <div style={styles.priceRow}>
 
                     <strong>
-                      ₹{product.price}
-                    </strong>
+  ₹{(
+    Number(product.price) +
+    Number(product.commission_amount || 0)
+  ).toFixed(2)}
+</strong>
 
                     <span>
                       / {product.unit}
@@ -302,10 +322,55 @@ export default function Home() {
                   </p>
 
                   <button
-                    style={styles.cartButton}
-                  >
-                    Add to Cart
-                  </button>
+  style={styles.cartButton}
+  onClick={(e) => {
+    e.stopPropagation()
+
+    const existingCart =
+      JSON.parse(localStorage.getItem('cart')) || []
+
+    const existingItem = existingCart.find(
+      (item) => item.id === product.id
+    )
+
+    let updatedCart
+
+    if (existingItem) {
+      updatedCart = existingCart.map((item) =>
+        item.id === product.id
+          ? {
+              ...item,
+              quantity: item.quantity + 1,
+            }
+          : item
+      )
+    } else {
+      updatedCart = [
+        ...existingCart,
+        {
+          id: product.id,
+          name: product.name,
+          price:
+  Number(product.price) +
+  Number(product.commission_amount || 0),
+          unit: product.unit,
+          image_url: product.image_url,
+          quantity: 1,
+          farmer_id: product.farmer_id,
+        },
+      ]
+    }
+
+    localStorage.setItem(
+      'cart',
+      JSON.stringify(updatedCart)
+    )
+
+    alert('Product added to cart!')
+  }}
+>
+  Add to Cart
+</button>
 
                 </div>
 

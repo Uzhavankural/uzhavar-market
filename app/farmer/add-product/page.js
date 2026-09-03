@@ -117,7 +117,13 @@ export default function AddProduct() {
         unit: unit,
         stock_quantity: Number(stock),
         image_url: imageUrl,
+
+        // Product waits for admin approval
         status: 'active',
+        approval_status: 'pending',
+
+        // Admin will decide commission
+        commission_amount: 0,
       })
 
     if (productError) {
@@ -126,7 +132,9 @@ export default function AddProduct() {
       return
     }
 
-    setMessage('Product added successfully!')
+    setMessage(
+      'Product submitted successfully! Waiting for admin approval.'
+    )
 
     setName('')
     setDescription('')
@@ -182,7 +190,7 @@ export default function AddProduct() {
           </h1>
 
           <p style={styles.subtitle}>
-            Add your farm product for customers to purchase.
+            Add your farm product for admin approval.
           </p>
 
           <form onSubmit={handleSubmit}>
@@ -302,7 +310,7 @@ export default function AddProduct() {
               disabled={saving}
               style={styles.button}
             >
-              {saving ? 'Adding Product...' : 'Add Product'}
+              {saving ? 'Submitting Product...' : 'Submit Product'}
             </button>
 
           </form>

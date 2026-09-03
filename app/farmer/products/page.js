@@ -135,6 +135,10 @@ export default function MyProducts() {
                     <span>/ {product.unit}</span>
                   </div>
 
+                  <div style={styles.commission}>
+                    Commission: ₹{product.commission_amount || 0}
+                  </div>
+
                   <div style={styles.stock}>
                     Stock: {product.stock_quantity} {product.unit}
                   </div>
@@ -294,6 +298,12 @@ const styles = {
     gap: '5px',
     fontSize: '18px',
     color: '#166534',
+  },
+
+  commission: {
+    marginTop: '8px',
+    fontSize: '14px',
+    color: '#6b7280',
   },
 
   stock: {
