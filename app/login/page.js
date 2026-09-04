@@ -9,6 +9,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -50,13 +51,13 @@ export default function Login() {
     setPassword('')
     setLoading(false)
 
-   if (profile.role === 'admin') {
-  router.push('/admin')
-} else if (profile.role === 'farmer') {
-  router.push('/farmer')
-} else {
-  router.push('/')
-}
+    if (profile.role === 'admin') {
+      router.push('/admin')
+    } else if (profile.role === 'farmer') {
+      router.push('/farmer')
+    } else {
+      router.push('/')
+    }
   }
 
   return (
@@ -94,14 +95,32 @@ export default function Login() {
             Password
           </label>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            required
-            style={styles.input}
-          />
+          {/* Password Input with Eye Button */}
+          <div style={styles.passwordWrapper}>
+
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+              style={styles.passwordInput}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={styles.eyeButton}
+              aria-label={
+                showPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              }
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+
+          </div>
 
           <p style={styles.forgotText}>
             <a
@@ -202,6 +221,39 @@ const styles = {
     borderRadius: '8px',
     fontSize: '15px',
     boxSizing: 'border-box',
+  },
+
+  /* Password input wrapper */
+  passwordWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+
+  /* Password input */
+  passwordInput: {
+    width: '100%',
+    padding: '12px',
+    paddingRight: '48px',
+    border: '1px solid #d1d5db',
+    borderRadius: '8px',
+    fontSize: '15px',
+    boxSizing: 'border-box',
+  },
+
+  /* Eye button */
+  eyeButton: {
+    position: 'absolute',
+    right: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    fontSize: '18px',
+    padding: '5px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   forgotText: {

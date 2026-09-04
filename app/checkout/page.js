@@ -27,6 +27,7 @@ export default function Checkout() {
     }
   }, [router])
 
+  // Customer total is calculated from database product price
   const totalAmount = cart.reduce(
     (total, item) =>
       total + Number(item.price) * item.quantity,
@@ -67,7 +68,123 @@ export default function Checkout() {
         return
       }
 
-      // Create order
+      // Get latest approved product data from Supabase
+      const productIds = cart.map((item) => item.id)
+
+      const { data: products, error: productsError } =
+        await supabase
+          .from('products')
+          .select(`
+            id,
+            name,
+            farmer_id,
+            price,
+            commission_amount,
+            unit,
+            stock_quantity,
+            status,
+            approval_status
+          `)
+          .in('id', productIds)
+          .eq('status', 'active')
+          .eq('approval_status', 'active')
+
+      if (productsError) {
+        console.error(
+          'PRODUCT FETCH ERROR:',
+          productsError
+        )
+
+        alert('Unable to verify products.')
+        return
+      }
+
+      if (!products || products.length !== cart.length) {
+        alert(
+          'One or more products are no longer available.'
+        )
+        return
+      }
+
+      // Create a map for quick product lookup
+      const productMap = new Map(
+        products.map((product) => [
+          product.id,
+          product,
+        ])
+      )
+
+      // Build order items using DATABASE values
+      const orderItems = []
+      let calculatedTotal = 0
+
+      for (const cartItem of cart) {
+        const product = productMap.get(cartItem.id)
+
+        if (!product) {
+          alert(
+            `${cartItem.name} is no longer available.`
+          )
+          return
+        }
+
+        const quantity = Number(cartItem.quantity)
+
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          alert(
+            `Invalid quantity for ${product.name}.`
+          )
+          return
+        }
+
+        // Check stock
+        if (
+          Number(product.stock_quantity) < quantity
+        ) {
+          alert(
+            `${product.name} has only ${product.stock_quantity} available.`
+          )
+          return
+        }
+
+        const farmerPrice = Number(product.price)
+        const commissionAmount =
+          Number(product.commission_amount || 0)
+
+        const customerPrice =
+          farmerPrice + commissionAmount
+
+        const itemTotal =
+          customerPrice * quantity
+
+        calculatedTotal += itemTotal
+
+        orderItems.push({
+          product_id: product.id,
+          farmer_id: product.farmer_id,
+          product_name: product.name,
+
+          // Customer-facing price stored in order
+          price: customerPrice,
+
+          quantity: quantity,
+          unit: product.unit,
+
+          item_total: itemTotal,
+
+          // Financial snapshot
+          farmer_price: farmerPrice,
+          commission_amount: commissionAmount,
+
+          // Farmer settlement starts as pending
+          settlement_status: 'pending',
+          settlement_amount:
+            farmerPrice * quantity,
+          settlement_paid_at: null,
+        })
+      }
+
+      // Create order using database-calculated total
       const { data: order, error: orderError } =
         await supabase
           .from('orders')
@@ -78,7 +195,9 @@ export default function Checkout() {
             delivery_address: address,
             district: district,
             village: village,
-            total_amount: totalAmount,
+
+            total_amount: calculatedTotal,
+
             order_status: 'pending',
             payment_status: 'pending',
           })
@@ -86,28 +205,28 @@ export default function Checkout() {
           .single()
 
       if (orderError) {
-        console.error('ORDER ERROR:', orderError)
+        console.error(
+          'ORDER ERROR:',
+          orderError
+        )
+
         alert('Unable to create order.')
         return
       }
 
-      // Create order items
-      const orderItems = cart.map((item) => ({
-        order_id: order.id,
-        product_id: item.id,
-        farmer_id: item.farmer_id,
-        product_name: item.name,
-        price: Number(item.price),
-        quantity: item.quantity,
-        unit: item.unit,
-        item_total:
-          Number(item.price) * item.quantity,
-      }))
+      // Add order ID to every item
+      const finalOrderItems = orderItems.map(
+        (item) => ({
+          ...item,
+          order_id: order.id,
+        })
+      )
 
+      // Create order items
       const { error: itemsError } =
         await supabase
           .from('order_items')
-          .insert(orderItems)
+          .insert(finalOrderItems)
 
       if (itemsError) {
         console.error(
@@ -115,8 +234,14 @@ export default function Checkout() {
           itemsError
         )
 
+        // Remove incomplete order
+        await supabase
+          .from('orders')
+          .delete()
+          .eq('id', order.id)
+
         alert(
-          'Order was created, but some order details could not be saved.'
+          'Unable to save order details. Please try again.'
         )
 
         return
@@ -133,7 +258,10 @@ export default function Checkout() {
       router.push('/')
 
     } catch (error) {
-      console.error('CHECKOUT ERROR:', error)
+      console.error(
+        'CHECKOUT ERROR:',
+        error
+      )
 
       alert(
         'Something went wrong while placing the order.'
@@ -183,7 +311,6 @@ export default function Checkout() {
                 style={styles.input}
               />
 
-
               <label style={styles.label}>
                 Phone Number
               </label>
@@ -197,7 +324,6 @@ export default function Checkout() {
                 placeholder="Enter phone number"
                 style={styles.input}
               />
-
 
               <label style={styles.label}>
                 Delivery Address
@@ -213,7 +339,6 @@ export default function Checkout() {
                 style={styles.textarea}
               />
 
-
               <label style={styles.label}>
                 District
               </label>
@@ -228,7 +353,6 @@ export default function Checkout() {
                 style={styles.input}
               />
 
-
               <label style={styles.label}>
                 Village / Town
               </label>
@@ -242,7 +366,6 @@ export default function Checkout() {
                 placeholder="Enter village or town"
                 style={styles.input}
               />
-
 
               <button
                 type="submit"
@@ -260,7 +383,6 @@ export default function Checkout() {
             </form>
 
           </section>
-
 
           {/* Order Summary */}
           <section style={styles.card}>
@@ -300,9 +422,7 @@ export default function Checkout() {
 
             ))}
 
-
             <div style={styles.divider}></div>
-
 
             <div style={styles.totalRow}>
 
@@ -324,7 +444,6 @@ export default function Checkout() {
     </main>
   )
 }
-
 
 const styles = {
 
