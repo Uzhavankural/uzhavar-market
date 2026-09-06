@@ -19,6 +19,9 @@ export default function CustomerProductDetailsPage() {
     }
   }, [params?.id]);
 
+  // =========================
+  // LOAD PRODUCT
+  // =========================
   async function loadProduct() {
     setLoading(true);
 
@@ -49,6 +52,9 @@ export default function CustomerProductDetailsPage() {
     setLoading(false);
   }
 
+  // =========================
+  // CUSTOMER PRICE
+  // =========================
   function getCustomerPrice() {
     if (!product) return 0;
 
@@ -58,6 +64,9 @@ export default function CustomerProductDetailsPage() {
     return farmerPrice + commission;
   }
 
+  // =========================
+  // INCREASE QUANTITY
+  // =========================
   function increaseQuantity() {
     if (!product) return;
 
@@ -68,6 +77,9 @@ export default function CustomerProductDetailsPage() {
     }
   }
 
+  // =========================
+  // DECREASE QUANTITY
+  // =========================
   function decreaseQuantity() {
     if (quantity > 1) {
       setQuantity((previous) => previous - 1);
@@ -96,7 +108,9 @@ export default function CustomerProductDetailsPage() {
     setAddingToCart(true);
 
     try {
-      // Check logged-in user
+      // =========================
+      // CHECK LOGIN
+      // =========================
       const {
         data: { user },
         error: userError,
@@ -108,7 +122,9 @@ export default function CustomerProductDetailsPage() {
         return;
       }
 
-      // User-specific cart key
+      // =========================
+      // USER-SPECIFIC CART
+      // =========================
       const cartKey = `uzhavar_cart_${user.id}`;
 
       // Get existing cart
@@ -119,7 +135,6 @@ export default function CustomerProductDetailsPage() {
       try {
         cart = savedCart ? JSON.parse(savedCart) : [];
 
-        // Safety check
         if (!Array.isArray(cart)) {
           cart = [];
         }
@@ -128,7 +143,9 @@ export default function CustomerProductDetailsPage() {
         cart = [];
       }
 
-      // Check whether product already exists
+      // =========================
+      // CHECK EXISTING PRODUCT
+      // =========================
       const existingIndex = cart.findIndex(
         (item) => String(item.id) === String(product.id)
       );
@@ -140,7 +157,7 @@ export default function CustomerProductDetailsPage() {
 
         const newQuantity = existingQuantity + quantity;
 
-        // Stock validation for combined quantity
+        // Combined quantity cannot exceed stock
         if (newQuantity > stock) {
           alert(
             `Only ${stock} ${
@@ -150,7 +167,7 @@ export default function CustomerProductDetailsPage() {
           return;
         }
 
-        // Update existing product quantity
+        // Update existing item
         cart[existingIndex] = {
           ...cart[existingIndex],
           quantity: newQuantity,
@@ -159,20 +176,8 @@ export default function CustomerProductDetailsPage() {
           commission_amount: Number(
             product.commission_amount || 0
           ),
-        };
-      } else {
-        // Add new product
-        cart.push({
-          id: product.id,
-          name: product.name,
-          description: product.description || "",
-          price: Number(product.price || 0),
-          commission_amount: Number(
-            product.commission_amount || 0
-          ),
           unit: product.unit || "unit",
           image_url: product.image_url || null,
-          stock_quantity: stock,
           farmer_id: product.farmer_id,
           farm_name:
             product.profiles?.farm_name ||
@@ -180,26 +185,64 @@ export default function CustomerProductDetailsPage() {
             "Local Farmer",
           category_name:
             product.categories?.name || "General",
+        };
+      } else {
+        // =========================
+        // ADD NEW PRODUCT
+        // =========================
+        cart.push({
+          id: product.id,
+          name: product.name,
+          description: product.description || "",
+
+          // Farmer price
+          price: Number(product.price || 0),
+
+          // Platform commission
+          commission_amount: Number(
+            product.commission_amount || 0
+          ),
+
+          unit: product.unit || "unit",
+          image_url: product.image_url || null,
+          stock_quantity: stock,
+
+          farmer_id: product.farmer_id,
+
+          farm_name:
+            product.profiles?.farm_name ||
+            product.profiles?.full_name ||
+            "Local Farmer",
+
+          category_name:
+            product.categories?.name || "General",
+
           quantity: quantity,
         });
       }
 
-      // Save updated cart
+      // =========================
+      // SAVE CART
+      // =========================
       localStorage.setItem(
         cartKey,
         JSON.stringify(cart)
       );
 
-      // Success message
+      // =========================
+      // SUCCESS
+      // =========================
       alert(
         `${product.name} added to cart successfully!`
       );
 
-      // Go to cart
       router.push("/customer/cart");
     } catch (error) {
       console.error("Add to cart error:", error);
-      alert("Something went wrong while adding the product to cart.");
+
+      alert(
+        "Something went wrong while adding the product to cart."
+      );
     } finally {
       setAddingToCart(false);
     }
@@ -229,12 +272,15 @@ export default function CustomerProductDetailsPage() {
           <h2>Product not found</h2>
 
           <p>
-            This product may have been removed or is no longer available.
+            This product may have been removed or is no longer
+            available.
           </p>
 
           <button
             style={styles.primaryButton}
-            onClick={() => router.push("/customer/products")}
+            onClick={() =>
+              router.push("/customer/products")
+            }
           >
             ← Back to Products
           </button>
@@ -262,14 +308,18 @@ export default function CustomerProductDetailsPage() {
         <div style={styles.topBar}>
           <button
             style={styles.backButton}
-            onClick={() => router.push("/customer/products")}
+            onClick={() =>
+              router.push("/customer/products")
+            }
           >
             ← Back to Products
           </button>
 
           <button
             style={styles.dashboardButton}
-            onClick={() => router.push("/customer")}
+            onClick={() =>
+              router.push("/customer")
+            }
           >
             Dashboard
           </button>
@@ -312,7 +362,8 @@ export default function CustomerProductDetailsPage() {
 
             {/* DESCRIPTION */}
             <p style={styles.description}>
-              {product.description || "Fresh farm product"}
+              {product.description ||
+                "Fresh farm product"}
             </p>
 
             {/* FARMER */}
@@ -341,7 +392,10 @@ export default function CustomerProductDetailsPage() {
             <div
               style={{
                 ...styles.stock,
-                color: stock > 0 ? "#26733a" : "#b42318",
+                color:
+                  stock > 0
+                    ? "#26733a"
+                    : "#b42318",
               }}
             >
               {stock > 0
@@ -359,10 +413,12 @@ export default function CustomerProductDetailsPage() {
                   </div>
 
                   <div style={styles.quantityControls}>
+
                     <button
                       style={{
                         ...styles.quantityButton,
-                        opacity: quantity <= 1 ? 0.5 : 1,
+                        opacity:
+                          quantity <= 1 ? 0.5 : 1,
                         cursor:
                           quantity <= 1
                             ? "not-allowed"
@@ -382,7 +438,9 @@ export default function CustomerProductDetailsPage() {
                       style={{
                         ...styles.quantityButton,
                         opacity:
-                          quantity >= stock ? 0.5 : 1,
+                          quantity >= stock
+                            ? 0.5
+                            : 1,
                         cursor:
                           quantity >= stock
                             ? "not-allowed"
@@ -393,6 +451,7 @@ export default function CustomerProductDetailsPage() {
                     >
                       +
                     </button>
+
                   </div>
                 </div>
 
@@ -411,7 +470,9 @@ export default function CustomerProductDetailsPage() {
                 <button
                   style={{
                     ...styles.cartButton,
-                    opacity: addingToCart ? 0.7 : 1,
+                    opacity: addingToCart
+                      ? 0.7
+                      : 1,
                     cursor: addingToCart
                       ? "not-allowed"
                       : "pointer",
@@ -435,6 +496,7 @@ export default function CustomerProductDetailsPage() {
                 Out of Stock
               </button>
             )}
+
           </div>
         </section>
       </div>

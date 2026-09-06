@@ -9,6 +9,7 @@ export default function FarmerDashboard() {
 
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
 
   const [productCount, setProductCount] = useState(0)
 
@@ -45,12 +46,14 @@ export default function FarmerDashboard() {
       console.log('FARMER ROLE:', data.role)
 
       // Farmer illa
-      if (data.role !== 'farmer') {
-        router.replace('/')
-        return
-      }
+if (data.role !== 'farmer') {
+  setProfile(data)
+  setAccessDenied(true)
+  setLoading(false)
+  return
+}
 
-      setProfile(data)
+setProfile(data)
 
       // Farmer-oda own products count
       const { count, error: productError } = await supabase
@@ -67,10 +70,11 @@ export default function FarmerDashboard() {
         setProductCount(count || 0)
       }
 
-      // Farmer earnings / settlements
-      await loadFarmerSettlements(user.id)
+      // Dashboard should load independently of earnings
+setLoading(false)
 
-      setLoading(false)
+// Load farmer earnings / settlements separately
+loadFarmerSettlements(user.id)
     }
 
     checkFarmer()
@@ -339,6 +343,77 @@ export default function FarmerDashboard() {
       </main>
     )
   }
+
+  // =====================================================
+// ACCESS DENIED
+// =====================================================
+
+if (accessDenied) {
+  const dashboardPath =
+    profile?.role === 'admin'
+      ? '/admin'
+      : '/customer'
+
+  const dashboardText =
+    profile?.role === 'admin'
+      ? 'Go to Admin Dashboard'
+      : 'Go to Customer Dashboard'
+
+  return (
+    <main style={styles.loadingPage}>
+      <div
+        style={{
+          textAlign: 'center',
+          maxWidth: '500px',
+          padding: '30px',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '50px',
+            marginBottom: '15px',
+          }}
+        >
+          🚫
+        </div>
+
+        <h2
+          style={{
+            margin: '0 0 10px',
+            color: '#1f2937',
+          }}
+        >
+          You don't have access to the Farmer Panel.
+        </h2>
+
+        <p
+          style={{
+            margin: '0 0 25px',
+            color: '#6b7280',
+            fontSize: '15px',
+          }}
+        >
+          This panel is available only for farmer users.
+        </p>
+
+        <button
+          onClick={() => router.push(dashboardPath)}
+          style={{
+            padding: '11px 20px',
+            border: 'none',
+            borderRadius: '8px',
+            background: '#166534',
+            color: '#ffffff',
+            cursor: 'pointer',
+            fontWeight: '600',
+          }}
+        >
+          {dashboardText}
+        </button>
+      </div>
+    </main>
+  )
+}
 
   // =====================================================
   // PROFILE ERROR

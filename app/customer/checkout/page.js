@@ -142,7 +142,9 @@ export default function CheckoutPage() {
         const { data: product, error: productError } =
           await supabase
             .from("products")
-            .select("id, name, stock_quantity, status, approval_status")
+            .select(
+              "id, name, stock_quantity, status, approval_status"
+            )
             .eq("id", item.id)
             .single();
 
@@ -171,7 +173,9 @@ export default function CheckoutPage() {
 
         if (currentStock < requestedQuantity) {
           throw new Error(
-            `Only ${currentStock} ${item.unit || "unit"} of ${item.name} is available.`
+            `Only ${currentStock} ${
+              item.unit || "unit"
+            } of ${item.name} is available.`
           );
         }
       }
@@ -198,9 +202,14 @@ export default function CheckoutPage() {
           .single();
 
       if (orderError) {
-        console.error("Order insert error:", orderError);
+        console.error(
+          "Order insert error:",
+          orderError
+        );
+
         throw new Error(
-          orderError.message || "Failed to create order."
+          orderError.message ||
+            "Failed to create order."
         );
       }
 
@@ -210,10 +219,14 @@ export default function CheckoutPage() {
        */
       const orderItems = cart.map((item) => {
         const farmerPrice = Number(item.price || 0);
+
         const commissionAmount = Number(
           item.commission_amount || 0
         );
-        const quantity = Number(item.quantity || 0);
+
+        const quantity = Number(
+          item.quantity || 0
+        );
 
         const customerPrice =
           farmerPrice + commissionAmount;
@@ -271,18 +284,21 @@ export default function CheckoutPage() {
        * Reduce product stock
        */
       for (const item of cart) {
-        const { data: product, error: stockFetchError } =
-          await supabase
-            .from("products")
-            .select("stock_quantity")
-            .eq("id", item.id)
-            .single();
+        const {
+          data: product,
+          error: stockFetchError,
+        } = await supabase
+          .from("products")
+          .select("stock_quantity")
+          .eq("id", item.id)
+          .single();
 
         if (stockFetchError || !product) {
           console.error(
             "Stock fetch error:",
             stockFetchError
           );
+
           continue;
         }
 
@@ -291,15 +307,17 @@ export default function CheckoutPage() {
         );
 
         const newStock =
-          currentStock - Number(item.quantity || 0);
+          currentStock -
+          Number(item.quantity || 0);
 
-        const { error: stockUpdateError } =
-          await supabase
-            .from("products")
-            .update({
-              stock_quantity: Math.max(0, newStock),
-            })
-            .eq("id", item.id);
+        const {
+          error: stockUpdateError,
+        } = await supabase
+          .from("products")
+          .update({
+            stock_quantity: Math.max(0, newStock),
+          })
+          .eq("id", item.id);
 
         if (stockUpdateError) {
           console.error(
@@ -325,7 +343,10 @@ export default function CheckoutPage() {
         `/customer/order-success?order_id=${order.id}`
       );
     } catch (error) {
-      console.error("Place order error:", error);
+      console.error(
+        "Place order error:",
+        error
+      );
 
       alert(
         error.message ||
@@ -349,6 +370,7 @@ export default function CheckoutPage() {
   return (
     <main style={pageStyle}>
       <div style={containerStyle}>
+
         {/* Header */}
         <div style={headerStyle}>
           <div>
@@ -372,6 +394,7 @@ export default function CheckoutPage() {
         </div>
 
         <div style={gridStyle}>
+
           {/* Delivery Details */}
           <section style={cardStyle}>
             <h2>Delivery Details</h2>
@@ -383,7 +406,9 @@ export default function CheckoutPage() {
                 type="text"
                 value={customerName}
                 onChange={(e) =>
-                  setCustomerName(e.target.value)
+                  setCustomerName(
+                    e.target.value
+                  )
                 }
                 placeholder="Enter your name"
                 style={inputStyle}
@@ -405,7 +430,9 @@ export default function CheckoutPage() {
             </div>
 
             <div style={fieldStyle}>
-              <label>Delivery Address</label>
+              <label>
+                Delivery Address
+              </label>
 
               <textarea
                 value={address}
@@ -429,7 +456,9 @@ export default function CheckoutPage() {
                   type="text"
                   value={district}
                   onChange={(e) =>
-                    setDistrict(e.target.value)
+                    setDistrict(
+                      e.target.value
+                    )
                   }
                   placeholder="District"
                   style={inputStyle}
@@ -443,7 +472,9 @@ export default function CheckoutPage() {
                   type="text"
                   value={village}
                   onChange={(e) =>
-                    setVillage(e.target.value)
+                    setVillage(
+                      e.target.value
+                    )
                   }
                   placeholder="Village"
                   style={inputStyle}
@@ -451,25 +482,56 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Payment */}
+            {/* Payment Method */}
             <div style={paymentBoxStyle}>
               <h3 style={{ marginTop: 0 }}>
                 Payment Method
               </h3>
 
-              <div style={paymentMethodStyle}>
-                <strong>Cash on Delivery</strong>
+              <div
+                style={
+                  paymentMethodUnavailableStyle
+                }
+              >
+                <div>
+                  <strong
+                    style={{
+                      color: "#777",
+                    }}
+                  >
+                    💵 Cash on Delivery
+                  </strong>
 
-                <p
-                  style={{
-                    margin: "5px 0 0",
-                    color: "#666",
-                    fontSize: "14px",
-                  }}
+                  <p
+                    style={{
+                      margin: "5px 0 0",
+                      color: "#888",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Currently unavailable
+                  </p>
+                </div>
+
+                <span
+                  style={
+                    unavailableBadgeStyle
+                  }
                 >
-                  Pay when your order is delivered.
-                </p>
+                  Unavailable
+                </span>
               </div>
+
+              <p
+                style={{
+                  margin: "12px 0 0",
+                  color: "#777",
+                  fontSize: "13px",
+                }}
+              >
+                Online payment will be
+                available soon.
+              </p>
             </div>
           </section>
 
@@ -490,14 +552,22 @@ export default function CheckoutPage() {
                       style={imageStyle}
                     />
                   ) : (
-                    <span style={{ fontSize: "25px" }}>
+                    <span
+                      style={{
+                        fontSize: "25px",
+                      }}
+                    >
                       🌾
                     </span>
                   )}
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: "0 0 5px" }}>
+                  <h4
+                    style={{
+                      margin: "0 0 5px",
+                    }}
+                  >
                     {item.name}
                   </h4>
 
@@ -514,7 +584,9 @@ export default function CheckoutPage() {
 
                   <strong>
                     ₹
-                    {getItemTotal(item).toFixed(2)}
+                    {getItemTotal(
+                      item
+                    ).toFixed(2)}
                   </strong>
                 </div>
               </div>
@@ -543,7 +615,9 @@ export default function CheckoutPage() {
               disabled={placingOrder}
               style={{
                 ...placeOrderButtonStyle,
-                opacity: placingOrder ? 0.7 : 1,
+                opacity: placingOrder
+                  ? 0.7
+                  : 1,
                 cursor: placingOrder
                   ? "not-allowed"
                   : "pointer",
@@ -551,7 +625,9 @@ export default function CheckoutPage() {
             >
               {placingOrder
                 ? "Placing Order..."
-                : `Place Order • ₹${cartTotal.toFixed(2)}`}
+                : `Place Order • ₹${cartTotal.toFixed(
+                    2
+                  )}`}
             </button>
           </section>
         </div>
@@ -634,11 +710,26 @@ const paymentBoxStyle = {
   border: "1px solid #e5e5e5",
 };
 
-const paymentMethodStyle = {
-  padding: "12px",
-  background: "white",
+const paymentMethodUnavailableStyle = {
+  padding: "14px",
+  background: "#f5f5f5",
   borderRadius: "8px",
   border: "1px solid #ddd",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  opacity: 0.8,
+};
+
+const unavailableBadgeStyle = {
+  padding: "5px 9px",
+  borderRadius: "6px",
+  background: "#e9e9e9",
+  color: "#777",
+  fontSize: "12px",
+  fontWeight: "600",
+  whiteSpace: "nowrap",
 };
 
 const itemStyle = {

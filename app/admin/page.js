@@ -15,8 +15,9 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState([])
 
   const [loading, setLoading] = useState(true)
+const [accessDenied, setAccessDenied] = useState(false)
 
-  const [message, setMessage] = useState('')
+const [message, setMessage] = useState('')
   const [productMessage, setProductMessage] = useState('')
 
   const [commissionValues, setCommissionValues] =
@@ -62,10 +63,11 @@ export default function AdminDashboard() {
     }
 
     if (profileData.role !== 'admin') {
-      setMessage('Access denied. Admin only.')
-      setLoading(false)
-      return
-    }
+      setProfile(profileData)
+  setAccessDenied(true)
+  setLoading(false)
+  return
+}
 
     setProfile(profileData)
 
@@ -975,6 +977,34 @@ export default function AdminDashboard() {
     )
   }
 
+  if (accessDenied) {
+  const dashboardPath =
+    profile?.role === 'farmer'
+      ? '/farmer'
+      : '/customer'
+
+  const dashboardText =
+    profile?.role === 'farmer'
+      ? 'Go to Farmer Dashboard'
+      : 'Go to Customer Dashboard'
+
+  return (
+    <div style={styles.center}>
+      <h2>🚫 You don't have access to the Admin Panel.</h2>
+
+      <p>
+        This panel is available only for admin users.
+      </p>
+
+      <button
+        onClick={() => router.push(dashboardPath)}
+        style={styles.backButton}
+      >
+        {dashboardText}
+      </button>
+    </div>
+  )
+}
   // =====================================================
   // ERROR
   // =====================================================
