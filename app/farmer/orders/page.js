@@ -13,9 +13,16 @@ export default function FarmerOrders() {
   const [message, setMessage] = useState('')
   const [filter, setFilter] = useState('all')
 
+  // SEARCH
+  const [searchTerm, setSearchTerm] = useState('')
+
   useEffect(() => {
     loadOrders()
   }, [])
+
+  // ==================================================
+  // LOAD ORDERS
+  // ==================================================
 
   async function loadOrders() {
     setLoading(true)
@@ -32,6 +39,10 @@ export default function FarmerOrders() {
         return
       }
 
+      // ------------------------------------------------
+      // CHECK FARMER PROFILE
+      // ------------------------------------------------
+
       const {
         data: profile,
         error: profileError,
@@ -42,6 +53,8 @@ export default function FarmerOrders() {
         .single()
 
       if (profileError || !profile) {
+        console.error('PROFILE ERROR:', profileError)
+
         setMessage('Farmer profile not found.')
         setLoading(false)
         return
@@ -129,7 +142,10 @@ export default function FarmerOrders() {
         .in('id', orderIds)
 
       if (ordersError) {
-        console.error('ORDERS ERROR:', ordersError)
+        console.error(
+          'ORDERS ERROR:',
+          JSON.stringify(ordersError, null, 2)
+        )
 
         setMessage('Unable to load order details.')
         setLoading(false)
@@ -145,17 +161,38 @@ export default function FarmerOrders() {
           (order) => order.id === item.order_id
         )
 
-        const itemTotal = Number(item.item_total || 0)
-        const farmerPrice = Number(item.farmer_price || 0)
-        const quantity = Number(item.quantity || 0)
+        const itemTotal = Number(
+          item.item_total || 0
+        )
 
+        const farmerPrice = Number(
+          item.farmer_price || 0
+        )
+
+        const quantity = Number(
+          item.quantity || 0
+        )
+
+        // Farmer amount =
+        // farmer price per unit × quantity
         const calculatedFarmerAmount =
           farmerPrice * quantity
 
-        const commissionAmount =
-          Number(item.commission_amount ?? (
-            itemTotal - calculatedFarmerAmount
-          ))
+        // Commission is stored PER UNIT
+        const commissionPerUnit = Number(
+          item.commission_amount ??
+            (
+              quantity > 0
+                ? (itemTotal - calculatedFarmerAmount) /
+                  quantity
+                : 0
+            )
+        )
+
+        // Total commission =
+        // commission per unit × quantity
+        const calculatedCommission =
+          commissionPerUnit * quantity
 
         const settlementAmount =
           item.settlement_amount !== null &&
@@ -168,41 +205,138 @@ export default function FarmerOrders() {
           order,
 
           calculatedFarmerAmount,
-          calculatedCommission: commissionAmount,
+          calculatedCommission,
           calculatedSettlement: settlementAmount,
         }
       })
 
       setOrders(combinedOrders)
     } catch (error) {
-      console.error('FARMER ORDERS ERROR:', error)
+      console.error(
+        'FARMER ORDERS ERROR:',
+        JSON.stringify(error, null, 2)
+      )
+
       setMessage('Something went wrong.')
     } finally {
       setLoading(false)
     }
   }
 
-  // ------------------------------------------------
-  // UPDATE ORDER STATUS
-  // ------------------------------------------------
+  // ==================================================
+  // FARMER ORDER STATUS UPDATE
+  // ==================================================
+  //
+  // IMPORTANT:
+  // Farmer can ONLY:
+  //
+  // confirmed → shipped
+  //
+  // Farmer CANNOT:
+  //
+  // pending → confirmed
+  // shipped → delivered
+  //
+  // ==================================================
 
-  async function updateOrderStatus(orderId, newStatus) {
+  async function updateOrderStatus(
+    orderId,
+    newStatus
+  ) {
     setUpdating(orderId)
     setMessage('')
 
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          order_status: newStatus,
-        })
-        .eq('id', orderId)
+      // ------------------------------------------------
+      // GET CURRENT USER
+      // ------------------------------------------------
 
-      if (error) {
-        console.error('STATUS UPDATE ERROR:', error)
-        setMessage('Unable to update order status.')
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        setMessage('Please login again.')
         return
       }
+
+      // ------------------------------------------------
+      // FIND CURRENT ORDER
+      // ------------------------------------------------
+
+      const currentItem = orders.find(
+        (item) =>
+          item.order?.id === orderId
+      )
+
+      if (!currentItem?.order) {
+        setMessage('Order not found.')
+        return
+      }
+
+      const currentStatus = String(
+        currentItem.order.order_status || ''
+      )
+        .trim()
+        .toLowerCase()
+
+      // ------------------------------------------------
+      // ONLY CONFIRMED → SHIPPED
+      // ------------------------------------------------
+
+      if (
+        currentStatus !== 'confirmed' ||
+        newStatus !== 'shipped'
+      ) {
+        setMessage(
+          'You can ship an order only after admin confirms it.'
+        )
+        return
+      }
+
+      // ------------------------------------------------
+      // UPDATE ORDER
+      // ------------------------------------------------
+
+      const {
+        data: updatedOrder,
+        error,
+      } = await supabase
+        .from('orders')
+        .update({
+          order_status: 'shipped',
+        })
+        .eq('id', orderId)
+        .eq('order_status', 'confirmed')
+        .select('id, order_status')
+        .single()
+
+      if (error) {
+        console.error(
+          'SHIP ORDER ERROR:',
+          JSON.stringify(error, null, 2)
+        )
+
+        setMessage(
+          error.message ||
+            'Unable to mark order as shipped.'
+        )
+
+        return
+      }
+
+      if (!updatedOrder) {
+        setMessage(
+          'Order could not be updated. It may already have changed.'
+        )
+
+        return
+      }
+
+      // ------------------------------------------------
+      // UPDATE LOCAL UI
+      // ------------------------------------------------
 
       setOrders((currentOrders) =>
         currentOrders.map((item) => {
@@ -212,9 +346,11 @@ export default function FarmerOrders() {
           ) {
             return {
               ...item,
+
               order: {
                 ...item.order,
-                order_status: newStatus,
+
+                order_status: 'shipped',
               },
             }
           }
@@ -222,110 +358,195 @@ export default function FarmerOrders() {
           return item
         })
       )
+
+      setMessage(
+        'Order marked as shipped successfully.'
+      )
     } catch (error) {
-      console.error('UPDATE ERROR:', error)
+      console.error(
+        'SHIP ORDER ERROR:',
+        JSON.stringify(error, null, 2)
+      )
+
       setMessage('Something went wrong.')
     } finally {
       setUpdating(null)
     }
   }
 
-  // ------------------------------------------------
+  // ==================================================
   // NEXT ACTION
-  // ------------------------------------------------
+  // ==================================================
 
   function getNextAction(status) {
-    const currentStatus = String(status || '')
+    const currentStatus = String(
+      status || ''
+    )
       .trim()
       .toLowerCase()
 
+    // ------------------------------------------------
+    // PENDING
+    // ------------------------------------------------
+    // Admin must verify payment and confirm order.
+    // Farmer cannot confirm.
+    // ------------------------------------------------
+
     if (currentStatus === 'pending') {
       return {
-        text: 'Confirm Order',
-        nextStatus: 'confirmed',
+        text: '🔒 Waiting for Admin Confirmation',
+        nextStatus: null,
+        disabled: true,
       }
     }
+
+    // ------------------------------------------------
+    // CONFIRMED
+    // ------------------------------------------------
+    // Farmer can ship.
+    // ------------------------------------------------
 
     if (currentStatus === 'confirmed') {
       return {
-        text: 'Mark as Shipped',
+        text: '🚚 Ship Order',
         nextStatus: 'shipped',
+        disabled: false,
       }
     }
 
+    // ------------------------------------------------
+    // SHIPPED
+    // ------------------------------------------------
+    // Customer must confirm delivery.
+    // Farmer cannot mark delivered.
+    // ------------------------------------------------
+
     if (currentStatus === 'shipped') {
       return {
-        text: 'Mark as Delivered',
-        nextStatus: 'delivered',
+        text: '⏳ Waiting for Customer Delivery Confirmation',
+        nextStatus: null,
+        disabled: true,
+      }
+    }
+
+    // ------------------------------------------------
+    // DELIVERED
+    // ------------------------------------------------
+    // Customer already confirmed delivery.
+    // Admin can pay farmer.
+    // ------------------------------------------------
+
+    if (currentStatus === 'delivered') {
+      return {
+        text: '✓ Delivery Confirmed by Customer',
+        nextStatus: null,
+        disabled: true,
       }
     }
 
     return null
   }
 
-  // ------------------------------------------------
-  // FILTERED ORDERS
-  // ------------------------------------------------
+  // ==================================================
+  // FILTER + SEARCH
+  // ==================================================
 
   const filteredOrders = useMemo(() => {
-    if (filter === 'all') {
-      return orders
-    }
+    let result = orders
+
+    // ------------------------------------------------
+    // STATUS FILTER
+    // ------------------------------------------------
 
     if (filter === 'pending') {
-      return orders.filter(
+      result = result.filter(
         (item) =>
-          String(item.order?.order_status || '')
-            .toLowerCase() === 'pending'
+          String(
+            item.order?.order_status || ''
+          ).toLowerCase() === 'pending'
       )
     }
 
     if (filter === 'confirmed') {
-      return orders.filter(
+      result = result.filter(
         (item) =>
-          String(item.order?.order_status || '')
-            .toLowerCase() === 'confirmed'
+          String(
+            item.order?.order_status || ''
+          ).toLowerCase() === 'confirmed'
       )
     }
 
     if (filter === 'shipped') {
-      return orders.filter(
+      result = result.filter(
         (item) =>
-          String(item.order?.order_status || '')
-            .toLowerCase() === 'shipped'
+          String(
+            item.order?.order_status || ''
+          ).toLowerCase() === 'shipped'
       )
     }
 
     if (filter === 'delivered') {
-      return orders.filter(
+      result = result.filter(
         (item) =>
-          String(item.order?.order_status || '')
-            .toLowerCase() === 'delivered'
+          String(
+            item.order?.order_status || ''
+          ).toLowerCase() === 'delivered'
       )
     }
 
     if (filter === 'paid') {
-      return orders.filter(
+      result = result.filter(
         (item) =>
-          String(item.settlement_status || '')
-            .toLowerCase() === 'paid'
+          String(
+            item.settlement_status || ''
+          ).toLowerCase() === 'paid'
       )
     }
 
     if (filter === 'settlement_pending') {
-      return orders.filter(
+      result = result.filter(
         (item) =>
-          String(item.settlement_status || '')
-            .toLowerCase() !== 'paid'
+          String(
+            item.settlement_status || ''
+          ).toLowerCase() !== 'paid'
       )
     }
 
-    return orders
-  }, [orders, filter])
+    // ------------------------------------------------
+    // CUSTOMER SEARCH
+    // ------------------------------------------------
 
-  // ------------------------------------------------
+    const search = searchTerm
+      .trim()
+      .toLowerCase()
+
+    if (search) {
+      result = result.filter((item) => {
+        const customerName = String(
+          item.order?.customer_name || ''
+        ).toLowerCase()
+
+        const customerPhone = String(
+          item.order?.customer_phone || ''
+        ).toLowerCase()
+
+        return (
+          customerName.includes(search) ||
+          customerPhone.includes(search)
+        )
+      })
+    }
+
+    return result
+  }, [
+    orders,
+    filter,
+    searchTerm,
+  ])
+
+  // ==================================================
   // SUMMARY CALCULATIONS
-  // ------------------------------------------------
+  // ==================================================
 
   const summary = useMemo(() => {
     let sales = 0
@@ -340,16 +561,20 @@ export default function FarmerOrders() {
     const deliveredOrderIds = new Set()
 
     orders.forEach((item) => {
-      const itemTotal = Number(item.item_total || 0)
-      const commissionAmount = Number(
+      const itemTotal = Number(
+        item.item_total || 0
+      )
+
+      const calculatedCommission = Number(
         item.calculatedCommission || 0
       )
+
       const settlementAmount = Number(
         item.calculatedSettlement || 0
       )
 
       sales += itemTotal
-      commission += commissionAmount
+      commission += calculatedCommission
 
       const status = String(
         item.order?.order_status || ''
@@ -360,7 +585,9 @@ export default function FarmerOrders() {
       ).toLowerCase()
 
       if (status === 'delivered') {
-        deliveredOrderIds.add(item.order_id)
+        deliveredOrderIds.add(
+          item.order_id
+        )
       }
 
       if (settlementStatus === 'paid') {
@@ -372,7 +599,8 @@ export default function FarmerOrders() {
       }
     })
 
-    deliveredCount = deliveredOrderIds.size
+    deliveredCount =
+      deliveredOrderIds.size
 
     return {
       sales,
@@ -385,13 +613,14 @@ export default function FarmerOrders() {
     }
   }, [orders])
 
-  // ------------------------------------------------
+  // ==================================================
   // STATUS STYLE
-  // ------------------------------------------------
+  // ==================================================
 
   function getStatusStyle(status) {
-    const currentStatus = String(status || '')
-      .toLowerCase()
+    const currentStatus = String(
+      status || ''
+    ).toLowerCase()
 
     if (currentStatus === 'pending') {
       return {
@@ -434,13 +663,14 @@ export default function FarmerOrders() {
     }
   }
 
-  // ------------------------------------------------
+  // ==================================================
   // SETTLEMENT STYLE
-  // ------------------------------------------------
+  // ==================================================
 
   function getSettlementStyle(status) {
     if (
-      String(status || '').toLowerCase() === 'paid'
+      String(status || '')
+        .toLowerCase() === 'paid'
     ) {
       return {
         background: '#ecfdf5',
@@ -454,14 +684,15 @@ export default function FarmerOrders() {
     }
   }
 
-  // ------------------------------------------------
+  // ==================================================
   // LOADING
-  // ------------------------------------------------
+  // ==================================================
 
   if (loading) {
     return (
       <main style={styles.loadingPage}>
         <div style={styles.loadingCard}>
+
           <div style={styles.loadingIcon}>
             🌾
           </div>
@@ -469,14 +700,15 @@ export default function FarmerOrders() {
           <p style={styles.loadingText}>
             Loading your orders...
           </p>
+
         </div>
       </main>
     )
   }
 
-  // ------------------------------------------------
+  // ==================================================
   // PAGE
-  // ------------------------------------------------
+  // ==================================================
 
   return (
     <main style={styles.page}>
@@ -485,7 +717,9 @@ export default function FarmerOrders() {
         {/* BACK */}
 
         <button
-          onClick={() => router.push('/farmer')}
+          onClick={() =>
+            router.push('/farmer')
+          }
           style={styles.backButton}
         >
           ← Back to Dashboard
@@ -494,6 +728,7 @@ export default function FarmerOrders() {
         {/* HEADER */}
 
         <div style={styles.header}>
+
           <div>
             <p style={styles.smallTitle}>
               FARMER PANEL
@@ -504,8 +739,8 @@ export default function FarmerOrders() {
             </h1>
 
             <p style={styles.subtitle}>
-              Manage your customer orders and track
-              your earnings.
+              Manage your customer orders and
+              track your earnings.
             </p>
           </div>
 
@@ -515,12 +750,21 @@ export default function FarmerOrders() {
           >
             ↻ Refresh
           </button>
+
         </div>
 
-        {/* ERROR */}
+        {/* MESSAGE */}
 
         {message && (
-          <div style={styles.error}>
+          <div
+            style={
+              message.includes(
+                'successfully'
+              )
+                ? styles.success
+                : styles.error
+            }
+          >
             {message}
           </div>
         )}
@@ -572,7 +816,10 @@ export default function FarmerOrders() {
               </p>
 
               <h2 style={styles.summaryNumber}>
-                ₹{summary.pendingSettlement.toFixed(2)}
+                ₹
+                {summary.pendingSettlement.toFixed(
+                  2
+                )}
               </h2>
             </div>
           </div>
@@ -598,71 +845,183 @@ export default function FarmerOrders() {
         {/* EARNINGS OVERVIEW */}
 
         {orders.length > 0 && (
-          <section style={styles.earningsSection}>
+          <section
+            style={styles.earningsSection}
+          >
 
-            <div style={styles.sectionHeader}>
+            <div
+              style={styles.sectionHeader}
+            >
               <div>
-                <h2 style={styles.sectionTitle}>
+
+                <h2
+                  style={styles.sectionTitle}
+                >
                   Earnings Overview
                 </h2>
 
-                <p style={styles.sectionSubtitle}>
-                  Track your farmer amount and platform
-                  commission.
+                <p
+                  style={styles.sectionSubtitle}
+                >
+                  Track your farmer amount and
+                  platform commission.
                 </p>
+
               </div>
             </div>
 
             <div style={styles.earningsGrid}>
 
               <div style={styles.earningBox}>
-                <span style={styles.earningLabel}>
+                <span
+                  style={styles.earningLabel}
+                >
                   Farmer Sales
                 </span>
 
-                <strong style={styles.earningValue}>
+                <strong
+                  style={styles.earningValue}
+                >
                   ₹{summary.sales.toFixed(2)}
                 </strong>
               </div>
 
               <div style={styles.earningBox}>
-                <span style={styles.earningLabel}>
+                <span
+                  style={styles.earningLabel}
+                >
                   Platform Commission
                 </span>
 
-                <strong style={styles.commissionValue}>
-                  ₹{summary.commission.toFixed(2)}
+                <strong
+                  style={styles.commissionValue}
+                >
+                  ₹
+                  {summary.commission.toFixed(
+                    2
+                  )}
                 </strong>
               </div>
 
               <div style={styles.earningBox}>
-                <span style={styles.earningLabel}>
+                <span
+                  style={styles.earningLabel}
+                >
                   Settlements Paid
                 </span>
 
-                <strong style={styles.paidValue}>
+                <strong
+                  style={styles.paidValue}
+                >
                   {summary.paidSettlementCount}
                 </strong>
               </div>
 
               <div style={styles.earningBox}>
-                <span style={styles.earningLabel}>
+                <span
+                  style={styles.earningLabel}
+                >
                   Settlements Pending
                 </span>
 
-                <strong style={styles.pendingValue}>
+                <strong
+                  style={styles.pendingValue}
+                >
                   {summary.pendingSettlementCount}
                 </strong>
               </div>
 
             </div>
+
+          </section>
+        )}
+
+        {/* SEARCH */}
+
+        {orders.length > 0 && (
+          <section
+            style={styles.searchSection}
+          >
+
+            <div
+              style={styles.searchHeader}
+            >
+              <div>
+
+                <h2
+                  style={styles.sectionTitle}
+                >
+                  🔍 Find Customer Order
+                </h2>
+
+                <p
+                  style={styles.sectionSubtitle}
+                >
+                  Search using customer name or
+                  mobile number.
+                </p>
+
+              </div>
+            </div>
+
+            <div
+              style={styles.searchWrapper}
+            >
+
+              <span
+                style={styles.searchIcon}
+              >
+                🔍
+              </span>
+
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(
+                    e.target.value
+                  )
+                }
+                placeholder="Search customer name or mobile number..."
+                style={styles.searchInput}
+              />
+
+              {searchTerm && (
+                <button
+                  onClick={() =>
+                    setSearchTerm('')
+                  }
+                  style={
+                    styles.clearSearchButton
+                  }
+                >
+                  ✕
+                </button>
+              )}
+
+            </div>
+
+            {searchTerm.trim() && (
+              <p
+                style={styles.searchResultText}
+              >
+                {filteredOrders.length}{' '}
+                {filteredOrders.length === 1
+                  ? 'order'
+                  : 'orders'}{' '}
+                found
+              </p>
+            )}
+
           </section>
         )}
 
         {/* FILTERS */}
 
         {orders.length > 0 && (
-          <section style={styles.filterSection}>
+          <section
+            style={styles.filterSection}
+          >
 
             <h2 style={styles.sectionTitle}>
               Order Filters
@@ -671,7 +1030,9 @@ export default function FarmerOrders() {
             <div style={styles.filterGrid}>
 
               <button
-                onClick={() => setFilter('all')}
+                onClick={() =>
+                  setFilter('all')
+                }
                 style={{
                   ...styles.filterButton,
                   ...(filter === 'all'
@@ -683,7 +1044,9 @@ export default function FarmerOrders() {
               </button>
 
               <button
-                onClick={() => setFilter('pending')}
+                onClick={() =>
+                  setFilter('pending')
+                }
                 style={{
                   ...styles.filterButton,
                   ...(filter === 'pending'
@@ -695,7 +1058,9 @@ export default function FarmerOrders() {
               </button>
 
               <button
-                onClick={() => setFilter('confirmed')}
+                onClick={() =>
+                  setFilter('confirmed')
+                }
                 style={{
                   ...styles.filterButton,
                   ...(filter === 'confirmed'
@@ -707,7 +1072,9 @@ export default function FarmerOrders() {
               </button>
 
               <button
-                onClick={() => setFilter('shipped')}
+                onClick={() =>
+                  setFilter('shipped')
+                }
                 style={{
                   ...styles.filterButton,
                   ...(filter === 'shipped'
@@ -719,7 +1086,9 @@ export default function FarmerOrders() {
               </button>
 
               <button
-                onClick={() => setFilter('delivered')}
+                onClick={() =>
+                  setFilter('delivered')
+                }
                 style={{
                   ...styles.filterButton,
                   ...(filter === 'delivered'
@@ -731,7 +1100,9 @@ export default function FarmerOrders() {
               </button>
 
               <button
-                onClick={() => setFilter('paid')}
+                onClick={() =>
+                  setFilter('paid')
+                }
                 style={{
                   ...styles.filterButton,
                   ...(filter === 'paid'
@@ -744,11 +1115,14 @@ export default function FarmerOrders() {
 
               <button
                 onClick={() =>
-                  setFilter('settlement_pending')
+                  setFilter(
+                    'settlement_pending'
+                  )
                 }
                 style={{
                   ...styles.filterButton,
-                  ...(filter === 'settlement_pending'
+                  ...(filter ===
+                  'settlement_pending'
                     ? styles.activeFilter
                     : {}),
                 }}
@@ -757,36 +1131,52 @@ export default function FarmerOrders() {
               </button>
 
             </div>
+
           </section>
         )}
 
         {/* NO ORDERS */}
 
-        {!message && orders.length === 0 && (
-          <div style={styles.emptyCard}>
+        {!message &&
+          orders.length === 0 && (
+            <div
+              style={styles.emptyCard}
+            >
 
-            <div style={styles.emptyIcon}>
-              📦
+              <div style={styles.emptyIcon}>
+                📦
+              </div>
+
+              <h2
+                style={styles.emptyTitle}
+              >
+                No Orders Yet
+              </h2>
+
+              <p style={styles.emptyText}>
+                Orders for your products will
+                appear here when customers place
+                them.
+              </p>
+
             </div>
+          )}
 
-            <h2 style={styles.emptyTitle}>
-              No Orders Yet
-            </h2>
-
-            <p style={styles.emptyText}>
-              Orders for your products will appear
-              here when customers place them.
-            </p>
-
-          </div>
-        )}
-
-        {/* FILTER EMPTY */}
+        {/* SEARCH / FILTER EMPTY */}
 
         {orders.length > 0 &&
           filteredOrders.length === 0 && (
-            <div style={styles.emptyFilterCard}>
-              <div style={styles.emptyFilterIcon}>
+            <div
+              style={
+                styles.emptyFilterCard
+              }
+            >
+
+              <div
+                style={
+                  styles.emptyFilterIcon
+                }
+              >
                 🔍
               </div>
 
@@ -795,8 +1185,24 @@ export default function FarmerOrders() {
               </h3>
 
               <p>
-                There are no orders in this filter.
+                {searchTerm.trim()
+                  ? 'No customer found with that name or mobile number.'
+                  : 'There are no orders in this filter.'}
               </p>
+
+              {searchTerm.trim() && (
+                <button
+                  onClick={() =>
+                    setSearchTerm('')
+                  }
+                  style={
+                    styles.clearSearchLargeButton
+                  }
+                >
+                  Clear Search
+                </button>
+              )}
+
             </div>
           )}
 
@@ -813,7 +1219,9 @@ export default function FarmerOrders() {
               }
 
               const nextAction =
-                getNextAction(order.order_status)
+                getNextAction(
+                  order.order_status
+                )
 
               const orderStatus =
                 String(
@@ -822,7 +1230,8 @@ export default function FarmerOrders() {
 
               const settlementStatus =
                 String(
-                  item.settlement_status || 'pending'
+                  item.settlement_status ||
+                    'pending'
                 ).toLowerCase()
 
               return (
@@ -833,20 +1242,32 @@ export default function FarmerOrders() {
 
                   {/* ORDER HEADER */}
 
-                  <div style={styles.orderHeader}>
+                  <div
+                    style={styles.orderHeader}
+                  >
 
                     <div>
-                      <p style={styles.orderLabel}>
+
+                      <p
+                        style={styles.orderLabel}
+                      >
                         PRODUCT ORDER
                       </p>
 
-                      <h2 style={styles.productName}>
+                      <h2
+                        style={
+                          styles.productName
+                        }
+                      >
                         {item.product_name}
                       </h2>
 
-                      <p style={styles.orderId}>
+                      <p
+                        style={styles.orderId}
+                      >
                         Order ID: {item.order_id}
                       </p>
+
                     </div>
 
                     <div
@@ -857,21 +1278,36 @@ export default function FarmerOrders() {
                         ),
                       }}
                     >
-                      {order.order_status || 'Unknown'}
+                      {order.order_status ||
+                        'Unknown'}
                     </div>
 
                   </div>
 
                   {/* PRODUCT DETAILS */}
 
-                  <div style={styles.productDetails}>
+                  <div
+                    style={
+                      styles.productDetails
+                    }
+                  >
 
-                    <div style={styles.detailBox}>
-                      <span style={styles.detailLabel}>
+                    <div
+                      style={styles.detailBox}
+                    >
+                      <span
+                        style={
+                          styles.detailLabel
+                        }
+                      >
                         Customer Price
                       </span>
 
-                      <strong style={styles.detailValue}>
+                      <strong
+                        style={
+                          styles.detailValue
+                        }
+                      >
                         ₹
                         {Number(
                           item.price || 0
@@ -881,22 +1317,43 @@ export default function FarmerOrders() {
                       </strong>
                     </div>
 
-                    <div style={styles.detailBox}>
-                      <span style={styles.detailLabel}>
+                    <div
+                      style={styles.detailBox}
+                    >
+                      <span
+                        style={
+                          styles.detailLabel
+                        }
+                      >
                         Quantity
                       </span>
 
-                      <strong style={styles.detailValue}>
-                        {item.quantity} {item.unit}
+                      <strong
+                        style={
+                          styles.detailValue
+                        }
+                      >
+                        {item.quantity}{' '}
+                        {item.unit}
                       </strong>
                     </div>
 
-                    <div style={styles.detailBox}>
-                      <span style={styles.detailLabel}>
+                    <div
+                      style={styles.detailBox}
+                    >
+                      <span
+                        style={
+                          styles.detailLabel
+                        }
+                      >
                         Customer Total
                       </span>
 
-                      <strong style={styles.detailValue}>
+                      <strong
+                        style={
+                          styles.detailValue
+                        }
+                      >
                         ₹
                         {Number(
                           item.item_total || 0
@@ -908,18 +1365,37 @@ export default function FarmerOrders() {
 
                   {/* FARMER EARNINGS */}
 
-                  <div style={styles.earningsCard}>
+                  <div
+                    style={
+                      styles.earningsCard
+                    }
+                  >
 
-                    <div style={styles.earningsCardHeader}>
+                    <div
+                      style={
+                        styles.earningsCardHeader
+                      }
+                    >
+
                       <div>
-                        <h3 style={styles.earningsTitle}>
+
+                        <h3
+                          style={
+                            styles.earningsTitle
+                          }
+                        >
                           🌾 Farmer Earnings
                         </h3>
 
-                        <p style={styles.earningsHint}>
+                        <p
+                          style={
+                            styles.earningsHint
+                          }
+                        >
                           Your amount after platform
                           commission.
                         </p>
+
                       </div>
 
                       <div
@@ -930,23 +1406,36 @@ export default function FarmerOrders() {
                           ),
                         }}
                       >
-                        {settlementStatus === 'paid'
+                        {settlementStatus ===
+                        'paid'
                           ? '✓ Settlement Paid'
                           : '⏳ Settlement Pending'}
                       </div>
+
                     </div>
 
-                    <div style={styles.moneyGrid}>
+                    <div
+                      style={styles.moneyGrid}
+                    >
 
                       <div>
-                        <span style={styles.moneyLabel}>
+                        <span
+                          style={
+                            styles.moneyLabel
+                          }
+                        >
                           Farmer Price
                         </span>
 
-                        <strong style={styles.moneyValue}>
+                        <strong
+                          style={
+                            styles.moneyValue
+                          }
+                        >
                           ₹
                           {Number(
-                            item.farmer_price || 0
+                            item.farmer_price ||
+                              0
                           ).toFixed(2)}
                           {' / '}
                           {item.unit}
@@ -954,11 +1443,19 @@ export default function FarmerOrders() {
                       </div>
 
                       <div>
-                        <span style={styles.moneyLabel}>
+                        <span
+                          style={
+                            styles.moneyLabel
+                          }
+                        >
                           Farmer Amount
                         </span>
 
-                        <strong style={styles.moneyValue}>
+                        <strong
+                          style={
+                            styles.moneyValue
+                          }
+                        >
                           ₹
                           {item.calculatedFarmerAmount.toFixed(
                             2
@@ -967,11 +1464,19 @@ export default function FarmerOrders() {
                       </div>
 
                       <div>
-                        <span style={styles.moneyLabel}>
+                        <span
+                          style={
+                            styles.moneyLabel
+                          }
+                        >
                           Platform Commission
                         </span>
 
-                        <strong style={styles.commissionMoney}>
+                        <strong
+                          style={
+                            styles.commissionMoney
+                          }
+                        >
                           ₹
                           {item.calculatedCommission.toFixed(
                             2
@@ -980,11 +1485,19 @@ export default function FarmerOrders() {
                       </div>
 
                       <div>
-                        <span style={styles.moneyLabel}>
+                        <span
+                          style={
+                            styles.moneyLabel
+                          }
+                        >
                           Settlement Amount
                         </span>
 
-                        <strong style={styles.settlementMoney}>
+                        <strong
+                          style={
+                            styles.settlementMoney
+                          }
+                        >
                           ₹
                           {item.calculatedSettlement.toFixed(
                             2
@@ -994,9 +1507,14 @@ export default function FarmerOrders() {
 
                     </div>
 
-                    {settlementStatus === 'paid' &&
+                    {settlementStatus ===
+                      'paid' &&
                       item.settlement_paid_at && (
-                        <div style={styles.paidDate}>
+                        <div
+                          style={
+                            styles.paidDate
+                          }
+                        >
                           Paid on:{' '}
                           {new Date(
                             item.settlement_paid_at
@@ -1008,36 +1526,62 @@ export default function FarmerOrders() {
 
                   {/* CUSTOMER DETAILS */}
 
-                  <div style={styles.customerSection}>
+                  <div
+                    style={
+                      styles.customerSection
+                    }
+                  >
 
-                    <h3 style={styles.customerHeading}>
+                    <h3
+                      style={
+                        styles.customerHeading
+                      }
+                    >
                       Customer Details
                     </h3>
 
-                    <div style={styles.customerGrid}>
+                    <div
+                      style={
+                        styles.customerGrid
+                      }
+                    >
 
                       <div>
-                        <span style={styles.detailLabel}>
+                        <span
+                          style={
+                            styles.detailLabel
+                          }
+                        >
                           Name
                         </span>
 
                         <strong>
-                          {order.customer_name || '-'}
+                          {order.customer_name ||
+                            '-'}
                         </strong>
                       </div>
 
                       <div>
-                        <span style={styles.detailLabel}>
+                        <span
+                          style={
+                            styles.detailLabel
+                          }
+                        >
                           Phone
                         </span>
 
                         <strong>
-                          {order.customer_phone || '-'}
+                          {order.customer_phone ||
+                            '-'}
                         </strong>
                       </div>
 
                       <div>
-                        <span style={styles.detailLabel}>
+                        <span
+                          style={
+                            styles.detailLabel
+                          }
+                        >
                           District
                         </span>
 
@@ -1047,7 +1591,11 @@ export default function FarmerOrders() {
                       </div>
 
                       <div>
-                        <span style={styles.detailLabel}>
+                        <span
+                          style={
+                            styles.detailLabel
+                          }
+                        >
                           Village / Town
                         </span>
 
@@ -1058,13 +1606,20 @@ export default function FarmerOrders() {
 
                     </div>
 
-                    <div style={styles.addressBox}>
-                      <span style={styles.detailLabel}>
+                    <div
+                      style={styles.addressBox}
+                    >
+                      <span
+                        style={
+                          styles.detailLabel
+                        }
+                      >
                         Delivery Address
                       </span>
 
                       <strong>
-                        {order.delivery_address || '-'}
+                        {order.delivery_address ||
+                          '-'}
                       </strong>
                     </div>
 
@@ -1072,25 +1627,47 @@ export default function FarmerOrders() {
 
                   {/* ORDER ACTION */}
 
-                  <div style={styles.actionSection}>
+                  <div
+                    style={
+                      styles.actionSection
+                    }
+                  >
 
                     {nextAction ? (
                       <button
-                        onClick={() =>
-                          updateOrderStatus(
-                            order.id,
-                            nextAction.nextStatus
-                          )
-                        }
+                        onClick={() => {
+                          if (
+                            !nextAction.disabled
+                          ) {
+                            updateOrderStatus(
+                              order.id,
+                              nextAction.nextStatus
+                            )
+                          }
+                        }}
                         disabled={
+                          nextAction.disabled ||
                           updating === order.id
                         }
                         style={{
                           ...styles.actionButton,
+
                           opacity:
+                            nextAction.disabled ||
                             updating === order.id
-                              ? 0.7
+                              ? 0.6
                               : 1,
+
+                          cursor:
+                            nextAction.disabled ||
+                            updating === order.id
+                              ? 'not-allowed'
+                              : 'pointer',
+
+                          background:
+                            nextAction.disabled
+                              ? '#9ca3af'
+                              : '#2e7d32',
                         }}
                       >
                         {updating === order.id
@@ -1099,11 +1676,18 @@ export default function FarmerOrders() {
                       </button>
                     ) : orderStatus ===
                       'delivered' ? (
-                      <div style={styles.completed}>
-                        ✓ Order Delivered
+                      <div
+                        style={
+                          styles.completed
+                        }
+                      >
+                        ✓ Delivery Confirmed by
+                        Customer
                       </div>
                     ) : (
-                      <div style={styles.noAction}>
+                      <div
+                        style={styles.noAction}
+                      >
                         No action available
                       </div>
                     )}
@@ -1112,24 +1696,36 @@ export default function FarmerOrders() {
 
                   {/* FOOTER */}
 
-                  <div style={styles.footer}>
+                  <div
+                    style={styles.footer}
+                  >
 
                     <div>
-                      <span style={styles.detailLabel}>
+                      <span
+                        style={
+                          styles.detailLabel
+                        }
+                      >
                         Payment Status
                       </span>
 
                       <strong
                         style={{
-                          textTransform: 'capitalize',
+                          textTransform:
+                            'capitalize',
                         }}
                       >
-                        {order.payment_status || '-'}
+                        {order.payment_status ||
+                          '-'}
                       </strong>
                     </div>
 
                     <div>
-                      <span style={styles.detailLabel}>
+                      <span
+                        style={
+                          styles.detailLabel
+                        }
+                      >
                         Order Date
                       </span>
 
@@ -1182,7 +1778,8 @@ const styles = {
     padding: '40px',
     borderRadius: '16px',
     textAlign: 'center',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    boxShadow:
+      '0 2px 12px rgba(0,0,0,0.08)',
   },
 
   loadingIcon: {
@@ -1258,6 +1855,15 @@ const styles = {
     marginBottom: '25px',
   },
 
+  success: {
+    background: '#ecfdf5',
+    border: '1px solid #bbf7d0',
+    padding: '16px',
+    borderRadius: '10px',
+    color: '#047857',
+    marginBottom: '25px',
+  },
+
   summaryGrid: {
     display: 'grid',
     gridTemplateColumns:
@@ -1274,7 +1880,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '15px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    boxShadow:
+      '0 2px 8px rgba(0,0,0,0.04)',
   },
 
   summaryIcon: {
@@ -1358,6 +1965,88 @@ const styles = {
     color: '#c2410c',
   },
 
+  // ------------------------------------------------
+  // SEARCH
+  // ------------------------------------------------
+
+  searchSection: {
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '25px',
+    marginBottom: '25px',
+    border: '1px solid #e5e7eb',
+  },
+
+  searchHeader: {
+    marginBottom: '18px',
+  },
+
+  searchWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+
+  searchIcon: {
+    position: 'absolute',
+    left: '15px',
+    top: '50%',
+    transform:
+      'translateY(-50%)',
+    fontSize: '18px',
+    pointerEvents: 'none',
+  },
+
+  searchInput: {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding:
+      '14px 48px 14px 45px',
+    border: '1px solid #d1d5db',
+    borderRadius: '10px',
+    fontSize: '15px',
+    outline: 'none',
+    color: '#1f2937',
+    background: '#ffffff',
+  },
+
+  clearSearchButton: {
+    position: 'absolute',
+    right: '12px',
+    top: '50%',
+    transform:
+      'translateY(-50%)',
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    border: 'none',
+    background: '#f3f4f6',
+    color: '#6b7280',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+  },
+
+  searchResultText: {
+    margin: '12px 0 0',
+    fontSize: '13px',
+    color: '#166534',
+    fontWeight: '600',
+  },
+
+  clearSearchLargeButton: {
+    marginTop: '15px',
+    padding: '10px 18px',
+    border: 'none',
+    borderRadius: '8px',
+    background: '#166534',
+    color: '#ffffff',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+
+  // ------------------------------------------------
+  // FILTER
+  // ------------------------------------------------
+
   filterSection: {
     marginBottom: '25px',
   },
@@ -1386,12 +2075,17 @@ const styles = {
     border: '1px solid #166534',
   },
 
+  // ------------------------------------------------
+  // EMPTY
+  // ------------------------------------------------
+
   emptyCard: {
     background: '#ffffff',
     padding: '65px 20px',
     borderRadius: '16px',
     textAlign: 'center',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+    boxShadow:
+      '0 2px 10px rgba(0,0,0,0.08)',
   },
 
   emptyIcon: {
@@ -1422,6 +2116,10 @@ const styles = {
     marginBottom: '10px',
   },
 
+  // ------------------------------------------------
+  // ORDERS
+  // ------------------------------------------------
+
   ordersList: {
     display: 'flex',
     flexDirection: 'column',
@@ -1432,7 +2130,8 @@ const styles = {
     background: '#ffffff',
     padding: '25px',
     borderRadius: '16px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.07)',
+    boxShadow:
+      '0 2px 10px rgba(0,0,0,0.07)',
     border: '1px solid #e5e7eb',
   },
 
@@ -1442,7 +2141,8 @@ const styles = {
     alignItems: 'flex-start',
     gap: '20px',
     paddingBottom: '20px',
-    borderBottom: '1px solid #eee',
+    borderBottom:
+      '1px solid #eee',
   },
 
   orderLabel: {
@@ -1500,6 +2200,10 @@ const styles = {
     color: '#1f2937',
     fontSize: '16px',
   },
+
+  // ------------------------------------------------
+  // EARNINGS
+  // ------------------------------------------------
 
   earningsCard: {
     background: '#f0fdf4',
@@ -1569,10 +2273,15 @@ const styles = {
   paidDate: {
     marginTop: '15px',
     paddingTop: '12px',
-    borderTop: '1px solid #bbf7d0',
+    borderTop:
+      '1px solid #bbf7d0',
     fontSize: '12px',
     color: '#047857',
   },
+
+  // ------------------------------------------------
+  // CUSTOMER
+  // ------------------------------------------------
 
   customerSection: {
     borderTop: '1px solid #eee',
@@ -1599,6 +2308,10 @@ const styles = {
     background: '#f9fafb',
     borderRadius: '8px',
   },
+
+  // ------------------------------------------------
+  // ACTION
+  // ------------------------------------------------
 
   actionSection: {
     borderTop: '1px solid #eee',
@@ -1635,6 +2348,10 @@ const styles = {
     color: '#6b7280',
     fontWeight: '600',
   },
+
+  // ------------------------------------------------
+  // FOOTER
+  // ------------------------------------------------
 
   footer: {
     display: 'flex',

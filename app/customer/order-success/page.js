@@ -54,7 +54,8 @@ export default function OrderSuccessPage() {
           }}
         >
           Your order has been successfully placed.
-          The farmer will process your order soon.
+           Payment verification and order confirmation are pending.
+              You can track your order status from My Orders.
         </p>
 
         {orderId && (

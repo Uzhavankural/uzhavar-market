@@ -15,13 +15,13 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState([])
 
   const [loading, setLoading] = useState(true)
-const [accessDenied, setAccessDenied] = useState(false)
+  const [accessDenied, setAccessDenied] = useState(false)
 
-const [message, setMessage] = useState('')
+  const [message, setMessage] = useState('')
   const [productMessage, setProductMessage] = useState('')
 
-  const [commissionValues, setCommissionValues] =
-    useState({})
+  const [orderSearch, setOrderSearch] = useState('')
+  const [commissionValues, setCommissionValues] = useState({})
 
   useEffect(() => {
     checkAdmin()
@@ -33,14 +33,23 @@ const [message, setMessage] = useState('')
 
   async function checkAdmin() {
     setLoading(true)
+    setAccessDenied(false)
     setMessage('')
 
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser()
 
+    if (authError) {
+      console.log('AUTH ERROR:', authError)
+      setMessage(authError.message || 'Authentication failed.')
+      setLoading(false)
+      return
+    }
+
     if (!user) {
-      router.push('/login')
+      router.replace('/login')
       return
     }
 
@@ -57,22 +66,26 @@ const [message, setMessage] = useState('')
 
     if (profileError || !profileData) {
       console.log('PROFILE ERROR:', profileError)
-      setMessage('Profile not found.')
+      setMessage(
+        profileError?.message || 'Profile not found.'
+      )
       setLoading(false)
       return
     }
 
     if (profileData.role !== 'admin') {
       setProfile(profileData)
-  setAccessDenied(true)
-  setLoading(false)
-  return
-}
+      setAccessDenied(true)
+      setLoading(false)
+      return
+    }
 
     setProfile(profileData)
 
-    await loadOrders()
-    await loadProducts()
+    await Promise.all([
+      loadOrders(),
+      loadProducts(),
+    ])
 
     setLoading(false)
   }
@@ -82,6 +95,8 @@ const [message, setMessage] = useState('')
   // =====================================================
 
   async function loadOrders() {
+    setMessage('')
+
     const {
       data: ordersData,
       error: ordersError,
@@ -94,7 +109,12 @@ const [message, setMessage] = useState('')
 
     if (ordersError) {
       console.log('ORDERS ERROR:', ordersError)
-      setMessage(ordersError.message)
+
+      setMessage(
+        ordersError.message ||
+          'Failed to load orders.'
+      )
+
       return
     }
 
@@ -112,7 +132,7 @@ const [message, setMessage] = useState('')
     )
 
     // ===================================================
-    // ORDER ITEMS
+    // LOAD ORDER ITEMS
     // ===================================================
 
     const {
@@ -144,7 +164,11 @@ const [message, setMessage] = useState('')
         itemsError
       )
 
-      setMessage(itemsError.message)
+      setMessage(
+        itemsError.message ||
+          'Failed to load order items.'
+      )
+
       return
     }
 
@@ -182,7 +206,8 @@ const [message, setMessage] = useState('')
         )
 
         setMessage(
-          farmersError.message
+          farmersError.message ||
+            'Failed to load farmer profiles.'
         )
 
         return
@@ -229,10 +254,45 @@ const [message, setMessage] = useState('')
   }
 
   // =====================================================
+  // COMMISSION CALCULATION
+  // Commission is PER UNIT
+  // =====================================================
+
+  function getCommissionTotal(item) {
+    const commissionPerUnit =
+      Number(
+        item.commission_amount || 0
+      )
+
+    const quantity =
+      Number(item.quantity || 0)
+
+    return commissionPerUnit * quantity
+  }
+
+  // =====================================================
+  // FARMER SETTLEMENT CALCULATION
+  // =====================================================
+
+  function getFarmerSettlementTotal(item) {
+    const farmerPrice =
+      Number(
+        item.farmer_price || 0
+      )
+
+    const quantity =
+      Number(item.quantity || 0)
+
+    return farmerPrice * quantity
+  }
+
+  // =====================================================
   // LOAD PRODUCTS
   // =====================================================
 
   async function loadProducts() {
+    setProductMessage('')
+
     const {
       data,
       error,
@@ -259,7 +319,8 @@ const [message, setMessage] = useState('')
       )
 
       setProductMessage(
-        error.message
+        error.message ||
+          'Failed to load products.'
       )
 
       return
@@ -299,7 +360,6 @@ const [message, setMessage] = useState('')
       setProductMessage(
         'Please enter a commission before approving the product.'
       )
-
       return
     }
 
@@ -313,7 +373,6 @@ const [message, setMessage] = useState('')
       setProductMessage(
         'Please enter a valid commission amount.'
       )
-
       return
     }
 
@@ -326,9 +385,9 @@ const [message, setMessage] = useState('')
     const confirmed =
       window.confirm(
         `Approve "${product.name}"?\n\n` +
-        `Farmer Price: ₹${farmerPrice.toFixed(2)}\n` +
-        `Commission: ₹${commission.toFixed(2)}\n` +
-        `Customer Price: ₹${customerPrice.toFixed(2)}`
+        `Farmer Price: ₹${farmerPrice.toFixed(2)} / ${product.unit}\n` +
+        `Commission: ₹${commission.toFixed(2)} / ${product.unit}\n` +
+        `Customer Price: ₹${customerPrice.toFixed(2)} / ${product.unit}`
       )
 
     if (!confirmed) {
@@ -339,18 +398,19 @@ const [message, setMessage] = useState('')
       'Approving product...'
     )
 
-    const { error } =
-      await supabase
-        .from('products')
-        .update({
-          commission_amount:
-            commission,
-          approval_status:
-            'active',
-          status:
-            'active',
-        })
-        .eq('id', product.id)
+    const {
+      error,
+    } = await supabase
+      .from('products')
+      .update({
+        commission_amount:
+          commission,
+        approval_status:
+          'active',
+        status:
+          'active',
+      })
+      .eq('id', product.id)
 
     if (error) {
       console.log(
@@ -359,7 +419,8 @@ const [message, setMessage] = useState('')
       )
 
       setProductMessage(
-        error.message
+        error.message ||
+          'Failed to approve product.'
       )
 
       return
@@ -389,9 +450,7 @@ const [message, setMessage] = useState('')
           ...current,
         }
 
-        delete updated[
-          product.id
-        ]
+        delete updated[product.id]
 
         return updated
       }
@@ -420,16 +479,17 @@ const [message, setMessage] = useState('')
       'Rejecting product...'
     )
 
-    const { error } =
-      await supabase
-        .from('products')
-        .update({
-          approval_status:
-            'rejected',
-          status:
-            'inactive',
-        })
-        .eq('id', product.id)
+    const {
+      error,
+    } = await supabase
+      .from('products')
+      .update({
+        approval_status:
+          'rejected',
+        status:
+          'inactive',
+      })
+      .eq('id', product.id)
 
     if (error) {
       console.log(
@@ -438,7 +498,8 @@ const [message, setMessage] = useState('')
       )
 
       setProductMessage(
-        error.message
+        error.message ||
+          'Failed to reject product.'
       )
 
       return
@@ -480,10 +541,13 @@ const [message, setMessage] = useState('')
     }
 
     setProductMessage(
-      'Deleting product...'
+      'Checking product orders...'
     )
 
-    // Check existing orders
+    // ---------------------------------------------------
+    // CHECK EXISTING ORDERS
+    // ---------------------------------------------------
+
     const {
       data: orderItemsCheck,
       error: orderCheckError,
@@ -503,7 +567,8 @@ const [message, setMessage] = useState('')
       )
 
       setProductMessage(
-        orderCheckError.message
+        orderCheckError.message ||
+          'Failed to check product orders.'
       )
 
       return
@@ -520,7 +585,14 @@ const [message, setMessage] = useState('')
       return
     }
 
-    // Delete image
+    setProductMessage(
+      'Deleting product...'
+    )
+
+    // ---------------------------------------------------
+    // DELETE IMAGE
+    // ---------------------------------------------------
+
     if (product.image_url) {
       try {
         const marker =
@@ -538,13 +610,22 @@ const [message, setMessage] = useState('')
                 .split('?')[0]
             )
 
-          await supabase.storage
+          const {
+            error: imageDeleteError,
+          } = await supabase.storage
             .from(
               'product-images'
             )
             .remove([
               filePath,
             ])
+
+          if (imageDeleteError) {
+            console.log(
+              'IMAGE DELETE ERROR:',
+              imageDeleteError
+            )
+          }
         }
       } catch (imageError) {
         console.log(
@@ -554,11 +635,16 @@ const [message, setMessage] = useState('')
       }
     }
 
-    const { error } =
-      await supabase
-        .from('products')
-        .delete()
-        .eq('id', product.id)
+    // ---------------------------------------------------
+    // DELETE PRODUCT
+    // ---------------------------------------------------
+
+    const {
+      error,
+    } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', product.id)
 
     if (error) {
       console.log(
@@ -567,7 +653,8 @@ const [message, setMessage] = useState('')
       )
 
       setProductMessage(
-        error.message
+        error.message ||
+          'Failed to delete product.'
       )
 
       return
@@ -587,7 +674,14 @@ const [message, setMessage] = useState('')
   }
 
   // =====================================================
-  // ORDER STATUS
+  // ADMIN ORDER STATUS
+  //
+  // ADMIN CAN ONLY:
+  // pending -> confirmed
+  //
+  // confirmed -> farmer ships
+  // shipped -> customer confirms delivery
+  // delivered -> completed
   // =====================================================
 
   async function updateOrderStatus(
@@ -596,26 +690,90 @@ const [message, setMessage] = useState('')
   ) {
     setMessage('')
 
+    const order =
+      orders.find(
+        (item) =>
+          item.id === orderId
+      )
+
+    if (!order) {
+      setMessage(
+        'Order not found.'
+      )
+      return
+    }
+
+    // ---------------------------------------------------
+    // ADMIN FLOW VALIDATION
+    // ---------------------------------------------------
+
+    if (
+      order.order_status === 'pending' &&
+      newStatus !== 'confirmed'
+    ) {
+      setMessage(
+        'Admin can only confirm a pending order.'
+      )
+      return
+    }
+
+    if (
+      order.order_status !== 'pending'
+    ) {
+      setMessage(
+        'This order status is controlled by the next step in the marketplace flow.'
+      )
+      return
+    }
+
+    // ---------------------------------------------------
+    // PAYMENT MUST BE PAID
+    // ---------------------------------------------------
+
+    if (
+      order.payment_status !== 'paid'
+    ) {
+      setMessage(
+        'Order cannot be confirmed until customer payment is verified.'
+      )
+      return
+    }
+
     const confirmed =
       window.confirm(
-        `Change order status to "${newStatus}"?`
+        `Confirm Order #${order.id.slice(0, 8)}?\n\n` +
+        `Customer: ${order.customer_name || 'Customer'}\n` +
+        `Amount: ₹${Number(order.total_amount || 0).toFixed(2)}`
       )
 
     if (!confirmed) {
       return
     }
 
-    const { error } =
-      await supabase
-        .from('orders')
-        .update({
-          order_status:
-            newStatus,
-        })
-        .eq(
-          'id',
-          orderId
-        )
+    setMessage(
+      'Confirming order...'
+    )
+
+    const {
+      error,
+    } = await supabase
+      .from('orders')
+      .update({
+        order_status:
+          'confirmed',
+      })
+      .eq(
+        'id',
+        orderId
+      )
+      .eq(
+        'order_status',
+        'pending'
+      )
+      .eq(
+        'payment_status',
+        'paid'
+      )
 
     if (error) {
       console.log(
@@ -624,7 +782,8 @@ const [message, setMessage] = useState('')
       )
 
       setMessage(
-        error.message
+        error.message ||
+          'Failed to confirm order.'
       )
 
       return
@@ -633,15 +792,19 @@ const [message, setMessage] = useState('')
     setOrders(
       (currentOrders) =>
         currentOrders.map(
-          (order) =>
-            order.id === orderId
+          (currentOrder) =>
+            currentOrder.id === orderId
               ? {
-                  ...order,
+                  ...currentOrder,
                   order_status:
-                    newStatus,
+                    'confirmed',
                 }
-              : order
+              : currentOrder
         )
+    )
+
+    setMessage(
+      'Order confirmed successfully. Waiting for farmer to ship.'
     )
   }
 
@@ -655,26 +818,69 @@ const [message, setMessage] = useState('')
   ) {
     setMessage('')
 
+    const order =
+      orders.find(
+        (item) =>
+          item.id === orderId
+      )
+
+    if (!order) {
+      setMessage(
+        'Order not found.'
+      )
+      return
+    }
+
+    if (
+      order.payment_status === 'paid'
+    ) {
+      setMessage(
+        'Payment is already verified.'
+      )
+      return
+    }
+
+    if (
+      newStatus !== 'paid'
+    ) {
+      setMessage(
+        'Invalid payment status.'
+      )
+      return
+    }
+
     const confirmed =
       window.confirm(
-        `Mark payment as "${newStatus}"?`
+        `Mark payment as PAID?\n\n` +
+        `Order: #${order.id.slice(0, 8)}\n` +
+        `Customer: ${order.customer_name || 'Customer'}\n` +
+        `Amount: ₹${Number(order.total_amount || 0).toFixed(2)}`
       )
 
     if (!confirmed) {
       return
     }
 
-    const { error } =
-      await supabase
-        .from('orders')
-        .update({
-          payment_status:
-            newStatus,
-        })
-        .eq(
-          'id',
-          orderId
-        )
+    setMessage(
+      'Verifying payment...'
+    )
+
+    const {
+      error,
+    } = await supabase
+      .from('orders')
+      .update({
+        payment_status:
+          'paid',
+      })
+      .eq(
+        'id',
+        orderId
+      )
+      .eq(
+        'payment_status',
+        'pending'
+      )
 
     if (error) {
       console.log(
@@ -683,7 +889,8 @@ const [message, setMessage] = useState('')
       )
 
       setMessage(
-        error.message
+        error.message ||
+          'Failed to update payment status.'
       )
 
       return
@@ -692,20 +899,29 @@ const [message, setMessage] = useState('')
     setOrders(
       (currentOrders) =>
         currentOrders.map(
-          (order) =>
-            order.id === orderId
+          (currentOrder) =>
+            currentOrder.id === orderId
               ? {
-                  ...order,
+                  ...currentOrder,
                   payment_status:
-                    newStatus,
+                    'paid',
                 }
-              : order
+              : currentOrder
         )
+    )
+
+    setMessage(
+      'Payment verified successfully. Order can now be confirmed.'
     )
   }
 
   // =====================================================
   // FARMER SETTLEMENT
+  //
+  // ONLY:
+  // order_status = delivered
+  // payment_status = paid
+  // settlement_status != paid
   // =====================================================
 
   async function settleFarmerItem(
@@ -713,6 +929,49 @@ const [message, setMessage] = useState('')
     item
   ) {
     setMessage('')
+
+    const order =
+      orders.find(
+        (currentOrder) =>
+          currentOrder.id === orderId
+      )
+
+    if (!order) {
+      setMessage(
+        'Order not found.'
+      )
+      return
+    }
+
+    if (
+      order.order_status !==
+      'delivered'
+    ) {
+      setMessage(
+        'Farmer settlement is available only after customer confirms delivery.'
+      )
+      return
+    }
+
+    if (
+      order.payment_status !==
+      'paid'
+    ) {
+      setMessage(
+        'Farmer settlement is available only after customer payment is verified.'
+      )
+      return
+    }
+
+    if (
+      item.settlement_status ===
+      'paid'
+    ) {
+      setMessage(
+        'This farmer settlement has already been paid.'
+      )
+      return
+    }
 
     const farmerPrice =
       Number(
@@ -736,19 +995,19 @@ const [message, setMessage] = useState('')
       setMessage(
         'Invalid farmer settlement amount.'
       )
-
       return
     }
 
     const confirmed =
       window.confirm(
-        `Settle payment to ${
+        `Pay farmer settlement?\n\n` +
+        `Farmer: ${
           item.farmer_name ||
-          'farmer'
-        }?\n\n` +
+          'Unknown Farmer'
+        }\n` +
         `Product: ${item.product_name}\n` +
         `Quantity: ${item.quantity} ${item.unit || ''}\n` +
-        `Farmer Price: ₹${farmerPrice.toFixed(2)}\n` +
+        `Farmer Price: ₹${farmerPrice.toFixed(2)} / ${item.unit || ''}\n` +
         `Farmer Amount: ₹${settlementAmount.toFixed(2)}`
       )
 
@@ -763,21 +1022,28 @@ const [message, setMessage] = useState('')
     const paidAt =
       new Date().toISOString()
 
-    const { error } =
-      await supabase
-        .from('order_items')
-        .update({
-          settlement_status:
-            'paid',
-          settlement_amount:
-            settlementAmount,
-          settlement_paid_at:
-            paidAt,
-        })
-        .eq(
-          'id',
-          item.id
-        )
+    const {
+      error,
+    } = await supabase
+      .from('order_items')
+      .update({
+        settlement_status:
+          'paid',
+
+        settlement_amount:
+          settlementAmount,
+
+        settlement_paid_at:
+          paidAt,
+      })
+      .eq(
+        'id',
+        item.id
+      )
+      .neq(
+        'settlement_status',
+        'paid'
+      )
 
     if (error) {
       console.log(
@@ -786,7 +1052,8 @@ const [message, setMessage] = useState('')
       )
 
       setMessage(
-        error.message
+        error.message ||
+          'Failed to process farmer settlement.'
       )
 
       return
@@ -807,10 +1074,13 @@ const [message, setMessage] = useState('')
               item.id
                 ? {
                     ...currentItem,
+
                     settlement_status:
                       'paid',
+
                     settlement_amount:
                       settlementAmount,
+
                     settlement_paid_at:
                       paidAt,
                   }
@@ -825,39 +1095,69 @@ const [message, setMessage] = useState('')
   }
 
   // =====================================================
-  // NEXT ORDER ACTION
+  // NEXT ADMIN ORDER ACTION
+  //
+  // IMPORTANT:
+  // Admin only confirms pending orders.
   // =====================================================
 
   function getNextOrderAction(
-    status
+    order
   ) {
     if (
-      status === 'pending'
+      order.order_status ===
+      'pending'
     ) {
+      if (
+        order.payment_status !==
+        'paid'
+      ) {
+        return {
+          type: 'waiting',
+          text:
+            '🔒 Confirm Order — Payment Pending',
+        }
+      }
+
       return {
-        text: 'Confirm Order',
+        type: 'action',
+        text:
+          '✓ Confirm Order',
         nextStatus:
           'confirmed',
       }
     }
 
     if (
-      status === 'confirmed'
+      order.order_status ===
+      'confirmed'
     ) {
       return {
-        text: 'Mark as Shipped',
-        nextStatus:
-          'shipped',
+        type: 'waiting',
+        text:
+          'Waiting for Farmer to Ship',
       }
     }
 
     if (
-      status === 'shipped'
+      order.order_status ===
+      'shipped'
     ) {
       return {
-        text: 'Mark as Delivered',
-        nextStatus:
-          'delivered',
+        type: 'waiting',
+        text:
+          'Waiting for Customer Delivery Confirmation',
+      }
+    }
+
+    if (
+      order.order_status ===
+      'delivered'
+    ) {
+      return {
+        type: 'completed',
+        text:
+          '✓ Delivery Confirmed by Customer',
       }
     }
 
@@ -889,9 +1189,7 @@ const [message, setMessage] = useState('')
   async function handleLogout() {
     await supabase.auth.signOut()
 
-    router.replace(
-      '/login'
-    )
+    router.replace('/login')
   }
 
   // =====================================================
@@ -977,34 +1275,45 @@ const [message, setMessage] = useState('')
     )
   }
 
+  // =====================================================
+  // ACCESS DENIED
+  // =====================================================
+
   if (accessDenied) {
-  const dashboardPath =
-    profile?.role === 'farmer'
-      ? '/farmer'
-      : '/customer'
+    const dashboardPath =
+      profile?.role === 'farmer'
+        ? '/farmer'
+        : '/customer'
 
-  const dashboardText =
-    profile?.role === 'farmer'
-      ? 'Go to Farmer Dashboard'
-      : 'Go to Customer Dashboard'
+    const dashboardText =
+      profile?.role === 'farmer'
+        ? 'Go to Farmer Dashboard'
+        : 'Go to Customer Dashboard'
 
-  return (
-    <div style={styles.center}>
-      <h2>🚫 You don't have access to the Admin Panel.</h2>
+    return (
+      <div style={styles.center}>
+        <h2>
+          🚫 You don't have access to the Admin Panel.
+        </h2>
 
-      <p>
-        This panel is available only for admin users.
-      </p>
+        <p>
+          This panel is available only for admin users.
+        </p>
 
-      <button
-        onClick={() => router.push(dashboardPath)}
-        style={styles.backButton}
-      >
-        {dashboardText}
-      </button>
-    </div>
-  )
-}
+        <button
+          onClick={() =>
+            router.push(
+              dashboardPath
+            )
+          }
+          style={styles.backButton}
+        >
+          {dashboardText}
+        </button>
+      </div>
+    )
+  }
+
   // =====================================================
   // ERROR
   // =====================================================
@@ -1029,8 +1338,119 @@ const [message, setMessage] = useState('')
   }
 
   // =====================================================
-  // DASHBOARD
+  // ORDER SEARCH
   // =====================================================
+
+  const normalizedSearch =
+    orderSearch
+      .trim()
+      .toLowerCase()
+
+  const filteredOrders =
+    normalizedSearch === ''
+      ? orders
+      : orders.filter((order) => {
+          const customerName =
+            String(
+              order.customer_name || ''
+            ).toLowerCase()
+
+          const customerPhone =
+            String(
+              order.customer_phone || ''
+            ).toLowerCase()
+
+          const orderId =
+            String(
+              order.id || ''
+            ).toLowerCase()
+
+          const shortOrderId =
+            orderId.slice(0, 8)
+
+          return (
+            customerName.includes(
+              normalizedSearch
+            ) ||
+            customerPhone.includes(
+              normalizedSearch
+            ) ||
+            orderId.includes(
+              normalizedSearch
+            ) ||
+            shortOrderId.includes(
+              normalizedSearch
+            )
+          )
+        })
+
+  // =====================================================
+  // ADMIN EARNINGS
+  //
+  // Commission counted only from PAID orders.
+  // =====================================================
+
+  let totalCommissionEarned = 0
+  let totalFarmerSettlement = 0
+
+  orders.forEach((order) => {
+    if (
+      order.payment_status !==
+      'paid'
+    ) {
+      return
+    }
+
+    const items =
+      orderItems[order.id] || []
+
+    items.forEach((item) => {
+      totalCommissionEarned +=
+        getCommissionTotal(item)
+
+      totalFarmerSettlement +=
+        getFarmerSettlementTotal(item)
+    })
+  })
+
+  // =====================================================
+  // ORDER COUNTS
+  // =====================================================
+
+  const pendingOrders =
+    orders.filter(
+      (order) =>
+        order.order_status ===
+        'pending'
+    ).length
+
+  const confirmedOrders =
+    orders.filter(
+      (order) =>
+        order.order_status ===
+        'confirmed'
+    ).length
+
+  const shippedOrders =
+    orders.filter(
+      (order) =>
+        order.order_status ===
+        'shipped'
+    ).length
+
+  const deliveredOrders =
+    orders.filter(
+      (order) =>
+        order.order_status ===
+        'delivered'
+    ).length
+
+  const pendingPayments =
+    orders.filter(
+      (order) =>
+        order.payment_status !==
+        'paid'
+    ).length
 
   return (
     <main style={styles.page}>
@@ -1112,10 +1532,66 @@ const [message, setMessage] = useState('')
         </div>
 
         {/* =================================================
+            GLOBAL MESSAGE
+        ================================================= */}
+
+        {message && (
+          <div
+            style={
+              styles.messageBox
+            }
+          >
+            {message}
+          </div>
+        )}
+
+        {/* =================================================
             STATS
         ================================================= */}
 
         <div style={styles.statsGrid}>
+
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>
+              Total Commission Earned
+            </p>
+
+            <h2 style={styles.statNumber}>
+              ₹
+              {totalCommissionEarned.toFixed(
+                2
+              )}
+            </h2>
+
+            <p
+              style={
+                styles.greenSmallText
+              }
+            >
+              From paid orders
+            </p>
+          </div>
+
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>
+              Farmer Settlement
+            </p>
+
+            <h2 style={styles.statNumber}>
+              ₹
+              {totalFarmerSettlement.toFixed(
+                2
+              )}
+            </h2>
+
+            <p
+              style={
+                styles.graySmallText
+              }
+            >
+              Farmer amount from paid orders
+            </p>
+          </div>
 
           <button
             onClick={
@@ -1146,13 +1622,7 @@ const [message, setMessage] = useState('')
             </p>
 
             <h2 style={styles.statNumber}>
-              {
-                orders.filter(
-                  (order) =>
-                    order.order_status ===
-                    'pending'
-                ).length
-              }
+              {pendingOrders}
             </h2>
           </div>
 
@@ -1162,13 +1632,17 @@ const [message, setMessage] = useState('')
             </p>
 
             <h2 style={styles.statNumber}>
-              {
-                orders.filter(
-                  (order) =>
-                    order.order_status ===
-                    'confirmed'
-                ).length
-              }
+              {confirmedOrders}
+            </h2>
+          </div>
+
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>
+              Shipped
+            </p>
+
+            <h2 style={styles.statNumber}>
+              {shippedOrders}
             </h2>
           </div>
 
@@ -1178,13 +1652,17 @@ const [message, setMessage] = useState('')
             </p>
 
             <h2 style={styles.statNumber}>
-              {
-                orders.filter(
-                  (order) =>
-                    order.order_status ===
-                    'delivered'
-                ).length
-              }
+              {deliveredOrders}
+            </h2>
+          </div>
+
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>
+              Payment Pending
+            </p>
+
+            <h2 style={styles.statNumber}>
+              {pendingPayments}
             </h2>
           </div>
 
@@ -1202,13 +1680,23 @@ const [message, setMessage] = useState('')
 
           <div style={styles.sectionHeader}>
 
-            <h2
-              style={
-                styles.sectionTitle
-              }
-            >
-              All Products
-            </h2>
+            <div>
+              <h2
+                style={
+                  styles.sectionTitle
+                }
+              >
+                All Products
+              </h2>
+
+              <p
+                style={
+                  styles.sectionSubtitle
+                }
+              >
+                Review and approve farmer products.
+              </p>
+            </div>
 
             <div
               style={
@@ -1237,7 +1725,7 @@ const [message, setMessage] = useState('')
                   styles.refreshButton
                 }
               >
-                Refresh
+                ↻ Refresh
               </button>
 
             </div>
@@ -1274,20 +1762,41 @@ const [message, setMessage] = useState('')
               {products.map(
                 (product) => {
 
-                  const commission =
+                  const inputCommission =
+                    commissionValues[
+                      product.id
+                    ]
+
+                  const currentCommission =
                     Number(
-                      commissionValues[
-                        product.id
-                      ] ??
-                        product.commission_amount ??
+                      product.commission_amount ||
+                        0
+                    )
+
+                  const previewCommission =
+                    inputCommission !==
+                      undefined &&
+                    inputCommission !== ''
+                      ? Number(
+                          inputCommission
+                        )
+                      : currentCommission
+
+                  const farmerPrice =
+                    Number(
+                      product.price ||
                         0
                     )
 
                   const customerPrice =
-                    Number(
-                      product.price || 0
-                    ) +
-                    commission
+                    farmerPrice +
+                    (
+                      Number.isFinite(
+                        previewCommission
+                      )
+                        ? previewCommission
+                        : 0
+                    )
 
                   return (
                     <div
@@ -1298,6 +1807,8 @@ const [message, setMessage] = useState('')
                         styles.productCard
                       }
                     >
+
+                      {/* IMAGE */}
 
                       <div
                         style={
@@ -1329,6 +1840,8 @@ const [message, setMessage] = useState('')
 
                       </div>
 
+                      {/* CONTENT */}
+
                       <div
                         style={
                           styles.productContent
@@ -1358,11 +1871,28 @@ const [message, setMessage] = useState('')
                             styles.farmerName
                           }
                         >
-                          Farmer:{' '}
+                          👨‍🌾 Farmer:{' '}
                           {product.profiles
                             ?.full_name ||
                             'Unknown'}
                         </p>
+
+                        {product.profiles
+                          ?.farm_name && (
+                          <p
+                            style={
+                              styles.farmName
+                            }
+                          >
+                            🌾 Farm:{' '}
+                            {
+                              product.profiles
+                                .farm_name
+                            }
+                          </p>
+                        )}
+
+                        {/* PRICE */}
 
                         <div
                           style={
@@ -1375,10 +1905,9 @@ const [message, setMessage] = useState('')
 
                           <strong>
                             ₹
-                            {Number(
-                              product.price ||
-                                0
-                            ).toFixed(2)}
+                            {farmerPrice.toFixed(
+                              2
+                            )}
                             {' / '}
                             {product.unit}
                           </strong>
@@ -1395,10 +1924,11 @@ const [message, setMessage] = useState('')
 
                           <strong>
                             ₹
-                            {Number(
-                              product.commission_amount ||
-                                0
-                            ).toFixed(2)}
+                            {currentCommission.toFixed(
+                              2
+                            )}
+                            {' / '}
+                            {product.unit}
                           </strong>
                         </div>
 
@@ -1411,22 +1941,24 @@ const [message, setMessage] = useState('')
                             Customer Price
                           </span>
 
-                          <strong>
+                          <strong
+                            style={
+                              styles.customerPrice
+                            }
+                          >
                             ₹
                             {(
-                              Number(
-                                product.price ||
-                                  0
-                              ) +
-                              Number(
-                                product.commission_amount ||
-                                  0
-                              )
-                            ).toFixed(2)}
+                              farmerPrice +
+                              currentCommission
+                            ).toFixed(
+                              2
+                            )}
                             {' / '}
                             {product.unit}
                           </strong>
                         </div>
+
+                        {/* STATUS */}
 
                         <div
                           style={
@@ -1486,6 +2018,14 @@ const [message, setMessage] = useState('')
                               }
                             >
                               Set Commission
+                              <span
+                                style={
+                                  styles.unitHint
+                                }
+                              >
+                                {' '}
+                                (per {product.unit})
+                              </span>
                             </label>
 
                             <div
@@ -1509,8 +2049,7 @@ const [message, setMessage] = useState('')
                                 value={
                                   commissionValues[
                                     product.id
-                                  ] ??
-                                  ''
+                                  ] ?? ''
                                 }
                                 onChange={(
                                   e
@@ -1533,13 +2072,17 @@ const [message, setMessage] = useState('')
                                 styles.customerPricePreview
                               }
                             >
-                              Customer Price:
-                              ₹
-                              {customerPrice.toFixed(
-                                2
-                              )}
-                              {' / '}
-                              {product.unit}
+                              Customer Price:{' '}
+                              <strong>
+                                ₹
+                                {customerPrice.toFixed(
+                                  2
+                                )}
+                                {' / '}
+                                {
+                                  product.unit
+                                }
+                              </strong>
                             </p>
 
                             <div
@@ -1579,6 +2122,8 @@ const [message, setMessage] = useState('')
                           </div>
                         )}
 
+                        {/* DELETE */}
+
                         <button
                           onClick={() =>
                             deleteProduct(
@@ -1616,13 +2161,23 @@ const [message, setMessage] = useState('')
 
           <div style={styles.sectionHeader}>
 
-            <h2
-              style={
-                styles.sectionTitle
-              }
-            >
-              All Orders
-            </h2>
+            <div>
+              <h2
+                style={
+                  styles.sectionTitle
+                }
+              >
+                All Orders
+              </h2>
+
+              <p
+                style={
+                  styles.sectionSubtitle
+                }
+              >
+                Manage payment verification and order confirmation.
+              </p>
+            </div>
 
             <button
               onClick={
@@ -1632,8 +2187,55 @@ const [message, setMessage] = useState('')
                 styles.refreshButton
               }
             >
-              Refresh
+              ↻ Refresh
             </button>
+
+          </div>
+
+          {/* ORDER SEARCH */}
+
+          <div
+            style={
+              styles.orderSearchBox
+            }
+          >
+
+            <span
+              style={
+                styles.searchIcon
+              }
+            >
+              🔎
+            </span>
+
+            <input
+              type="text"
+              value={
+                orderSearch
+              }
+              onChange={(e) =>
+                setOrderSearch(
+                  e.target.value
+                )
+              }
+              placeholder="Search customer name, phone or order ID..."
+              style={
+                styles.orderSearchInput
+              }
+            />
+
+            {orderSearch && (
+              <button
+                onClick={() =>
+                  setOrderSearch('')
+                }
+                style={
+                  styles.clearSearchButton
+                }
+              >
+                ✕
+              </button>
+            )}
 
           </div>
 
@@ -1649,6 +2251,20 @@ const [message, setMessage] = useState('')
               </p>
 
             </div>
+          ) : filteredOrders.length === 0 ? (
+
+            <div style={styles.empty}>
+
+              <h3>
+                No matching orders
+              </h3>
+
+              <p>
+                Try another customer name, phone number or order ID.
+              </p>
+
+            </div>
+
           ) : (
 
             <div
@@ -1657,12 +2273,12 @@ const [message, setMessage] = useState('')
               }
             >
 
-              {orders.map(
+              {filteredOrders.map(
                 (order) => {
 
                   const nextAction =
                     getNextOrderAction(
-                      order.order_status
+                      order
                     )
 
                   const items =
@@ -1775,7 +2391,8 @@ const [message, setMessage] = useState('')
                             }
                           >
                             {
-                              order.customer_name
+                              order.customer_name ||
+                              'Not available'
                             }
                           </p>
 
@@ -1785,7 +2402,8 @@ const [message, setMessage] = useState('')
                             }
                           >
                             {
-                              order.customer_phone
+                              order.customer_phone ||
+                              'Not available'
                             }
                           </p>
 
@@ -1807,7 +2425,8 @@ const [message, setMessage] = useState('')
                             }
                           >
                             {
-                              order.delivery_address
+                              order.delivery_address ||
+                              'Not available'
                             }
                           </p>
 
@@ -1817,11 +2436,16 @@ const [message, setMessage] = useState('')
                             }
                           >
                             {
-                              order.village
+                              order.village ||
+                              ''
                             }
-                            ,{' '}
+                            {order.village &&
+                            order.district
+                              ? ', '
+                              : ''}
                             {
-                              order.district
+                              order.district ||
+                              ''
                             }
                           </p>
 
@@ -1846,7 +2470,9 @@ const [message, setMessage] = useState('')
                             {Number(
                               order.total_amount ||
                                 0
-                            ).toFixed(2)}
+                            ).toFixed(
+                              2
+                            )}
                           </p>
 
                         </div>
@@ -1903,6 +2529,34 @@ const [message, setMessage] = useState('')
                                       0
                                   )
 
+                                const customerPrice =
+                                  Number(
+                                    item.price ||
+                                      0
+                                  )
+
+                                const itemTotal =
+                                  Number(
+                                    item.item_total ||
+                                      customerPrice *
+                                        quantity
+                                  )
+
+                                const commissionPerUnit =
+                                  Number(
+                                    item.commission_amount ||
+                                      0
+                                  )
+
+                                const commissionTotal =
+                                  getCommissionTotal(
+                                    item
+                                  )
+
+                                const calculatedFarmerAmount =
+                                  farmerPrice *
+                                  quantity
+
                                 const settlementAmount =
                                   item.settlement_amount !==
                                     null &&
@@ -1911,8 +2565,7 @@ const [message, setMessage] = useState('')
                                     ? Number(
                                         item.settlement_amount
                                       )
-                                    : farmerPrice *
-                                      quantity
+                                    : calculatedFarmerAmount
 
                                 const isPaid =
                                   item.settlement_status ===
@@ -1934,6 +2587,8 @@ const [message, setMessage] = useState('')
                                       styles.orderItemCard
                                     }
                                   >
+
+                                    {/* PRODUCT */}
 
                                     <div
                                       style={
@@ -1968,7 +2623,7 @@ const [message, setMessage] = useState('')
                                             styles.orderItemFarm
                                           }
                                         >
-                                          Farm:{' '}
+                                          🌾 Farm:{' '}
                                           {
                                             item.farm_name
                                           }
@@ -1976,6 +2631,8 @@ const [message, setMessage] = useState('')
                                       )}
 
                                     </div>
+
+                                    {/* ITEM INFO */}
 
                                     <div
                                       style={
@@ -2013,10 +2670,7 @@ const [message, setMessage] = useState('')
 
                                         <strong>
                                           ₹
-                                          {Number(
-                                            item.price ||
-                                              0
-                                          ).toFixed(
+                                          {customerPrice.toFixed(
                                             2
                                           )}
                                           {' / '}
@@ -2053,15 +2707,37 @@ const [message, setMessage] = useState('')
                                             styles.itemLabel
                                           }
                                         >
-                                          Commission
+                                          Commission / Unit
                                         </span>
 
                                         <strong>
                                           ₹
-                                          {Number(
-                                            item.commission_amount ||
-                                              0
-                                          ).toFixed(
+                                          {commissionPerUnit.toFixed(
+                                            2
+                                          )}
+                                          {' / '}
+                                          {
+                                            item.unit
+                                          }
+                                        </strong>
+                                      </div>
+
+                                      <div>
+                                        <span
+                                          style={
+                                            styles.itemLabel
+                                          }
+                                        >
+                                          Total Commission
+                                        </span>
+
+                                        <strong
+                                          style={
+                                            styles.commissionTotal
+                                          }
+                                        >
+                                          ₹
+                                          {commissionTotal.toFixed(
                                             2
                                           )}
                                         </strong>
@@ -2082,10 +2758,7 @@ const [message, setMessage] = useState('')
                                           }
                                         >
                                           ₹
-                                          {Number(
-                                            item.item_total ||
-                                              0
-                                          ).toFixed(
+                                          {itemTotal.toFixed(
                                             2
                                           )}
                                         </strong>
@@ -2201,8 +2874,8 @@ const [message, setMessage] = useState('')
                                           }
                                         >
                                           Settlement available after
-                                          order delivery and payment
-                                          verification.
+                                          delivery confirmation and
+                                          payment verification.
                                         </div>
 
                                       )}
@@ -2227,6 +2900,8 @@ const [message, setMessage] = useState('')
                         }
                       >
 
+                        {/* ORDER STATUS */}
+
                         <div
                           style={
                             styles.orderActionBlock
@@ -2241,7 +2916,8 @@ const [message, setMessage] = useState('')
                             Order Status
                           </span>
 
-                          {nextAction ? (
+                          {nextAction?.type ===
+                            'action' ? (
 
                             <button
                               onClick={() =>
@@ -2259,20 +2935,37 @@ const [message, setMessage] = useState('')
                               }
                             </button>
 
-                          ) : order.order_status ===
-                            'delivered' ? (
+                          ) : nextAction?.type ===
+                            'waiting' ? (
+
+                            <span
+                              style={
+                                styles.waitingStatus
+                              }
+                            >
+                              {
+                                nextAction.text
+                              }
+                            </span>
+
+                          ) : nextAction?.type ===
+                            'completed' ? (
 
                             <span
                               style={
                                 styles.completedText
                               }
                             >
-                              ✓ Order Delivered
+                              {
+                                nextAction.text
+                              }
                             </span>
 
                           ) : null}
 
                         </div>
+
+                        {/* PAYMENT */}
 
                         <div
                           style={
@@ -2318,6 +3011,28 @@ const [message, setMessage] = useState('')
                           )}
 
                         </div>
+
+                      </div>
+
+                      {/* FLOW INFORMATION */}
+
+                      <div
+                        style={
+                          styles.flowInfoBox
+                        }
+                      >
+
+                        <strong>
+                          Order Flow:
+                        </strong>
+
+                        <span>
+                          Payment →
+                          Admin Confirmation →
+                          Farmer Ships →
+                          Customer Confirms Delivery →
+                          Admin Pays Farmer
+                        </span>
 
                       </div>
 
@@ -2424,7 +3139,7 @@ const styles = {
   },
 
   header: {
-    marginBottom: '30px',
+    marginBottom: '25px',
   },
 
   title: {
@@ -2435,6 +3150,18 @@ const styles = {
   subtitle: {
     marginTop: '8px',
     color: '#666',
+  },
+
+  messageBox: {
+    padding: '12px 15px',
+    marginBottom: '25px',
+    background: '#f0f7f2',
+    color: '#1f7a3f',
+    border:
+      '1px solid #d7eadb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    lineHeight: 1.5,
   },
 
   statsGrid: {
@@ -2456,6 +3183,7 @@ const styles = {
   statLabel: {
     margin: 0,
     color: '#666',
+    fontSize: '14px',
   },
 
   statNumber: {
@@ -2468,6 +3196,19 @@ const styles = {
     fontSize: '12px',
     color: '#1f7a3f',
     fontWeight: '600',
+  },
+
+  greenSmallText: {
+    margin: '8px 0 0',
+    fontSize: '12px',
+    color: '#1f7a3f',
+    fontWeight: '600',
+  },
+
+  graySmallText: {
+    margin: '8px 0 0',
+    fontSize: '12px',
+    color: '#666',
   },
 
   productsSection: {
@@ -2496,6 +3237,12 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
+  },
+
+  sectionSubtitle: {
+    margin: '6px 0 0',
+    color: '#777',
+    fontSize: '13px',
   },
 
   productHeaderActions: {
@@ -2585,9 +3332,15 @@ const styles = {
   },
 
   farmerName: {
-    margin: '0 0 15px',
+    margin: '0 0 5px',
     color: '#666',
     fontSize: '14px',
+  },
+
+  farmName: {
+    margin: '0 0 15px',
+    color: '#777',
+    fontSize: '13px',
   },
 
   priceRow: {
@@ -2599,6 +3352,10 @@ const styles = {
     borderBottom:
       '1px solid #f0f0f0',
     fontSize: '14px',
+  },
+
+  customerPrice: {
+    color: '#1f7a3f',
   },
 
   productStatusRow: {
@@ -2656,6 +3413,11 @@ const styles = {
     color: '#374151',
   },
 
+  unitHint: {
+    color: '#777',
+    fontWeight: '400',
+  },
+
   commissionInputRow: {
     display: 'flex',
     alignItems: 'center',
@@ -2684,7 +3446,6 @@ const styles = {
     margin: '10px 0',
     fontSize: '13px',
     color: '#1f7a3f',
-    fontWeight: '600',
   },
 
   approvalButtons: {
@@ -2731,6 +3492,51 @@ const styles = {
     padding: '50px 20px',
     color: '#777',
   },
+
+  // =====================================================
+  // SEARCH
+  // =====================================================
+
+  orderSearchBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    marginBottom: '22px',
+    padding: '0 12px',
+    border:
+      '1px solid #d9ded9',
+    borderRadius: '9px',
+    background: '#fff',
+    boxSizing: 'border-box',
+  },
+
+  searchIcon: {
+    fontSize: '18px',
+  },
+
+  orderSearchInput: {
+    flex: 1,
+    border: 'none',
+    outline: 'none',
+    padding: '12px 5px',
+    fontSize: '14px',
+    background: 'transparent',
+    minWidth: '0',
+  },
+
+  clearSearchButton: {
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    color: '#777',
+    fontSize: '16px',
+    padding: '5px',
+  },
+
+  // =====================================================
+  // ORDERS
+  // =====================================================
 
   ordersList: {
     display: 'flex',
@@ -2796,6 +3602,7 @@ const styles = {
   text: {
     margin: '4px 0',
     color: '#555',
+    wordBreak: 'break-word',
   },
 
   total: {
@@ -2875,8 +3682,13 @@ const styles = {
     color: '#1f7a3f',
   },
 
+  commissionTotal: {
+    color: '#6f42c1',
+  },
+
   settlementBox: {
-    minWidth: '240px',
+    minWidth: '250px',
+    flex: '0 0 250px',
     padding: '12px',
     background: '#ffffff',
     border:
@@ -2965,6 +3777,10 @@ const styles = {
     fontSize: '13px',
   },
 
+  // =====================================================
+  // ORDER ACTIONS
+  // =====================================================
+
   orderActions: {
     marginTop: '20px',
     paddingTop: '16px',
@@ -3012,6 +3828,17 @@ const styles = {
     fontSize: '14px',
   },
 
+  waitingStatus: {
+    display: 'block',
+    textAlign: 'center',
+    padding: '10px',
+    background: '#f3f4f6',
+    color: '#6b7280',
+    borderRadius: '7px',
+    fontWeight: '600',
+    fontSize: '13px',
+  },
+
   completedText: {
     display: 'block',
     textAlign: 'center',
@@ -3020,6 +3847,7 @@ const styles = {
     color: '#155724',
     borderRadius: '7px',
     fontWeight: '600',
+    fontSize: '13px',
   },
 
   paymentVerifiedText: {
@@ -3030,6 +3858,21 @@ const styles = {
     color: '#155724',
     borderRadius: '7px',
     fontWeight: '600',
+  },
+
+  flowInfoBox: {
+    marginTop: '16px',
+    padding: '11px 13px',
+    background: '#f8fafc',
+    border:
+      '1px solid #e5e7eb',
+    borderRadius: '7px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
+    fontSize: '11px',
+    color: '#64748b',
+    lineHeight: 1.5,
   },
 
   backButton: {

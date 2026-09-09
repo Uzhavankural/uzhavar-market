@@ -51,13 +51,15 @@ export default function Login() {
     setPassword('')
     setLoading(false)
 
-    if (profile.role === 'admin') {
-      router.push('/admin')
-    } else if (profile.role === 'farmer') {
-      router.push('/farmer')
-    } else {
-      router.push('/')
-    }
+      if (profile.role === 'admin') {
+        router.push('/admin')
+      } else if (profile.role === 'farmer') {
+        router.push('/farmer')
+      } else if (profile.role === 'customer') {
+        router.push('/customer')
+      } else {
+        setMessage('Invalid user role.')
+      }
   }
 
   return (
