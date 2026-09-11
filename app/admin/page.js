@@ -13,6 +13,10 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState([])
   const [orderItems, setOrderItems] = useState({})
   const [products, setProducts] = useState([])
+  const [activeSection, setActiveSection] = useState('dashboard')
+  const [reviews, setReviews] = useState([])
+  const [reviewMessage, setReviewMessage] = useState('')
+  const [reviewFilter, setReviewFilter] = useState('pending')
 
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
@@ -83,9 +87,10 @@ export default function AdminDashboard() {
     setProfile(profileData)
 
     await Promise.all([
-      loadOrders(),
-      loadProducts(),
-    ])
+  loadOrders(),
+  loadProducts(),
+  loadReviews(),
+])
 
     setLoading(false)
   }
@@ -329,6 +334,186 @@ export default function AdminDashboard() {
     setProducts(data || [])
   }
 
+  // =====================================================
+// LOAD REVIEWS
+// =====================================================
+
+async function loadReviews() {
+  setReviewMessage('')
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from('reviews')
+    .select(`
+      id,
+      customer_id,
+      product_id,
+      order_id,
+      rating,
+      review_text,
+      review_type,
+      approval_status,
+      created_at,
+      profiles (
+        full_name
+      ),
+      products (
+        name
+      )
+    `)
+    .order('created_at', {
+      ascending: false,
+    })
+
+  if (error) {
+    console.log(
+      'REVIEWS ERROR:',
+      error
+    )
+
+    setReviewMessage(
+      error.message ||
+        'Failed to load reviews.'
+    )
+
+    return
+  }
+
+  setReviews(data || [])
+}
+
+// =====================================================
+// APPROVE REVIEW
+// =====================================================
+
+async function approveReview(review) {
+  const confirmed = window.confirm(
+    `Approve this review?\n\n` +
+    `Product: ${
+      review.products?.name ||
+      'Website Review'
+    }\n` +
+    `Rating: ${review.rating}/5\n\n` +
+    `${review.review_text || 'No written review'}`
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  setReviewMessage(
+    'Approving review...'
+  )
+
+  const {
+    error,
+  } = await supabase
+    .from('reviews')
+    .update({
+      approval_status: 'approved',
+    })
+    .eq('id', review.id)
+
+  if (error) {
+    console.log(
+      'APPROVE REVIEW ERROR:',
+      error
+    )
+
+    setReviewMessage(
+      error.message ||
+        'Failed to approve review.'
+    )
+
+    return
+  }
+
+  setReviews(
+    (currentReviews) =>
+      currentReviews.map(
+        (item) =>
+          item.id === review.id
+            ? {
+                ...item,
+                approval_status:
+                  'approved',
+              }
+            : item
+      )
+  )
+
+  setReviewMessage(
+    'Review approved successfully.'
+  )
+}
+
+
+// =====================================================
+// REJECT REVIEW
+// =====================================================
+
+async function rejectReview(review) {
+  const confirmed = window.confirm(
+    `Reject this review?\n\n` +
+    `Product: ${
+      review.products?.name ||
+      'Website Review'
+    }\n` +
+    `Rating: ${review.rating}/5\n\n` +
+    `${review.review_text || 'No written review'}`
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  setReviewMessage(
+    'Rejecting review...'
+  )
+
+  const {
+    error,
+  } = await supabase
+    .from('reviews')
+    .update({
+      approval_status: 'rejected',
+    })
+    .eq('id', review.id)
+
+  if (error) {
+    console.log(
+      'REJECT REVIEW ERROR:',
+      error
+    )
+
+    setReviewMessage(
+      error.message ||
+        'Failed to reject review.'
+    )
+
+    return
+  }
+
+  setReviews(
+    (currentReviews) =>
+      currentReviews.map(
+        (item) =>
+          item.id === review.id
+            ? {
+                ...item,
+                approval_status:
+                  'rejected',
+              }
+            : item
+      )
+  )
+
+  setReviewMessage(
+    'Review rejected successfully.'
+  )
+}
   // =====================================================
   // COMMISSION INPUT
   // =====================================================
@@ -1668,26 +1853,119 @@ export default function AdminDashboard() {
 
         </div>
 
+        {activeSection === 'dashboard' && (
+  <section style={styles.adminMenuSection}>
+
+    <div style={styles.adminMenuGrid}>
+
+      <button
+        type="button"
+        onClick={() =>
+          setActiveSection('products')
+        }
+        style={styles.adminMenuCard}
+      >
+        <div style={styles.adminMenuIcon}>
+          📦
+        </div>
+
+        <div>
+          <h3 style={styles.adminMenuTitle}>
+            All Products
+          </h3>
+
+          <p style={styles.adminMenuText}>
+            View and manage farmer products
+          </p>
+        </div>
+
+        <span style={styles.adminMenuArrow}>
+          →
+        </span>
+      </button>
+
+
+      <button
+        type="button"
+        onClick={() =>
+          setActiveSection('orders')
+        }
+        style={styles.adminMenuCard}
+      >
+        <div style={styles.adminMenuIcon}>
+          🛒
+        </div>
+
+        <div>
+          <h3 style={styles.adminMenuTitle}>
+            All Orders
+          </h3>
+
+          <p style={styles.adminMenuText}>
+            Manage customer orders and payments
+          </p>
+        </div>
+
+        <span style={styles.adminMenuArrow}>
+          →
+        </span>
+      </button>
+
+
+      <button
+        type="button"
+        onClick={() =>
+          setActiveSection('reviews')
+        }
+        style={styles.adminMenuCard}
+      >
+        <div style={styles.adminMenuIcon}>
+          ⭐
+        </div>
+
+        <div>
+          <h3 style={styles.adminMenuTitle}>
+            Customer Reviews
+          </h3>
+
+          <p style={styles.adminMenuText}>
+            Approve and manage customer reviews
+          </p>
+        </div>
+
+        <span style={styles.adminMenuArrow}>
+          →
+        </span>
+      </button>
+
+    </div>
+
+  </section>
+)}
+
         {/* =================================================
             PRODUCTS
         ================================================= */}
 
-        <section
-          style={
-            styles.productsSection
-          }
-        >
+        {activeSection === 'products' && (
+  <section
+    style={
+      styles.productsSection
+    }
+  >
 
           <div style={styles.sectionHeader}>
 
             <div>
-              <h2
-                style={
-                  styles.sectionTitle
-                }
-              >
-                All Products
-              </h2>
+              <button
+  type="button"
+  onClick={() =>
+    setActiveSection('dashboard')
+  }
+  style={styles.backToAdminButton}
+>
+  ← Dashboard
+</button>
 
               <p
                 style={
@@ -2146,29 +2424,288 @@ export default function AdminDashboard() {
             </div>
           )}
 
-        </section>
+          </section>
+        )}
 
-        {/* =================================================
+{/* =================================================
+    REVIEWS
+================================================= */}
+
+{activeSection === 'reviews' && (
+  <section
+    style={styles.reviewsSection}
+  >
+
+  <div style={styles.sectionHeader}>
+
+    <div>
+      <h2 style={styles.sectionTitle}>
+        ⭐ Customer Reviews
+      </h2>
+
+      <p style={styles.sectionSubtitle}>
+        Approve or reject customer reviews.
+      </p>
+    </div>
+
+    <button
+      onClick={loadReviews}
+      style={styles.refreshButton}
+    >
+      ↻ Refresh
+    </button>
+
+  </div>
+
+  {reviewMessage && (
+    <div style={styles.reviewMessage}>
+      {reviewMessage}
+    </div>
+  )}
+
+  <div style={styles.reviewFilters}>
+
+    <button
+      onClick={() =>
+        setReviewFilter('pending')
+      }
+      style={{
+        ...styles.reviewFilterButton,
+        ...(reviewFilter === 'pending'
+          ? styles.reviewFilterActive
+          : {}),
+      }}
+    >
+      Pending (
+      {
+        reviews.filter(
+          (review) =>
+            review.approval_status ===
+            'pending'
+        ).length
+      }
+      )
+    </button>
+
+    <button
+      onClick={() =>
+        setReviewFilter('approved')
+      }
+      style={{
+        ...styles.reviewFilterButton,
+        ...(reviewFilter === 'approved'
+          ? styles.reviewFilterActive
+          : {}),
+      }}
+    >
+      Approved (
+      {
+        reviews.filter(
+          (review) =>
+            review.approval_status ===
+            'approved'
+        ).length
+      }
+      )
+    </button>
+
+    <button
+      onClick={() =>
+        setReviewFilter('rejected')
+      }
+      style={{
+        ...styles.reviewFilterButton,
+        ...(reviewFilter === 'rejected'
+          ? styles.reviewFilterActive
+          : {}),
+      }}
+    >
+      Rejected (
+      {
+        reviews.filter(
+          (review) =>
+            review.approval_status ===
+            'rejected'
+        ).length
+      }
+      )
+    </button>
+
+    <button
+      onClick={() =>
+        setReviewFilter('all')
+      }
+      style={{
+        ...styles.reviewFilterButton,
+        ...(reviewFilter === 'all'
+          ? styles.reviewFilterActive
+          : {}),
+      }}
+    >
+      All ({reviews.length})
+    </button>
+
+  </div>
+
+  {reviews.filter(
+    (review) =>
+      reviewFilter === 'all' ||
+      review.approval_status ===
+        reviewFilter
+  ).length === 0 ? (
+
+    <div style={styles.empty}>
+      <h3>
+        No {reviewFilter === 'all'
+          ? ''
+          : reviewFilter} reviews
+      </h3>
+
+      <p>
+        Customer reviews will appear here.
+      </p>
+    </div>
+
+  ) : (
+
+    <div style={styles.reviewsList}>
+
+      {reviews
+        .filter(
+          (review) =>
+            reviewFilter === 'all' ||
+            review.approval_status ===
+              reviewFilter
+        )
+        .map((review) => (
+
+          <div
+            key={review.id}
+            style={styles.reviewCard}
+          >
+
+            <div style={styles.reviewTop}>
+
+              <div>
+
+                <h3 style={styles.reviewProductTitle}>
+                  {review.review_type ===
+                  'website'
+                    ? '🌐 Website Review'
+                    : `🌱 ${
+                        review.products?.name ||
+                        'Product Review'
+                      }`}
+                </h3>
+
+                <p style={styles.reviewCustomer}>
+                  👤{' '}
+                  {review.profiles?.full_name ||
+                    'Customer'}
+                </p>
+
+              </div>
+
+              <span
+                style={{
+                  ...styles.reviewStatusBadge,
+                  ...(review.approval_status ===
+                  'approved'
+                    ? styles.reviewApproved
+                    : review.approval_status ===
+                      'rejected'
+                    ? styles.reviewRejected
+                    : styles.reviewPending),
+                }}
+              >
+                {review.approval_status}
+              </span>
+
+            </div>
+
+            <div style={styles.reviewStars}>
+              {'★'.repeat(
+                Number(review.rating || 0)
+              )}
+              {'☆'.repeat(
+                5 -
+                  Number(review.rating || 0)
+              )}
+            </div>
+
+            {review.review_text && (
+              <p style={styles.reviewText}>
+                "{review.review_text}"
+              </p>
+            )}
+
+            <p style={styles.reviewDate}>
+              {new Date(
+                review.created_at
+              ).toLocaleString()}
+            </p>
+
+                       {review.approval_status ===
+              'pending' && (
+
+              <div style={styles.reviewActions}>
+
+                <button
+                  onClick={() =>
+                    approveReview(review)
+                  }
+                  style={styles.reviewApproveButton}
+                >
+                  ✓ Approve
+                </button>
+
+                <button
+                  onClick={() =>
+                    rejectReview(review)
+                  }
+                  style={styles.reviewRejectButton}
+                >
+                  ✕ Reject
+                </button>
+
+              </div>
+
+            )}
+
+          </div>
+
+        ))}
+
+      </div>
+  )
+}
+  </section>
+)}
+
+{/* =================================================
             ORDERS
-        ================================================= */}
+================================================= */}
 
-        <section
-          id="all-orders-section"
-          style={
-            styles.ordersSection
-          }
-        >
+        {activeSection === 'orders' && (
+  <section
+    id="all-orders-section"
+    style={
+      styles.ordersSection
+    }
+  >
 
           <div style={styles.sectionHeader}>
 
             <div>
-              <h2
-                style={
-                  styles.sectionTitle
-                }
-              >
-                All Orders
-              </h2>
+              <button
+  type="button"
+  onClick={() =>
+    setActiveSection('dashboard')
+  }
+  style={styles.backToAdminButton}
+>
+  ← Dashboard
+</button>
 
               <p
                 style={
@@ -3045,6 +3582,7 @@ export default function AdminDashboard() {
           )}
 
         </section>
+        )}
 
       </section>
     </main>
@@ -3054,6 +3592,7 @@ export default function AdminDashboard() {
 // =======================================================
 // STYLES
 // =======================================================
+
 
 const styles = {
   page: {
@@ -3209,6 +3748,211 @@ const styles = {
     margin: '8px 0 0',
     fontSize: '12px',
     color: '#666',
+  },
+
+    adminMenuSection: {
+    marginTop: '28px',
+    marginBottom: '28px',
+  },
+
+  adminMenuGrid: {
+    display: 'grid',
+    gridTemplateColumns:
+      'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: '18px',
+  },
+
+  adminMenuCard: {
+    width: '100%',
+    border: '1px solid #e5e7eb',
+    borderRadius: '16px',
+    padding: '22px',
+    background: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    textAlign: 'left',
+    cursor: 'pointer',
+    boxShadow:
+      '0 4px 14px rgba(0,0,0,0.06)',
+  },
+
+  adminMenuIcon: {
+    fontSize: '34px',
+    minWidth: '48px',
+  },
+
+  adminMenuTitle: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: '700',
+  },
+
+  adminMenuText: {
+    margin: '6px 0 0',
+    color: '#6b7280',
+    fontSize: '14px',
+  },
+
+  adminMenuArrow: {
+    marginLeft: 'auto',
+    fontSize: '22px',
+    fontWeight: '700',
+  },
+
+  backToAdminButton: {
+    padding: '9px 14px',
+    borderRadius: '8px',
+    border: '1px solid #d1d5db',
+    background: '#ffffff',
+    cursor: 'pointer',
+    fontWeight: '600',
+  },
+
+    // =====================================================
+  // REVIEWS
+  // =====================================================
+
+  reviewsSection: {
+    background: '#fff',
+    padding: '25px',
+    borderRadius: '12px',
+    marginBottom: '40px',
+  },
+
+  reviewMessage: {
+    padding: '12px',
+    marginBottom: '18px',
+    background: '#f0f7f2',
+    color: '#1f7a3f',
+    borderRadius: '8px',
+    fontSize: '14px',
+  },
+
+  reviewFilters: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    marginBottom: '20px',
+  },
+
+  reviewFilterButton: {
+    padding: '8px 14px',
+    border: '1px solid #d1d5db',
+    background: '#fff',
+    color: '#374151',
+    borderRadius: '7px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '13px',
+  },
+
+  reviewFilterActive: {
+    background: '#1f7a3f',
+    color: '#fff',
+    border: '1px solid #1f7a3f',
+  },
+
+  reviewsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+  },
+
+  reviewCard: {
+    border: '1px solid #e5e7eb',
+    borderRadius: '10px',
+    padding: '18px',
+    background: '#fafcfa',
+  },
+
+  reviewTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '15px',
+    flexWrap: 'wrap',
+  },
+
+  reviewProductTitle: {
+    margin: 0,
+    fontSize: '17px',
+  },
+
+  reviewCustomer: {
+    margin: '6px 0 0',
+    color: '#666',
+    fontSize: '13px',
+  },
+
+  reviewStatusBadge: {
+    padding: '5px 9px',
+    borderRadius: '20px',
+    fontSize: '11px',
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+
+  reviewPending: {
+    background: '#fff3cd',
+    color: '#856404',
+  },
+
+  reviewApproved: {
+    background: '#d4edda',
+    color: '#155724',
+  },
+
+  reviewRejected: {
+    background: '#f8d7da',
+    color: '#721c24',
+  },
+
+  reviewStars: {
+    marginTop: '12px',
+    fontSize: '21px',
+    letterSpacing: '2px',
+    color: '#f59e0b',
+  },
+
+  reviewText: {
+    margin: '12px 0 8px',
+    color: '#374151',
+    lineHeight: 1.6,
+    fontSize: '14px',
+  },
+
+  reviewDate: {
+    margin: 0,
+    color: '#888',
+    fontSize: '11px',
+  },
+
+  reviewActions: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+    marginTop: '15px',
+  },
+
+  reviewApproveButton: {
+    padding: '10px',
+    border: 'none',
+    background: '#1f7a3f',
+    color: '#fff',
+    borderRadius: '7px',
+    cursor: 'pointer',
+    fontWeight: '600',
+  },
+
+  reviewRejectButton: {
+    padding: '10px',
+    border: 'none',
+    background: '#d9534f',
+    color: '#fff',
+    borderRadius: '7px',
+    cursor: 'pointer',
+    fontWeight: '600',
   },
 
   productsSection: {

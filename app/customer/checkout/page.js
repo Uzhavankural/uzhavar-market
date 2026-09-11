@@ -131,216 +131,84 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!user) {
+      alert("Please login again.");
+      router.push("/login");
+      return;
+    }
+
     try {
       setPlacingOrder(true);
 
       /*
-       * STEP 1
-       * Check current stock for every product
+       * IMPORTANT
+       *
+       * Stock checking, order creation,
+       * order item creation and stock reduction
+       * are now handled inside ONE Supabase
+       * database transaction.
+       *
+       * We intentionally do NOT send:
+       * - price
+       * - farmer_price
+       * - commission_amount
+       * - farmer_id
+       * - item_total
+       * - settlement_amount
+       *
+       * as authoritative financial values.
+       *
+       * The database gets those values directly
+       * from the products table.
        */
-      for (const item of cart) {
-        const { data: product, error: productError } =
-          await supabase
-            .from("products")
-            .select(
-              "id, name, stock_quantity, status, approval_status"
-            )
-            .eq("id", item.id)
-            .single();
 
-        if (productError || !product) {
-          throw new Error(
-            `${item.name} is no longer available.`
-          );
-        }
+      const cartPayload = cart.map((item) => ({
+        id: item.id,
+        quantity: Number(item.quantity || 0),
+      }));
 
-        if (
-          product.approval_status !== "active" ||
-          product.status !== "active"
-        ) {
-          throw new Error(
-            `${item.name} is currently unavailable.`
-          );
-        }
-
-        const currentStock = Number(
-          product.stock_quantity || 0
-        );
-
-        const requestedQuantity = Number(
-          item.quantity || 0
-        );
-
-        if (currentStock < requestedQuantity) {
-          throw new Error(
-            `Only ${currentStock} ${
-              item.unit || "unit"
-            } of ${item.name} is available.`
-          );
-        }
-      }
-
-      /*
-       * STEP 2
-       * Create order
-       */
-      const { data: order, error: orderError } =
-        await supabase
-          .from("orders")
-          .insert({
-            customer_id: user.id,
-            customer_name: customerName.trim(),
-            customer_phone: phone.trim(),
-            delivery_address: address.trim(),
-            district: district.trim(),
-            village: village.trim(),
-            total_amount: cartTotal,
-            order_status: "pending",
-            payment_status: "pending",
-          })
-          .select()
-          .single();
+      const { data: orderId, error: orderError } =
+        await supabase.rpc("place_customer_order", {
+          p_customer_id: user.id,
+          p_customer_name: customerName.trim(),
+          p_customer_phone: phone.trim(),
+          p_delivery_address: address.trim(),
+          p_district: district.trim(),
+          p_village: village.trim(),
+          p_cart: cartPayload,
+        });
 
       if (orderError) {
         console.error(
-          "Order insert error:",
+          "Place order RPC error:",
           orderError
         );
 
         throw new Error(
           orderError.message ||
-            "Failed to create order."
+            "Failed to place order."
         );
       }
 
-      /*
-       * STEP 3
-       * Create order items
-       */
-      const orderItems = cart.map((item) => {
-        const farmerPrice = Number(item.price || 0);
-
-        const commissionAmount = Number(
-          item.commission_amount || 0
-        );
-
-        const quantity = Number(
-          item.quantity || 0
-        );
-
-        const customerPrice =
-          farmerPrice + commissionAmount;
-
-        const itemTotal =
-          customerPrice * quantity;
-
-        const farmerAmount =
-          farmerPrice * quantity;
-
-        return {
-          order_id: order.id,
-          product_id: item.id,
-          farmer_id: item.farmer_id,
-          product_name: item.name,
-          price: customerPrice,
-          quantity: quantity,
-          unit: item.unit || "unit",
-          item_total: itemTotal,
-
-          settlement_status: "pending",
-          settlement_amount: farmerAmount,
-          settlement_paid_at: null,
-
-          commission_amount: commissionAmount,
-          farmer_price: farmerPrice,
-        };
-      });
-
-      const { error: itemsError } =
-        await supabase
-          .from("order_items")
-          .insert(orderItems);
-
-      if (itemsError) {
-        console.error(
-          "Order items insert error:",
-          itemsError
-        );
-
-        // Remove order if items could not be created
-        await supabase
-          .from("orders")
-          .delete()
-          .eq("id", order.id);
-
+      if (!orderId) {
         throw new Error(
-          itemsError.message ||
-            "Failed to create order items."
+          "Order was not created. Please try again."
         );
       }
 
       /*
-       * STEP 4
-       * Reduce product stock
-       */
-      for (const item of cart) {
-        const {
-          data: product,
-          error: stockFetchError,
-        } = await supabase
-          .from("products")
-          .select("stock_quantity")
-          .eq("id", item.id)
-          .single();
-
-        if (stockFetchError || !product) {
-          console.error(
-            "Stock fetch error:",
-            stockFetchError
-          );
-
-          continue;
-        }
-
-        const currentStock = Number(
-          product.stock_quantity || 0
-        );
-
-        const newStock =
-          currentStock -
-          Number(item.quantity || 0);
-
-        const {
-          error: stockUpdateError,
-        } = await supabase
-          .from("products")
-          .update({
-            stock_quantity: Math.max(0, newStock),
-          })
-          .eq("id", item.id);
-
-        if (stockUpdateError) {
-          console.error(
-            "Stock update error:",
-            stockUpdateError
-          );
-        }
-      }
-
-      /*
-       * STEP 5
-       * Clear cart
+       * Clear cart only AFTER
+       * successful database transaction.
        */
       localStorage.removeItem(
         `uzhavar_cart_${user.id}`
       );
 
       /*
-       * STEP 6
        * Go to success page
        */
       router.push(
-        `/customer/order-success?order_id=${order.id}`
+        `/customer/order-success?order_id=${orderId}`
       );
     } catch (error) {
       console.error(

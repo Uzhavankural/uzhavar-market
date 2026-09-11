@@ -12,6 +12,10 @@ export default function CustomerOrdersPage() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [reviewRatings, setReviewRatings] = useState({});
+const [reviewTexts, setReviewTexts] = useState({});
+const [submittedReviews, setSubmittedReviews] = useState({});
+const [reviewSubmitting, setReviewSubmitting] = useState(null);
 
   useEffect(() => {
     loadOrders();
@@ -38,12 +42,23 @@ export default function CustomerOrdersPage() {
       }
 
       const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("customer_id", user.id)
-        .order("created_at", {
-          ascending: false,
-        });
+  .from("orders")
+  .select(`
+    *,
+    order_items (
+      id,
+      product_id,
+      product_name,
+      quantity,
+      unit,
+      price,
+      item_total
+    )
+  `)
+  .eq("customer_id", user.id)
+  .order("created_at", {
+    ascending: false,
+  });
 
       if (error) {
         console.error(
@@ -199,8 +214,8 @@ export default function CustomerOrdersPage() {
       );
 
       setMessage(
-        "✓ Delivery confirmed successfully."
-      );
+  "✓ Delivery confirmed successfully. You can now rate your products below."
+);
     } catch (error) {
       console.error(
         "CONFIRM DELIVERY ERROR:",
@@ -1016,6 +1031,317 @@ export default function CustomerOrdersPage() {
                     )}
 
                     {/* ==================================
+    PRODUCT REVIEWS
+================================== */}
+
+{orderStatus === "delivered" &&
+  Array.isArray(order.order_items) &&
+  order.order_items.length > 0 && (
+    <div style={styles.reviewSection}>
+
+      <h3 style={styles.reviewSectionTitle}>
+        ⭐ Rate Your Products
+      </h3>
+
+      <p style={styles.reviewSectionText}>
+        How was your experience with the products you received?
+      </p>
+
+      <div style={styles.reviewItems}>
+
+        {order.order_items.map((item) => {
+          const selectedRating =
+            reviewRatings[item.id] || 0;
+
+          const reviewText =
+            reviewTexts[item.id] || "";
+
+          const isSubmitted =
+            submittedReviews[item.id];
+
+          const isSubmitting =
+            reviewSubmitting === item.id;
+
+          return (
+            <div
+              key={item.id}
+              style={styles.reviewItem}
+            >
+
+              {/* PRODUCT NAME */}
+
+              <div style={styles.reviewItemInfo}>
+
+                <strong
+                  style={styles.reviewProductName}
+                >
+                  {item.product_name}
+                </strong>
+
+                <span
+                  style={styles.reviewProductMeta}
+                >
+                  Qty: {item.quantity}{" "}
+                  {item.unit || ""}
+                </span>
+
+              </div>
+
+              {/* STARS */}
+
+              {!isSubmitted ? (
+                <>
+                  <div style={styles.starRow}>
+
+                    {[1, 2, 3, 4, 5].map(
+                      (star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => {
+                            setReviewRatings(
+                              (current) => ({
+                                ...current,
+                                [item.id]: star,
+                              })
+                            );
+                          }}
+                          style={{
+                            ...styles.starButton,
+                            color:
+                              star <=
+                              selectedRating
+                                ? "#f59e0b"
+                                : "#d1d5db",
+                          }}
+                          aria-label={`${star} star`}
+                        >
+                          {star <=
+                          selectedRating
+                            ? "★"
+                            : "☆"}
+                        </button>
+                      )
+                    )}
+
+                  </div>
+
+                  {/* TEXT BOX + SUBMIT */}
+
+                  {selectedRating > 0 && (
+                    <div
+                      style={
+                        styles.reviewForm
+                      }
+                    >
+
+                      <textarea
+                        value={reviewText}
+                        onChange={(e) =>
+                          setReviewTexts(
+                            (current) => ({
+                              ...current,
+                              [item.id]:
+                                e.target.value,
+                            })
+                          )
+                        }
+                        placeholder="Share your experience with this product..."
+                        rows={4}
+                        maxLength={1000}
+                        style={
+                          styles.reviewTextarea
+                        }
+                      />
+
+                      <div
+                        style={
+                          styles.reviewFormBottom
+                        }
+                      >
+
+                        <span
+                          style={
+                            styles.reviewCharacterCount
+                          }
+                        >
+                          {reviewText.length}/1000
+                        </span>
+
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={async () => {
+
+                            if (
+                              selectedRating <
+                                1 ||
+                              selectedRating > 5
+                            ) {
+                              return;
+                            }
+
+                            setReviewSubmitting(
+                              item.id
+                            );
+
+                            try {
+
+                              const {
+                                data: {
+                                  user,
+                                },
+                                error:
+                                  userError,
+                              } =
+                                await supabase.auth.getUser();
+
+                              if (
+                                userError ||
+                                !user
+                              ) {
+                                router.push(
+                                  "/login"
+                                );
+                                return;
+                              }
+
+                              const {
+                                error:
+                                  reviewError,
+                              } =
+                                await supabase
+                                  .from(
+                                    "reviews"
+                                  )
+                                  .insert({
+                                    customer_id:
+                                      user.id,
+                                    product_id:
+                                      item.product_id,
+                                    order_id:
+                                      order.id,
+                                    rating:
+                                      selectedRating,
+                                    review_text:
+                                      reviewText.trim() ||
+                                      null,
+                                    review_type:
+                                      "product",
+                                    approval_status:
+                                      "pending",
+                                  });
+
+                              if (
+                                reviewError
+                              ) {
+                                console.error(
+                                  "REVIEW INSERT ERROR:",
+                                  JSON.stringify(
+                                    reviewError,
+                                    null,
+                                    2
+                                  )
+                                );
+
+                                if (
+                                  reviewError.code ===
+                                  "23505"
+                                ) {
+                                  setErrorMessage(
+                                    "You have already submitted a review for this product."
+                                  );
+                                } else {
+                                  setErrorMessage(
+                                    reviewError.message ||
+                                      "Unable to submit review."
+                                  );
+                                }
+
+                                return;
+                              }
+
+                              setSubmittedReviews(
+                                (current) => ({
+                                  ...current,
+                                  [item.id]:
+                                    true,
+                                })
+                              );
+
+                              setMessage(
+                                `⭐ Review submitted for ${item.product_name}. Waiting for admin approval.`
+                              );
+
+                            } catch (error) {
+
+                              console.error(
+                                "REVIEW SUBMIT ERROR:",
+                                error
+                              );
+
+                              setErrorMessage(
+                                "Something went wrong while submitting your review."
+                              );
+
+                            } finally {
+
+                              setReviewSubmitting(
+                                null
+                              );
+
+                            }
+                          }}
+                          style={{
+                            ...styles.submitReviewButton,
+                            opacity:
+                              isSubmitting
+                                ? 0.6
+                                : 1,
+                            cursor:
+                              isSubmitting
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
+                        >
+                          {isSubmitting
+                            ? "Submitting..."
+                            : "Submit Review"}
+                        </button>
+
+                      </div>
+
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* SUBMITTED */
+
+                <div
+                  style={
+                    styles.reviewSubmitted
+                  }
+                >
+                  <strong>
+                    ✓ Review Submitted
+                  </strong>
+
+                  <span>
+                    Waiting for admin approval.
+                  </span>
+                </div>
+              )}
+
+            </div>
+          );
+        })}
+
+      </div>
+
+    </div>
+  )}
+
+                    {/* ==================================
                         DELIVERY ADDRESS
                     ================================== */}
 
@@ -1602,5 +1928,127 @@ const styles = {
     color: "#1f7a3f",
     fontWeight: "700",
     cursor: "pointer",
+  },
+
+    reviewSection: {
+    marginTop: "20px",
+    padding: "20px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+  },
+
+  reviewSectionTitle: {
+    margin: 0,
+    color: "#1f2937",
+    fontSize: "18px",
+  },
+
+  reviewSectionText: {
+    margin: "6px 0 18px",
+    color: "#6b7280",
+    fontSize: "13px",
+    lineHeight: "1.5",
+  },
+
+  reviewItems: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+
+  reviewItem: {
+    padding: "16px",
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "10px",
+  },
+
+  reviewItemInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    marginBottom: "8px",
+  },
+
+  reviewProductName: {
+    color: "#1f2937",
+    fontSize: "15px",
+  },
+
+  reviewProductMeta: {
+    color: "#6b7280",
+    fontSize: "12px",
+  },
+
+  starRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+  },
+
+  starButton: {
+    border: "none",
+    background: "transparent",
+    padding: "2px",
+    fontSize: "32px",
+    lineHeight: 1,
+    cursor: "pointer",
+  },
+
+  reviewForm: {
+    marginTop: "12px",
+  },
+
+  reviewTextarea: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "12px",
+    border: "1px solid #d1d5db",
+    borderRadius: "9px",
+    background: "#ffffff",
+    color: "#1f2937",
+    fontSize: "14px",
+    lineHeight: "1.5",
+    resize: "vertical",
+    outline: "none",
+    fontFamily:
+      "Arial, Helvetica, sans-serif",
+  },
+
+  reviewFormBottom: {
+    marginTop: "8px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "10px",
+  },
+
+  reviewCharacterCount: {
+    color: "#9ca3af",
+    fontSize: "11px",
+  },
+
+  submitReviewButton: {
+    border: "none",
+    borderRadius: "8px",
+    background: "#166534",
+    color: "#ffffff",
+    padding: "10px 16px",
+    fontSize: "13px",
+    fontWeight: "700",
+  },
+
+  reviewSubmitted: {
+    marginTop: "8px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    padding: "10px 12px",
+    borderRadius: "8px",
+    background: "#ecfdf5",
+    border: "1px solid #bbf7d0",
+    color: "#166534",
+    fontSize: "13px",
   },
 };
