@@ -227,18 +227,18 @@ export default function AdminProducts() {
 
   function getApprovalStyle(status) {
     if (status === 'active') {
-      return styles.approvedBadge
+      return 'bg-green-100 text-green-800 py-1.5 px-2.5 rounded-full text-xs font-bold whitespace-nowrap absolute top-3 right-3 shadow-sm'
     }
 
     if (status === 'pending') {
-      return styles.pendingBadge
+      return 'bg-amber-100 text-amber-900 py-1.5 px-2.5 rounded-full text-xs font-bold whitespace-nowrap absolute top-3 right-3 shadow-sm'
     }
 
     if (status === 'rejected') {
-      return styles.rejectedBadge
+      return 'bg-red-100 text-red-700 py-1.5 px-2.5 rounded-full text-xs font-bold whitespace-nowrap absolute top-3 right-3 shadow-sm'
     }
 
-    return styles.neutralBadge
+    return 'bg-gray-100 text-gray-600 py-1.5 px-2.5 rounded-full text-xs font-bold whitespace-nowrap absolute top-3 right-3 shadow-sm'
   }
 
   function startCommissionEdit(product) {
@@ -472,9 +472,9 @@ export default function AdminProducts() {
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loadingCard}>
-          <div style={styles.loadingIcon}>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="bg-white px-[40px] md:px-[60px] py-[30px] md:py-[40px] rounded-[14px] border border-gray-200 text-center text-gray-700 mx-4 max-w-sm w-full">
+          <div className="text-[42px] mb-[10px]">
             🌾
           </div>
 
@@ -485,20 +485,20 @@ export default function AdminProducts() {
   }
 
   return (
-    <main style={styles.page}>
+    <main className="min-h-screen bg-[#f7f8f5] font-sans">
       {/* NAVBAR */}
-      <nav style={styles.navbar}>
-        <div style={styles.logo}>
+      <nav className="bg-white border-b border-gray-200 py-[18px] px-[4%] md:px-[6%] flex justify-between items-center gap-[15px] flex-wrap">
+        <div className="text-[22px] font-bold text-green-800">
           🌾 Uzhavar Market
         </div>
 
-        <div style={styles.navActions}>
+        <div className="flex gap-[10px] flex-wrap">
           <button
             onClick={() =>
               loadProducts(true)
             }
             disabled={refreshing}
-            style={styles.refreshButton}
+            className="py-[9px] px-[16px] border border-gray-300 rounded-[8px] bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             {refreshing
               ? 'Refreshing...'
@@ -509,22 +509,22 @@ export default function AdminProducts() {
             onClick={() =>
               router.push('/admin')
             }
-            style={styles.backButton}
+            className="py-[9px] px-[18px] border border-gray-300 rounded-[8px] bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors"
           >
             ← Admin Dashboard
           </button>
         </div>
       </nav>
 
-      <section style={styles.container}>
+      <section className="w-[95%] sm:w-[90%] max-w-[1300px] mx-auto py-[30px] md:py-[40px]">
         {/* HEADER */}
-        <div style={styles.header}>
+        <div className="mb-[25px]">
           <div>
-            <h1 style={styles.title}>
+            <h1 className="m-0 mb-[8px] text-[28px] md:text-[32px] font-bold text-gray-800">
               Product Management
             </h1>
 
-            <p style={styles.subtitle}>
+            <p className="m-0 text-gray-500 text-sm md:text-base">
               Manage farmer products, pricing,
               commission and approvals.
             </p>
@@ -533,78 +533,78 @@ export default function AdminProducts() {
 
         {/* MESSAGE */}
         {message && (
-          <div style={styles.successBox}>
+          <div className="bg-green-50 border border-green-200 text-green-800 py-[13px] px-[16px] rounded-[10px] mb-[18px]">
             ✓ {message}
           </div>
         )}
 
         {error && (
-          <div style={styles.errorBox}>
+          <div className="bg-red-50 border border-red-200 text-red-700 py-[13px] px-[16px] rounded-[10px] mb-[18px]">
             ⚠️ {error}
           </div>
         )}
 
         {/* SUMMARY */}
-        <div style={styles.summaryGrid}>
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px] md:gap-[15px] mb-[25px]">
+          <div className="bg-white border border-gray-200 rounded-[12px] p-[12px] md:p-[18px] flex items-center gap-[10px] md:gap-[14px]">
+            <div className="w-[35px] h-[35px] md:w-[45px] md:h-[45px] rounded-[10px] bg-green-50 flex justify-center items-center text-[18px] md:text-[22px] shrink-0">
               📦
             </div>
 
             <div>
-              <div style={styles.summaryNumber}>
+              <div className="text-[18px] md:text-[23px] font-bold text-gray-800">
                 {stats.total}
               </div>
 
-              <div style={styles.summaryLabel}>
+              <div className="text-[11px] md:text-[13px] text-gray-500 mt-[2px] md:mt-[3px]">
                 Total Products
               </div>
             </div>
           </div>
 
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+          <div className="bg-white border border-gray-200 rounded-[12px] p-[12px] md:p-[18px] flex items-center gap-[10px] md:gap-[14px]">
+            <div className="w-[35px] h-[35px] md:w-[45px] md:h-[45px] rounded-[10px] bg-green-50 flex justify-center items-center text-[18px] md:text-[22px] shrink-0">
               🟢
             </div>
 
             <div>
-              <div style={styles.summaryNumber}>
+              <div className="text-[18px] md:text-[23px] font-bold text-gray-800">
                 {stats.active}
               </div>
 
-              <div style={styles.summaryLabel}>
+              <div className="text-[11px] md:text-[13px] text-gray-500 mt-[2px] md:mt-[3px]">
                 Active
               </div>
             </div>
           </div>
 
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+          <div className="bg-white border border-gray-200 rounded-[12px] p-[12px] md:p-[18px] flex items-center gap-[10px] md:gap-[14px]">
+            <div className="w-[35px] h-[35px] md:w-[45px] md:h-[45px] rounded-[10px] bg-green-50 flex justify-center items-center text-[18px] md:text-[22px] shrink-0">
               ⏳
             </div>
 
             <div>
-              <div style={styles.summaryNumber}>
+              <div className="text-[18px] md:text-[23px] font-bold text-gray-800">
                 {stats.pending}
               </div>
 
-              <div style={styles.summaryLabel}>
+              <div className="text-[11px] md:text-[13px] text-gray-500 mt-[2px] md:mt-[3px]">
                 Pending Approval
               </div>
             </div>
           </div>
 
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+          <div className="bg-white border border-gray-200 rounded-[12px] p-[12px] md:p-[18px] flex items-center gap-[10px] md:gap-[14px]">
+            <div className="w-[35px] h-[35px] md:w-[45px] md:h-[45px] rounded-[10px] bg-green-50 flex justify-center items-center text-[18px] md:text-[22px] shrink-0">
               🔴
             </div>
 
             <div>
-              <div style={styles.summaryNumber}>
+              <div className="text-[18px] md:text-[23px] font-bold text-gray-800">
                 {stats.rejected}
               </div>
 
-              <div style={styles.summaryLabel}>
+              <div className="text-[11px] md:text-[13px] text-gray-500 mt-[2px] md:mt-[3px]">
                 Rejected
               </div>
             </div>
@@ -612,8 +612,8 @@ export default function AdminProducts() {
         </div>
 
         {/* SEARCH + FILTER */}
-        <div style={styles.controls}>
-          <div style={styles.searchBox}>
+        <div className="bg-white border border-gray-200 rounded-[12px] p-[15px] md:p-[18px] mb-[15px]">
+          <div className="flex items-center gap-[8px] border border-gray-300 rounded-[9px] px-[12px] mb-[15px] focus-within:ring-2 focus-within:ring-green-500">
             <span>🔍</span>
 
             <input
@@ -623,73 +623,73 @@ export default function AdminProducts() {
                 setSearch(e.target.value)
               }
               placeholder="Search product or farmer..."
-              style={styles.searchInput}
+              className="w-full border-none outline-none py-[11px] text-[15px] bg-transparent"
             />
           </div>
 
-          <div style={styles.filterRow}>
+          <div className="flex gap-[6px] md:gap-[8px] flex-wrap">
             <button
               onClick={() => setFilter('all')}
-              style={
+              className={`py-[6px] md:py-[8px] px-[10px] md:px-[13px] rounded-[20px] font-semibold text-[12px] md:text-[13px] transition-colors ${
                 filter === 'all'
-                  ? styles.filterActive
-                  : styles.filterButton
-              }
+                  ? 'border border-green-800 bg-green-800 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               All ({stats.total})
             </button>
 
             <button
               onClick={() => setFilter('active')}
-              style={
+              className={`py-[6px] md:py-[8px] px-[10px] md:px-[13px] rounded-[20px] font-semibold text-[12px] md:text-[13px] transition-colors ${
                 filter === 'active'
-                  ? styles.filterActive
-                  : styles.filterButton
-              }
+                  ? 'border border-green-800 bg-green-800 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Active ({stats.active})
             </button>
 
             <button
               onClick={() => setFilter('pending')}
-              style={
+              className={`py-[6px] md:py-[8px] px-[10px] md:px-[13px] rounded-[20px] font-semibold text-[12px] md:text-[13px] transition-colors ${
                 filter === 'pending'
-                  ? styles.filterActive
-                  : styles.filterButton
-              }
+                  ? 'border border-green-800 bg-green-800 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Pending ({stats.pending})
             </button>
 
             <button
               onClick={() => setFilter('approved')}
-              style={
+              className={`py-[6px] md:py-[8px] px-[10px] md:px-[13px] rounded-[20px] font-semibold text-[12px] md:text-[13px] transition-colors ${
                 filter === 'approved'
-                  ? styles.filterActive
-                  : styles.filterButton
-              }
+                  ? 'border border-green-800 bg-green-800 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Approved
             </button>
 
             <button
               onClick={() => setFilter('rejected')}
-              style={
+              className={`py-[6px] md:py-[8px] px-[10px] md:px-[13px] rounded-[20px] font-semibold text-[12px] md:text-[13px] transition-colors ${
                 filter === 'rejected'
-                  ? styles.filterActive
-                  : styles.filterButton
-              }
+                  ? 'border border-green-800 bg-green-800 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Rejected
             </button>
 
             <button
               onClick={() => setFilter('inactive')}
-              style={
+              className={`py-[6px] md:py-[8px] px-[10px] md:px-[13px] rounded-[20px] font-semibold text-[12px] md:text-[13px] transition-colors ${
                 filter === 'inactive'
-                  ? styles.filterActive
-                  : styles.filterButton
-              }
+                  ? 'border border-green-800 bg-green-800 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Inactive
             </button>
@@ -697,26 +697,26 @@ export default function AdminProducts() {
         </div>
 
         {/* RESULT */}
-        <div style={styles.resultText}>
+        <div className="mb-[15px] text-gray-500 text-[14px]">
           Showing {filteredProducts.length} of{' '}
           {products.length} products
         </div>
 
         {/* PRODUCTS */}
         {filteredProducts.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <div style={styles.emptyIcon}>
+          <div className="bg-white border border-gray-200 rounded-[14px] py-[60px] px-[20px] md:px-[30px] text-center text-gray-500">
+            <div className="text-[40px] md:text-[50px] mb-[10px]">
               📦
             </div>
 
-            <h2>No products found</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">No products found</h2>
 
             <p>
               Try changing your search or filter.
             </p>
           </div>
         ) : (
-          <div style={styles.grid}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[20px] md:gap-[25px]">
             {filteredProducts.map((product) => {
               const farmer = getFarmer(product)
 
@@ -742,21 +742,19 @@ export default function AdminProducts() {
               return (
                 <div
                   key={product.id}
-                  style={styles.card}
+                  className="bg-white border border-gray-200 rounded-[14px] overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow"
                 >
                   {/* IMAGE */}
                   {product.image_url ? (
-                    <div
-                      style={styles.imageWrapper}
-                    >
+                    <div className="relative">
                       <img
                         src={product.image_url}
                         alt={product.name}
-                        style={styles.image}
+                        className="w-full h-[180px] md:h-[220px] object-cover block"
                       />
 
                       <div
-                        style={
+                        className={
                           getApprovalStyle(
                             product.approval_status
                           )
@@ -768,11 +766,11 @@ export default function AdminProducts() {
                       </div>
                     </div>
                   ) : (
-                    <div style={styles.noImage}>
+                    <div className="h-[180px] md:h-[220px] bg-green-50 flex justify-center items-center text-[55px] relative">
                       <span>🌱</span>
 
                       <div
-                        style={
+                        className={
                           getApprovalStyle(
                             product.approval_status
                           )
@@ -785,28 +783,24 @@ export default function AdminProducts() {
                     </div>
                   )}
 
-                  <div style={styles.cardContent}>
+                  <div className="p-[15px] md:p-[20px] flex-grow flex flex-col">
                     {/* PRODUCT NAME */}
                     <h2
-                      style={styles.productName}
+                      className="m-0 mb-[8px] text-[18px] md:text-[21px] font-bold text-gray-800"
                     >
                       {product.name}
                     </h2>
 
                     <p
-                      style={styles.description}
+                      className="m-0 mb-[15px] text-gray-500 text-[13px] md:text-[14px] leading-relaxed min-h-[40px] line-clamp-2"
                     >
                       {product.description ||
                         'No description'}
                     </p>
 
                     {/* FARMER */}
-                    <div style={styles.farmerBox}>
-                      <div
-                        style={
-                          styles.farmerTitle
-                        }
-                      >
+                    <div className="bg-gray-50 border border-gray-200 rounded-[9px] p-[10px] md:p-[12px] flex flex-col gap-[4px] text-[12px] md:text-[13px] text-gray-700 mb-[14px]">
+                      <div className="text-green-800 font-bold mb-[2px] md:mb-[3px]">
                         👨‍🌾 Farmer
                       </div>
 
@@ -829,14 +823,8 @@ export default function AdminProducts() {
                     </div>
 
                     {/* PRICING */}
-                    <div
-                      style={styles.priceSection}
-                    >
-                      <div
-                        style={
-                          styles.priceRow
-                        }
-                      >
+                    <div className="bg-gray-50 rounded-[10px] p-[10px] md:p-[13px] mt-auto">
+                      <div className="flex justify-between gap-[10px] text-[12px] md:text-[13px] text-gray-500 mb-[10px]">
                         <span>
                           Farmer Price
                         </span>
@@ -847,32 +835,20 @@ export default function AdminProducts() {
                             'en-IN'
                           )}
                           {product.unit
-                            ? ` / ${product.unit}`
+                            ? ` / ${product.unit_count || 1} ${product.unit}`
                             : ''}
                         </strong>
                       </div>
 
                       {/* COMMISSION */}
-                      <div
-                        style={
-                          styles.commissionRow
-                        }
-                      >
+                      <div className="text-[12px] md:text-[13px] text-gray-500 flex justify-between items-center gap-2">
                         <span>
                           Commission
                         </span>
 
                         {isEditingCommission ? (
-                          <div
-                            style={
-                              styles.commissionEdit
-                            }
-                          >
-                            <div
-                              style={
-                                styles.commissionInputWrapper
-                              }
-                            >
+                          <div className="flex items-center gap-[4px] md:gap-[6px] flex-wrap justify-end">
+                            <div className="flex items-center border border-gray-300 rounded-[6px] bg-white pl-[5px] md:pl-[7px] w-auto max-w-[100px]">
                               <span>
                                 ₹
                               </span>
@@ -889,51 +865,43 @@ export default function AdminProducts() {
                                     e.target.value
                                   )
                                 }
-                                style={
-                                  styles.commissionInput
-                                }
+                                className="w-[50px] md:w-[70px] border-none outline-none py-[5px] md:py-[7px] px-[4px] md:px-[5px] text-[12px] md:text-[13px] bg-transparent"
                                 autoFocus
                               />
                             </div>
 
-                            <button
-                              onClick={() =>
-                                saveCommission(
-                                  product
-                                )
-                              }
-                              disabled={
-                                savingCommission
-                              }
-                              style={
-                                styles.smallSaveButton
-                              }
-                            >
-                              {savingCommission
-                                ? '...'
-                                : 'Save'}
-                            </button>
+                            <div className="flex gap-1 mt-1 sm:mt-0">
+                              <button
+                                onClick={() =>
+                                  saveCommission(
+                                    product
+                                  )
+                                }
+                                disabled={
+                                  savingCommission
+                                }
+                                className="border-none bg-green-800 text-white py-[5px] md:py-[7px] px-[7px] md:px-[9px] rounded-[6px] cursor-pointer text-[10px] md:text-[11px] font-semibold hover:bg-green-900 disabled:opacity-50"
+                              >
+                                {savingCommission
+                                  ? '...'
+                                  : 'Save'}
+                              </button>
 
-                            <button
-                              onClick={
-                                cancelCommissionEdit
-                              }
-                              disabled={
-                                savingCommission
-                              }
-                              style={
-                                styles.smallCancelButton
-                              }
-                            >
-                              Cancel
-                            </button>
+                              <button
+                                onClick={
+                                  cancelCommissionEdit
+                                }
+                                disabled={
+                                  savingCommission
+                                }
+                                className="border border-gray-300 bg-white text-gray-700 py-[4px] md:py-[6px] px-[6px] md:px-[8px] rounded-[6px] cursor-pointer text-[10px] md:text-[11px] hover:bg-gray-50 disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
                         ) : (
-                          <div
-                            style={
-                              styles.commissionDisplay
-                            }
-                          >
+                          <div className="flex items-center gap-[6px] md:gap-[8px]">
                             <strong>
                               ₹
                               {commission.toLocaleString(
@@ -947,9 +915,7 @@ export default function AdminProducts() {
                                   product
                                 )
                               }
-                              style={
-                                styles.editCommissionButton
-                              }
+                              className="border-none bg-blue-50 text-blue-700 py-[4px] md:py-[5px] px-[6px] md:px-[8px] rounded-[6px] cursor-pointer text-[10px] md:text-[11px] font-semibold hover:bg-blue-100"
                             >
                               ✏️ Edit
                             </button>
@@ -957,16 +923,17 @@ export default function AdminProducts() {
                         )}
                       </div>
 
-                      <div
-                        style={styles.divider}
-                      />
+                      <div className="text-[12px] md:text-[13px] text-gray-500 flex justify-between items-center mt-2">
+                        <span>Delivery</span>
+                        <strong>
+                          ₹{Number(product.delivery_price || 0).toLocaleString('en-IN')}
+                        </strong>
+                      </div>
+
+                      <div className="border-t border-gray-200 my-[8px] md:my-[10px]" />
 
                       {/* CUSTOMER PRICE */}
-                      <div
-                        style={
-                          styles.customerPriceRow
-                        }
-                      >
+                      <div className="flex justify-between gap-[10px] text-green-800 text-[14px] md:text-[15px] font-bold">
                         <span>
                           Customer Price
                         </span>
@@ -977,14 +944,14 @@ export default function AdminProducts() {
                             'en-IN'
                           )}
                           {product.unit
-                            ? ` / ${product.unit}`
+                            ? ` / ${product.unit_count || 1} ${product.unit}`
                             : ''}
                         </strong>
                       </div>
                     </div>
 
                     {/* STOCK */}
-                    <div style={styles.stockBox}>
+                    <div className="mt-[12px] p-[10px] md:p-[11px] border border-gray-200 rounded-[9px] flex items-center gap-[6px] md:gap-[8px] text-[12px] md:text-[13px]">
                       <span>Stock</span>
 
                       <strong>
@@ -993,11 +960,11 @@ export default function AdminProducts() {
                       </strong>
 
                       <span
-                        style={
+                        className={`ml-auto py-[4px] md:py-[5px] px-[6px] md:px-[8px] rounded-[15px] text-[9px] md:text-[10px] font-bold ${
                           stock > 0
-                            ? styles.stockAvailable
-                            : styles.stockEmpty
-                        }
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-700'
+                        }`}
                       >
                         {stock > 0
                           ? 'In Stock'
@@ -1006,13 +973,9 @@ export default function AdminProducts() {
                     </div>
 
                     {/* STATUS */}
-                    <div style={styles.statusBox}>
+                    <div className="mt-[12px] p-[10px] md:p-[12px] border border-gray-200 rounded-[9px] grid grid-cols-2 gap-[10px] md:gap-[12px] text-[12px] md:text-[13px]">
                       <div>
-                        <span
-                          style={
-                            styles.statusLabel
-                          }
-                        >
+                        <span className="block text-gray-500 text-[10px] md:text-[11px] mb-[2px] md:mb-[4px]">
                           Product Status
                         </span>
 
@@ -1025,11 +988,7 @@ export default function AdminProducts() {
                       </div>
 
                       <div>
-                        <span
-                          style={
-                            styles.statusLabel
-                          }
-                        >
+                        <span className="block text-gray-500 text-[10px] md:text-[11px] mb-[2px] md:mb-[4px]">
                           Approval
                         </span>
 
@@ -1044,11 +1003,7 @@ export default function AdminProducts() {
                     {/* APPROVAL BUTTONS */}
                     {product.approval_status ===
                       'pending' && (
-                      <div
-                        style={
-                          styles.approvalButtons
-                        }
-                      >
+                      <div className="grid grid-cols-2 gap-[6px] md:gap-[8px] mt-[12px] md:mt-[15px]">
                         <button
                           onClick={() =>
                             updateApproval(
@@ -1060,9 +1015,7 @@ export default function AdminProducts() {
                             updatingId ===
                             product.id
                           }
-                          style={
-                            styles.approveButton
-                          }
+                          className="p-[8px] md:p-[10px] border-none rounded-[8px] bg-green-800 text-white cursor-pointer font-semibold text-xs md:text-sm hover:bg-green-900 disabled:opacity-50 transition-colors"
                         >
                           {updatingId ===
                           product.id
@@ -1081,9 +1034,7 @@ export default function AdminProducts() {
                             updatingId ===
                             product.id
                           }
-                          style={
-                            styles.rejectButton
-                          }
+                          className="p-[8px] md:p-[10px] border-none rounded-[8px] bg-red-600 text-white cursor-pointer font-semibold text-xs md:text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >
                           ✕ Reject
                         </button>
@@ -1106,9 +1057,7 @@ export default function AdminProducts() {
                             updatingId ===
                             product.id
                           }
-                          style={
-                            styles.activateButton
-                          }
+                          className="w-full mt-[12px] md:mt-[15px] p-[8px] md:p-[10px] border-none rounded-[8px] bg-green-800 text-white cursor-pointer font-semibold text-xs md:text-sm hover:bg-green-900 disabled:opacity-50 transition-colors"
                         >
                           🟢 Activate Product
                         </button>
@@ -1122,9 +1071,7 @@ export default function AdminProducts() {
                       disabled={
                         deletingId === product.id
                       }
-                      style={
-                        styles.deleteButton
-                      }
+                      className="w-full mt-[8px] md:mt-[10px] p-[7px] md:p-[9px] border border-red-200 rounded-[8px] bg-red-50 text-red-700 cursor-pointer font-semibold text-xs md:text-sm hover:bg-red-100 disabled:opacity-50 transition-colors"
                     >
                       {deletingId === product.id
                         ? 'Deleting...'
@@ -1139,547 +1086,4 @@ export default function AdminProducts() {
       </section>
     </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingCard: {
-    background: '#ffffff',
-    padding: '40px 60px',
-    borderRadius: '14px',
-    border: '1px solid #e5e7eb',
-    textAlign: 'center',
-    color: '#374151',
-  },
-
-  loadingIcon: {
-    fontSize: '42px',
-    marginBottom: '10px',
-  },
-
-  navbar: {
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '18px 6%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-  navActions: {
-    display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap',
-  },
-
-  refreshButton: {
-    padding: '9px 16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  backButton: {
-    padding: '9px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  container: {
-    width: '90%',
-    maxWidth: '1300px',
-    margin: '0 auto',
-    padding: '40px 0',
-  },
-
-  header: {
-    marginBottom: '25px',
-  },
-
-  title: {
-    margin: '0 0 8px',
-    fontSize: '32px',
-    color: '#1f2937',
-  },
-
-  subtitle: {
-    margin: 0,
-    color: '#6b7280',
-  },
-
-  successBox: {
-    background: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    color: '#166534',
-    padding: '13px 16px',
-    borderRadius: '10px',
-    marginBottom: '18px',
-  },
-
-  errorBox: {
-    background: '#fef2f2',
-    border: '1px solid #fecaca',
-    color: '#b91c1c',
-    padding: '13px 16px',
-    borderRadius: '10px',
-    marginBottom: '18px',
-  },
-
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '15px',
-    marginBottom: '25px',
-  },
-
-  summaryCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '18px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-  },
-
-  summaryIcon: {
-    width: '45px',
-    height: '45px',
-    borderRadius: '10px',
-    background: '#f0fdf4',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontSize: '22px',
-  },
-
-  summaryNumber: {
-    fontSize: '23px',
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-
-  summaryLabel: {
-    fontSize: '13px',
-    color: '#6b7280',
-    marginTop: '3px',
-  },
-
-  controls: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '18px',
-    marginBottom: '15px',
-  },
-
-  searchBox: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    border: '1px solid #d1d5db',
-    borderRadius: '9px',
-    padding: '0 12px',
-    marginBottom: '15px',
-  },
-
-  searchInput: {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    padding: '11px',
-    fontSize: '15px',
-  },
-
-  filterRow: {
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-  },
-
-  filterButton: {
-    padding: '8px 13px',
-    border: '1px solid #d1d5db',
-    borderRadius: '20px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-
-  filterActive: {
-    padding: '8px 13px',
-    border: '1px solid #166534',
-    borderRadius: '20px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-
-  resultText: {
-    marginBottom: '15px',
-    color: '#6b7280',
-    fontSize: '14px',
-  },
-
-  grid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '25px',
-  },
-
-  card: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    overflow: 'hidden',
-  },
-
-  imageWrapper: {
-    position: 'relative',
-  },
-
-  image: {
-    width: '100%',
-    height: '220px',
-    objectFit: 'cover',
-    display: 'block',
-  },
-
-  imageWrapper: {
-    position: 'relative',
-  },
-
-  noImage: {
-    height: '220px',
-    background: '#f0fdf4',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontSize: '55px',
-    position: 'relative',
-  },
-
-  approvedBadge: {
-    background: '#dcfce7',
-    color: '#166534',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  pendingBadge: {
-    background: '#fef3c7',
-    color: '#92400e',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  rejectedBadge: {
-    background: '#fee2e2',
-    color: '#b91c1c',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  neutralBadge: {
-    background: '#f3f4f6',
-    color: '#4b5563',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  cardContent: {
-    padding: '20px',
-  },
-
-  productName: {
-    margin: '0 0 8px',
-    fontSize: '21px',
-    color: '#1f2937',
-  },
-
-  description: {
-    margin: '0 0 15px',
-    color: '#6b7280',
-    fontSize: '14px',
-    lineHeight: '1.5',
-    minHeight: '40px',
-  },
-
-  farmerBox: {
-    background: '#f9fafb',
-    border: '1px solid #e5e7eb',
-    borderRadius: '9px',
-    padding: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-    fontSize: '13px',
-    color: '#374151',
-    marginBottom: '14px',
-  },
-
-  farmerTitle: {
-    color: '#166534',
-    fontWeight: '700',
-    marginBottom: '3px',
-  },
-
-  priceSection: {
-    background: '#f9fafb',
-    borderRadius: '10px',
-    padding: '13px',
-  },
-
-  priceRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '10px',
-    fontSize: '13px',
-    color: '#6b7280',
-    marginBottom: '10px',
-  },
-
-  commissionRow: {
-    fontSize: '13px',
-    color: '#6b7280',
-  },
-
-  commissionDisplay: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-
-  editCommissionButton: {
-    border: 'none',
-    background: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '5px 8px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '11px',
-    fontWeight: '600',
-  },
-
-  commissionEdit: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-  },
-
-  commissionInputWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    background: '#ffffff',
-    paddingLeft: '7px',
-  },
-
-  commissionInput: {
-    width: '70px',
-    border: 'none',
-    outline: 'none',
-    padding: '7px 5px',
-    fontSize: '13px',
-  },
-
-  smallSaveButton: {
-    border: 'none',
-    background: '#166534',
-    color: '#ffffff',
-    padding: '7px 9px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '11px',
-    fontWeight: '600',
-  },
-
-  smallCancelButton: {
-    border: '1px solid #d1d5db',
-    background: '#ffffff',
-    color: '#374151',
-    padding: '6px 8px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '11px',
-  },
-
-  divider: {
-    borderTop: '1px solid #e5e7eb',
-    margin: '10px 0',
-  },
-
-  customerPriceRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '10px',
-    color: '#166534',
-    fontSize: '15px',
-  },
-
-  stockBox: {
-    marginTop: '12px',
-    padding: '11px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '9px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '13px',
-  },
-
-  stockAvailable: {
-    marginLeft: 'auto',
-    background: '#dcfce7',
-    color: '#166534',
-    padding: '5px 8px',
-    borderRadius: '15px',
-    fontSize: '10px',
-    fontWeight: '700',
-  },
-
-  stockEmpty: {
-    marginLeft: 'auto',
-    background: '#fee2e2',
-    color: '#b91c1c',
-    padding: '5px 8px',
-    borderRadius: '15px',
-    fontSize: '10px',
-    fontWeight: '700',
-  },
-
-  statusBox: {
-    marginTop: '12px',
-    padding: '12px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '9px',
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(2, minmax(0, 1fr))',
-    gap: '12px',
-    fontSize: '13px',
-  },
-
-  statusLabel: {
-    display: 'block',
-    color: '#6b7280',
-    fontSize: '11px',
-    marginBottom: '4px',
-  },
-
-  approvalButtons: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(2, minmax(0, 1fr))',
-    gap: '8px',
-    marginTop: '15px',
-  },
-
-  approveButton: {
-    padding: '10px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  rejectButton: {
-    padding: '10px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#dc2626',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  activateButton: {
-    width: '100%',
-    marginTop: '15px',
-    padding: '10px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  deleteButton: {
-    width: '100%',
-    marginTop: '10px',
-    padding: '9px',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    background: '#fffafa',
-    color: '#b91c1c',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  emptyCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '60px 30px',
-    textAlign: 'center',
-    color: '#6b7280',
-  },
-
-  emptyIcon: {
-    fontSize: '50px',
-    marginBottom: '10px',
-  },
 }

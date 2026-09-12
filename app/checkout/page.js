@@ -272,32 +272,32 @@ export default function Checkout() {
   }
 
   return (
-    <main style={styles.page}>
-      <div style={styles.container}>
+    <main className="min-h-screen bg-[#f5f7f5] py-8 px-4 sm:py-10 sm:px-6">
+      <div className="max-w-5xl mx-auto w-full">
 
         <button
           onClick={() => router.push('/cart')}
-          style={styles.backButton}
+          className="text-gray-600 hover:text-gray-900 font-medium mb-6 text-sm sm:text-base cursor-pointer"
         >
           ← Back to Cart
         </button>
 
-        <h1 style={styles.title}>
+        <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8 text-gray-800">
           Checkout
         </h1>
 
-        <div style={styles.layout}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
 
           {/* Customer Details */}
-          <section style={styles.card}>
+          <section className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-100">
 
-            <h2 style={styles.heading}>
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-gray-800">
               Delivery Details
             </h2>
 
             <form onSubmit={handlePlaceOrder}>
 
-              <label style={styles.label}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">
                 Full Name
               </label>
 
@@ -308,10 +308,10 @@ export default function Checkout() {
                   setName(e.target.value)
                 }
                 placeholder="Enter your name"
-                style={styles.input}
+                className="w-full p-3 mb-4 sm:mb-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-green-600 outline-none"
               />
 
-              <label style={styles.label}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">
                 Phone Number
               </label>
 
@@ -322,10 +322,10 @@ export default function Checkout() {
                   setPhone(e.target.value)
                 }
                 placeholder="Enter phone number"
-                style={styles.input}
+                className="w-full p-3 mb-4 sm:mb-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-green-600 outline-none"
               />
 
-              <label style={styles.label}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">
                 Delivery Address
               </label>
 
@@ -336,10 +336,10 @@ export default function Checkout() {
                 }
                 placeholder="Enter your full delivery address"
                 rows="4"
-                style={styles.textarea}
+                className="w-full p-3 mb-4 sm:mb-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-green-600 outline-none resize-y"
               />
 
-              <label style={styles.label}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">
                 District
               </label>
 
@@ -350,10 +350,10 @@ export default function Checkout() {
                   setDistrict(e.target.value)
                 }
                 placeholder="Enter district"
-                style={styles.input}
+                className="w-full p-3 mb-4 sm:mb-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-green-600 outline-none"
               />
 
-              <label style={styles.label}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">
                 Village / Town
               </label>
 
@@ -364,16 +364,13 @@ export default function Checkout() {
                   setVillage(e.target.value)
                 }
                 placeholder="Enter village or town"
-                style={styles.input}
+                className="w-full p-3 mb-4 sm:mb-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-green-600 outline-none"
               />
 
               <button
                 type="submit"
-                style={{
-                  ...styles.placeOrderButton,
-                  opacity: loading ? 0.7 : 1,
-                }}
                 disabled={loading}
+                className="w-full p-3 sm:p-4 bg-green-800 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-70 transition-colors mt-2"
               >
                 {loading
                   ? 'Placing Order...'
@@ -385,46 +382,48 @@ export default function Checkout() {
           </section>
 
           {/* Order Summary */}
-          <section style={styles.card}>
+          <section className="lg:col-span-1 bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-100 lg:sticky lg:top-8">
 
-            <h2 style={styles.heading}>
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 text-gray-800">
               Order Summary
             </h2>
 
-            {cart.map((item) => (
+            <div className="flex flex-col">
+              {cart.map((item) => (
 
-              <div
-                key={item.id}
-                style={styles.item}
-              >
+                <div
+                  key={item.id}
+                  className="flex justify-between gap-4 py-4 border-b border-gray-100 last:border-0"
+                >
 
-                <div>
+                  <div>
 
-                  <strong>
-                    {item.name}
+                    <strong className="text-gray-800">
+                      {item.name}
+                    </strong>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      ₹{item.price} × {item.quantity}
+                    </p>
+
+                  </div>
+
+                  <strong className="text-gray-800">
+                    ₹
+                    {(
+                      Number(item.price) *
+                      item.quantity
+                    ).toFixed(2)}
                   </strong>
-
-                  <p style={styles.itemText}>
-                    ₹{item.price} × {item.quantity}
-                  </p>
 
                 </div>
 
-                <strong>
-                  ₹
-                  {(
-                    Number(item.price) *
-                    item.quantity
-                  ).toFixed(2)}
-                </strong>
+              ))}
+            </div>
 
-              </div>
+            <div className="my-5 border-t border-gray-200"></div>
 
-            ))}
-
-            <div style={styles.divider}></div>
-
-            <div style={styles.totalRow}>
+            <div className="flex justify-between text-lg sm:text-xl font-bold text-gray-800">
 
               <span>
                 Total
@@ -443,113 +442,4 @@ export default function Checkout() {
       </div>
     </main>
   )
-}
-
-const styles = {
-
-  page: {
-    minHeight: '100vh',
-    background: '#f5f7f5',
-    padding: '40px 20px',
-  },
-
-  container: {
-    maxWidth: '1100px',
-    margin: '0 auto',
-  },
-
-  backButton: {
-    border: 'none',
-    background: 'transparent',
-    fontSize: '16px',
-    cursor: 'pointer',
-    marginBottom: '20px',
-  },
-
-  title: {
-    fontSize: '36px',
-    marginBottom: '30px',
-  },
-
-  layout: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: '25px',
-  },
-
-  card: {
-    background: '#ffffff',
-    padding: '25px',
-    borderRadius: '12px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-  },
-
-  heading: {
-    fontSize: '22px',
-    marginBottom: '20px',
-  },
-
-  label: {
-    display: 'block',
-    marginBottom: '7px',
-    fontWeight: '600',
-  },
-
-  input: {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '18px',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    fontSize: '15px',
-    boxSizing: 'border-box',
-  },
-
-  textarea: {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '18px',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    fontSize: '15px',
-    resize: 'vertical',
-    boxSizing: 'border-box',
-  },
-
-  placeOrderButton: {
-    width: '100%',
-    padding: '14px',
-    background: '#2e7d32',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  },
-
-  item: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '15px',
-    padding: '15px 0',
-    borderBottom: '1px solid #eee',
-  },
-
-  itemText: {
-    margin: '6px 0 0',
-    color: '#666',
-  },
-
-  divider: {
-    margin: '20px 0',
-    borderTop: '1px solid #ddd',
-  },
-
-  totalRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '20px',
-  },
-
 }

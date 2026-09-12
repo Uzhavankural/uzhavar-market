@@ -20,10 +20,6 @@ export default function FarmerEarningsPage() {
     checkFarmer()
   }, [])
 
-  // =====================================================
-  // CHECK FARMER
-  // =====================================================
-
   async function checkFarmer() {
     setLoading(true)
 
@@ -66,10 +62,6 @@ export default function FarmerEarningsPage() {
     }
   }
 
-  // =====================================================
-  // LOAD FARMER EARNINGS
-  // =====================================================
-
   async function loadFarmerEarnings(farmerId) {
     setRefreshing(true)
 
@@ -93,9 +85,7 @@ export default function FarmerEarningsPage() {
           settlement_paid_at
         `)
         .eq('farmer_id', farmerId)
-        .order('id', {
-          ascending: false,
-        })
+        .order('id', { ascending: false })
 
       if (itemsError) {
         console.log('FARMER EARNINGS ITEMS ERROR:', itemsError)
@@ -110,18 +100,9 @@ export default function FarmerEarningsPage() {
         return
       }
 
-      // Get unique order IDs
-      const orderIds = [
-        ...new Set(
-          orderItems.map((item) => item.order_id)
-        ),
-      ]
+      const orderIds = [...new Set(orderItems.map((item) => item.order_id))]
 
-      // Load order details
-      const {
-        data: orders,
-        error: ordersError,
-      } = await supabase
+      const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
           id,
@@ -144,116 +125,54 @@ export default function FarmerEarningsPage() {
       }
 
       const orderMap = {}
-
       ;(orders || []).forEach((order) => {
         orderMap[order.id] = order
       })
-
-      // =================================================
-      // ONLY DELIVERED ORDERS
-      // =================================================
 
       const completedItems = orderItems
         .map((item) => {
           const order = orderMap[item.order_id]
 
-          if (!order) {
-            return null
-          }
-
-          // Only completed/delivered orders
-          if (order.order_status !== 'delivered') {
-            return null
-          }
+          if (!order) return null
+          if (order.order_status !== 'delivered') return null
 
           const quantity = Number(item.quantity || 0)
+          const farmerPrice = Number(item.farmer_price || 0)
+          const customerPrice = Number(item.price || 0)
+          const itemTotal = Number(item.item_total || 0)
 
-          const farmerPrice = Number(
-            item.farmer_price || 0
-          )
+          const farmerAmount = farmerPrice * quantity
 
-          const customerPrice = Number(
-            item.price || 0
-          )
-
-          const itemTotal = Number(
-            item.item_total || 0
-          )
-
-          // Farmer amount = farmer price × quantity
-          const farmerAmount =
-            farmerPrice * quantity
-
-          // Commission is PER UNIT
           const commissionPerUnit =
-            item.commission_amount !== null &&
-            item.commission_amount !== undefined
+            item.commission_amount !== null && item.commission_amount !== undefined
               ? Number(item.commission_amount)
-              : Math.max(
-                  0,
-                  customerPrice - farmerPrice
-                )
+              : Math.max(0, customerPrice - farmerPrice)
 
-          // Total commission = per-unit × quantity
-          const commissionTotal =
-            commissionPerUnit * quantity
-
-          const calculatedSettlement =
-            farmerAmount
+          const commissionTotal = commissionPerUnit * quantity
+          const calculatedSettlement = farmerAmount
 
           const settlementAmount =
-            item.settlement_amount !== null &&
-            item.settlement_amount !== undefined
+            item.settlement_amount !== null && item.settlement_amount !== undefined
               ? Number(item.settlement_amount)
               : calculatedSettlement
 
           return {
             ...item,
-
-            customer_name:
-              order.customer_name || 'Customer',
-
-            customer_phone:
-              order.customer_phone || '',
-
-            delivery_address:
-              order.delivery_address || '',
-
-            district:
-              order.district || '',
-
-            village:
-              order.village || '',
-
-            order_total_amount:
-              Number(order.total_amount || 0),
-
-            order_status:
-              order.order_status,
-
-            payment_status:
-              order.payment_status,
-
-            order_created_at:
-              order.created_at,
-
-            calculated_farmer_amount:
-              farmerAmount,
-
-            commission_per_unit:
-              commissionPerUnit,
-
-            calculated_commission:
-              commissionTotal,
-
-            calculated_customer_total:
-              customerPrice * quantity,
-
-            final_settlement_amount:
-              settlementAmount,
-
-            item_total_value:
-              itemTotal,
+            customer_name: order.customer_name || 'Customer',
+            customer_phone: order.customer_phone || '',
+            delivery_address: order.delivery_address || '',
+            district: order.district || '',
+            village: order.village || '',
+            order_total_amount: Number(order.total_amount || 0),
+            order_status: order.order_status,
+            payment_status: order.payment_status,
+            order_created_at: order.created_at,
+            calculated_farmer_amount: farmerAmount,
+            commission_per_unit: commissionPerUnit,
+            calculated_commission: commissionTotal,
+            calculated_customer_total: customerPrice * quantity,
+            final_settlement_amount: settlementAmount,
+            item_total_value: itemTotal,
           }
         })
         .filter(Boolean)
@@ -266,10 +185,6 @@ export default function FarmerEarningsPage() {
       setRefreshing(false)
     }
   }
-
-  // =====================================================
-  // REFRESH
-  // =====================================================
 
   async function handleRefresh() {
     const {
@@ -284,245 +199,119 @@ export default function FarmerEarningsPage() {
     await loadFarmerEarnings(user.id)
   }
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
-
   async function handleLogout() {
     await supabase.auth.signOut()
     router.replace('/login')
   }
 
-  // =====================================================
-  // MONEY FORMAT
-  // =====================================================
-
   function formatMoney(amount) {
-    return Number(amount || 0).toLocaleString(
-      'en-IN',
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }
-    )
+    return Number(amount || 0).toLocaleString('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
   }
-
-  // =====================================================
-  // DATE FORMAT
-  // =====================================================
 
   function formatDate(date) {
     if (!date) return '-'
-
-    return new Date(date).toLocaleDateString(
-      'en-IN',
-      {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }
-    )
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
   }
 
   function formatDateTime(date) {
     if (!date) return '-'
-
-    return new Date(date).toLocaleString(
-      'en-IN',
-      {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }
-    )
+    return new Date(date).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
-  // =====================================================
-  // FILTER
-  // =====================================================
-
   const filteredSettlements = useMemo(() => {
-    const search = searchTerm
-      .trim()
-      .toLowerCase()
+    const search = searchTerm.trim().toLowerCase()
 
     return settlements.filter((item) => {
       const matchesSearch =
         !search ||
-        item.customer_name
-          ?.toLowerCase()
-          .includes(search) ||
-        item.customer_phone
-          ?.toLowerCase()
-          .includes(search) ||
-        item.product_name
-          ?.toLowerCase()
-          .includes(search) ||
-        item.order_id
-          ?.toLowerCase()
-          .includes(search)
+        item.customer_name?.toLowerCase().includes(search) ||
+        item.customer_phone?.toLowerCase().includes(search) ||
+        item.product_name?.toLowerCase().includes(search) ||
+        item.order_id?.toLowerCase().includes(search)
 
-      const isPaid =
-        item.settlement_status === 'paid'
-
+      const isPaid = item.settlement_status === 'paid'
       const matchesStatus =
         statusFilter === 'all' ||
         (statusFilter === 'paid' && isPaid) ||
         (statusFilter === 'pending' && !isPaid)
 
-      return (
-        matchesSearch &&
-        matchesStatus
-      )
+      return matchesSearch && matchesStatus
     })
-  }, [
-    settlements,
-    searchTerm,
-    statusFilter,
-  ])
-
-  // =====================================================
-  // SUMMARY
-  // =====================================================
+  }, [settlements, searchTerm, statusFilter])
 
   const totalSales = settlements.reduce(
-    (total, item) =>
-      total +
-      Number(
-        item.calculated_customer_total || 0
-      ),
+    (total, item) => total + Number(item.calculated_customer_total || 0),
     0
   )
 
-  const totalFarmerEarnings =
-    settlements.reduce(
-      (total, item) =>
-        total +
-        Number(
-          item.calculated_farmer_amount || 0
-        ),
-      0
-    )
-
-  const totalCommission =
-    settlements.reduce(
-      (total, item) =>
-        total +
-        Number(
-          item.calculated_commission || 0
-        ),
-      0
-    )
-
-  const paidSettlements =
-    settlements.filter(
-      (item) =>
-        item.settlement_status === 'paid'
-    )
-
-  const pendingSettlements =
-    settlements.filter(
-      (item) =>
-        item.settlement_status !== 'paid'
-    )
-
-  const totalPaid =
-    paidSettlements.reduce(
-      (total, item) =>
-        total +
-        Number(
-          item.final_settlement_amount || 0
-        ),
-      0
-    )
-
-  const totalPending =
-    pendingSettlements.reduce(
-      (total, item) =>
-        total +
-        Number(
-          item.final_settlement_amount || 0
-        ),
-      0
-    )
-
-  const completedOrderIds = new Set(
-    settlements.map(
-      (item) => item.order_id
-    )
+  const totalFarmerEarnings = settlements.reduce(
+    (total, item) => total + Number(item.calculated_farmer_amount || 0),
+    0
   )
 
-  const paidOrderIds = new Set(
-    paidSettlements.map(
-      (item) => item.order_id
-    )
+  const totalCommission = settlements.reduce(
+    (total, item) => total + Number(item.calculated_commission || 0),
+    0
   )
 
-  const pendingOrderIds = new Set(
-    pendingSettlements.map(
-      (item) => item.order_id
-    )
+  const paidSettlements = settlements.filter((item) => item.settlement_status === 'paid')
+  const pendingSettlements = settlements.filter((item) => item.settlement_status !== 'paid')
+
+  const totalPaid = paidSettlements.reduce(
+    (total, item) => total + Number(item.final_settlement_amount || 0),
+    0
   )
 
-  // =====================================================
-  // LOADING
-  // =====================================================
+  const totalPending = pendingSettlements.reduce(
+    (total, item) => total + Number(item.final_settlement_amount || 0),
+    0
+  )
+
+  const completedOrderIds = new Set(settlements.map((item) => item.order_id))
+  const paidOrderIds = new Set(paidSettlements.map((item) => item.order_id))
+  const pendingOrderIds = new Set(pendingSettlements.map((item) => item.order_id))
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loadingBox}>
-          <div style={styles.loadingIcon}>
-            🌾
-          </div>
-
-          <p style={styles.loadingText}>
-            Loading earnings...
-          </p>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="text-center">
+          <div className="text-[45px] mb-2.5">🌾</div>
+          <p className="text-base text-gray-500">Loading earnings...</p>
         </div>
       </main>
     )
   }
 
-  // =====================================================
-  // ACCESS DENIED
-  // =====================================================
-
   if (accessDenied) {
-    const dashboardPath =
-      profile?.role === 'admin'
-        ? '/admin'
-        : '/customer'
-
-    const dashboardText =
-      profile?.role === 'admin'
-        ? 'Go to Admin Dashboard'
-        : 'Go to Customer Dashboard'
+    const dashboardPath = profile?.role === 'admin' ? '/admin' : '/customer'
+    const dashboardText = profile?.role === 'admin' ? 'Go to Admin Dashboard' : 'Go to Customer Dashboard'
 
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.accessBox}>
-          <div style={styles.accessIcon}>
-            🚫
-          </div>
-
-          <h2 style={styles.accessTitle}>
-            You don't have access to the
-            Farmer Earnings Panel.
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="text-center max-w-[500px] w-full p-[30px]">
+          <div className="text-[50px] mb-[15px]">🚫</div>
+          <h2 className="m-0 mb-2.5 text-gray-800 text-xl font-bold">
+            You don't have access to the Farmer Earnings Panel.
           </h2>
-
-          <p style={styles.accessText}>
-            This page is available only for
-            farmer users.
+          <p className="m-0 mb-6 text-gray-500 text-[15px]">
+            This page is available only for farmer users.
           </p>
-
           <button
-            onClick={() =>
-              router.push(dashboardPath)
-            }
-            style={styles.primaryButton}
+            onClick={() => router.push(dashboardPath)}
+            className="px-5 py-3 border-none rounded-lg bg-green-800 text-white cursor-pointer font-semibold w-full sm:w-auto hover:bg-green-700 transition-colors"
           >
             {dashboardText}
           </button>
@@ -531,1237 +320,313 @@ export default function FarmerEarningsPage() {
     )
   }
 
-  // =====================================================
-  // PROFILE ERROR
-  // =====================================================
-
   if (!profile) {
     return (
-      <main style={styles.loadingPage}>
-        <p style={styles.loadingText}>
-          Unable to load your farmer profile.
-        </p>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <p className="text-base text-gray-500">Unable to load your farmer profile.</p>
       </main>
     )
   }
 
-  // =====================================================
-  // PAGE
-  // =====================================================
-
   return (
-    <main style={styles.page}>
-
-      {/* =================================================
-          NAVBAR
-      ================================================= */}
-
-      <nav style={styles.navbar}>
-
+    <main className="min-h-screen bg-[#f7f8f5] font-sans">
+      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center gap-4 flex-wrap">
         <button
-          onClick={() =>
-            router.push('/farmer')
-          }
-          style={styles.logoButton}
+          onClick={() => router.push('/farmer')}
+          className="border-none bg-transparent text-green-800 text-xl sm:text-[22px] font-bold cursor-pointer p-0"
         >
           🌾 Uzhavar Market
         </button>
-
-        <div style={styles.navRight}>
-
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={() =>
-              router.push('/farmer')
-            }
-            style={styles.backButton}
+            onClick={() => router.push('/farmer')}
+            className="px-3 py-2 sm:px-[15px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
             ← Dashboard
           </button>
-
           <button
             onClick={handleLogout}
-            style={styles.logoutButton}
+            className="px-3 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
             Logout
           </button>
-
         </div>
-
       </nav>
 
-      <section style={styles.container}>
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <div style={styles.headerCard}>
-
+      <section className="w-[95%] sm:w-[90%] max-w-[1200px] mx-auto pt-[35px] pb-[50px]">
+        <div className="bg-green-800 text-white p-6 sm:p-[30px] rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-4 flex-wrap shadow-md">
           <div>
-            <p style={styles.smallTitle}>
+            <p className="text-xs font-bold tracking-wider m-0 mb-2 opacity-85">
               FARMER FINANCE
             </p>
-
-            <h1 style={styles.title}>
+            <h1 className="text-2xl sm:text-[30px] m-0 mb-2 font-bold">
               My Earnings & Settlements 💰
             </h1>
-
-            <p style={styles.subtitle}>
-              View your completed orders,
-              farmer earnings and settlement
-              status.
+            <p className="m-0 opacity-90 text-sm sm:text-[15px]">
+              View your completed orders, farmer earnings and settlement status.
             </p>
           </div>
-
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            style={{
-              ...styles.refreshButton,
-              opacity: refreshing ? 0.6 : 1,
-            }}
+            className={`px-4 py-2 sm:px-4 sm:py-2.5 border border-white/50 rounded-lg bg-white text-green-800 cursor-pointer font-bold w-full sm:w-auto text-sm sm:text-base hover:bg-gray-50 transition-colors ${
+              refreshing ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
           >
-            {refreshing
-              ? '⏳ Refreshing...'
-              : '🔄 Refresh'}
+            {refreshing ? '⏳ Refreshing...' : '🔄 Refresh'}
           </button>
-
         </div>
 
-        {/* =================================================
-            SUMMARY CARDS
-        ================================================= */}
-
-        <div style={styles.summaryGrid}>
-
-          <div style={styles.summaryCard}>
-            <span style={styles.summaryIcon}>
-              🛒
-            </span>
-
-            <p style={styles.summaryLabel}>
-              Completed Orders
-            </p>
-
-            <h2 style={styles.summaryNumber}>
-              {completedOrderIds.size}
-            </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-[18px] mt-6 sm:mt-[22px]">
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
+            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">🛒</span>
+            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Completed Orders</p>
+            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">{completedOrderIds.size}</h2>
           </div>
-
-          <div style={styles.summaryCard}>
-            <span style={styles.summaryIcon}>
-              💰
-            </span>
-
-            <p style={styles.summaryLabel}>
-              Farmer Earnings
-            </p>
-
-            <h2
-              style={{
-                ...styles.summaryNumber,
-                color: '#166534',
-              }}
-            >
-              ₹{formatMoney(
-                totalFarmerEarnings
-              )}
-            </h2>
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
+            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">💰</span>
+            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Farmer Earnings</p>
+            <h2 className="m-0 text-xl sm:text-[23px] text-green-800 font-bold">₹{formatMoney(totalFarmerEarnings)}</h2>
           </div>
-
-          <div style={styles.summaryCard}>
-            <span style={styles.summaryIcon}>
-              💼
-            </span>
-
-            <p style={styles.summaryLabel}>
-              Platform Commission
-            </p>
-
-            <h2 style={styles.summaryNumber}>
-              ₹{formatMoney(totalCommission)}
-            </h2>
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
+            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">💼</span>
+            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Platform Commission</p>
+            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">₹{formatMoney(totalCommission)}</h2>
           </div>
-
-          <div style={styles.summaryCard}>
-            <span style={styles.summaryIcon}>
-              🌾
-            </span>
-
-            <p style={styles.summaryLabel}>
-              Customer Sales
-            </p>
-
-            <h2 style={styles.summaryNumber}>
-              ₹{formatMoney(totalSales)}
-            </h2>
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
+            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">🌾</span>
+            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Customer Sales</p>
+            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">₹{formatMoney(totalSales)}</h2>
           </div>
-
         </div>
 
-        {/* =================================================
-            SETTLEMENT SUMMARY
-        ================================================= */}
-
-        <div style={styles.settlementSummary}>
-
+        <div className="mt-5 bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5 flex-wrap">
           <div>
-            <p style={styles.summarySmallLabel}>
-              Settlement Overview
-            </p>
-
-            <h2 style={styles.settlementTitle}>
-              Farmer Settlement
-            </h2>
+            <p className="m-0 text-gray-500 text-xs font-medium">Settlement Overview</p>
+            <h2 className="m-0 mt-1 text-lg sm:text-[20px] text-gray-800 font-bold">Farmer Settlement</h2>
           </div>
-
-          <div style={styles.settlementStats}>
-
-            <div style={styles.settlementStat}>
-              <span
-                style={{
-                  ...styles.settlementStatNumber,
-                  color: '#166534',
-                }}
-              >
-                ₹{formatMoney(totalPaid)}
-              </span>
-
-              <span style={styles.settlementStatLabel}>
-                Paid
-              </span>
+          <div className="flex flex-wrap gap-4 sm:gap-[30px]">
+            <div className="flex flex-col gap-1">
+              <span className="text-base sm:text-[19px] font-bold text-green-800">₹{formatMoney(totalPaid)}</span>
+              <span className="text-xs text-gray-500 font-medium">Paid</span>
             </div>
-
-            <div style={styles.settlementStat}>
-              <span
-                style={{
-                  ...styles.settlementStatNumber,
-                  color: '#b7791f',
-                }}
-              >
-                ₹{formatMoney(totalPending)}
-              </span>
-
-              <span style={styles.settlementStatLabel}>
-                Pending
-              </span>
+            <div className="flex flex-col gap-1">
+              <span className="text-base sm:text-[19px] font-bold text-yellow-600">₹{formatMoney(totalPending)}</span>
+              <span className="text-xs text-gray-500 font-medium">Pending</span>
             </div>
-
-            <div style={styles.settlementStat}>
-              <span style={styles.settlementStatNumber}>
-                {paidOrderIds.size}
-              </span>
-
-              <span style={styles.settlementStatLabel}>
-                Paid Orders
-              </span>
+            <div className="flex flex-col gap-1">
+              <span className="text-base sm:text-[19px] font-bold text-gray-800">{paidOrderIds.size}</span>
+              <span className="text-xs text-gray-500 font-medium">Paid Orders</span>
             </div>
-
-            <div style={styles.settlementStat}>
-              <span style={styles.settlementStatNumber}>
-                {pendingOrderIds.size}
-              </span>
-
-              <span style={styles.settlementStatLabel}>
-                Pending Orders
-              </span>
+            <div className="flex flex-col gap-1">
+              <span className="text-base sm:text-[19px] font-bold text-gray-800">{pendingOrderIds.size}</span>
+              <span className="text-xs text-gray-500 font-medium">Pending Orders</span>
             </div>
-
           </div>
-
         </div>
 
-        {/* =================================================
-            SEARCH + FILTER
-        ================================================= */}
-
-        <div style={styles.filterCard}>
-
-          <div style={styles.searchWrapper}>
-
-            <span style={styles.searchIcon}>
-              🔍
-            </span>
-
+        <div className="mt-[22px] bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 flex-wrap shadow-sm">
+          <div className="flex-1 w-full lg:w-auto min-w-[280px] flex items-center border border-gray-300 rounded-lg px-3 bg-white">
+            <span className="text-[17px]">🔍</span>
             <input
               type="text"
-              placeholder="Search customer name, mobile, product or order ID..."
+              placeholder="Search customer, product or order ID..."
               value={searchTerm}
-              onChange={(e) =>
-                setSearchTerm(e.target.value)
-              }
-              style={styles.searchInput}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border-none outline-none py-2.5 px-2.5 text-sm bg-transparent"
             />
-
           </div>
-
-          <div style={styles.filterButtons}>
-
+          <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() =>
-                setStatusFilter('all')
-              }
-              style={{
-                ...styles.filterButton,
-                ...(statusFilter === 'all'
-                  ? styles.activeFilter
-                  : {}),
-              }}
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-2 sm:px-[14px] sm:py-[9px] border rounded-lg cursor-pointer font-semibold text-sm sm:text-base transition-colors ${
+                statusFilter === 'all'
+                  ? 'bg-green-800 text-white border-green-800'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
             >
               All
             </button>
-
             <button
-              onClick={() =>
-                setStatusFilter('paid')
-              }
-              style={{
-                ...styles.filterButton,
-                ...(statusFilter === 'paid'
-                  ? styles.activeFilter
-                  : {}),
-              }}
+              onClick={() => setStatusFilter('paid')}
+              className={`px-3 py-2 sm:px-[14px] sm:py-[9px] border rounded-lg cursor-pointer font-semibold text-sm sm:text-base transition-colors ${
+                statusFilter === 'paid'
+                  ? 'bg-green-800 text-white border-green-800'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
             >
               ✓ Paid
             </button>
-
             <button
-              onClick={() =>
-                setStatusFilter('pending')
-              }
-              style={{
-                ...styles.filterButton,
-                ...(statusFilter === 'pending'
-                  ? styles.activeFilter
-                  : {}),
-              }}
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-2 sm:px-[14px] sm:py-[9px] border rounded-lg cursor-pointer font-semibold text-sm sm:text-base transition-colors ${
+                statusFilter === 'pending'
+                  ? 'bg-green-800 text-white border-green-800'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
             >
               ⏳ Pending
             </button>
-
           </div>
-
         </div>
 
-        {/* =================================================
-            RESULT COUNT
-        ================================================= */}
-
-        <div style={styles.resultHeader}>
-
+        <div className="mt-[30px]">
           <div>
-            <h2 style={styles.sectionTitle}>
-              Completed Orders
-            </h2>
-
-            <p style={styles.resultText}>
-              Showing {filteredSettlements.length}{' '}
-              of {settlements.length} completed
-              order items
+            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">Completed Orders</h2>
+            <p className="m-0 mt-1.5 text-sm sm:text-[13px] text-gray-500">
+              Showing {filteredSettlements.length} of {settlements.length} completed order items
             </p>
           </div>
-
         </div>
 
-        {/* =================================================
-            EMPTY
-        ================================================= */}
-
         {filteredSettlements.length === 0 ? (
-
-          <div style={styles.emptyBox}>
-
-            <div style={styles.emptyIcon}>
-              🌱
-            </div>
-
-            <h3 style={styles.emptyTitle}>
-              {settlements.length === 0
-                ? 'No completed orders yet'
-                : 'No matching orders'}
+          <div className="mt-[18px] p-[30px] sm:p-[50px] px-5 text-center bg-white border border-dashed border-gray-300 rounded-xl sm:rounded-2xl">
+            <div className="text-[45px] mb-2">🌱</div>
+            <h3 className="m-0 my-1.5 text-gray-700 font-bold text-lg">
+              {settlements.length === 0 ? 'No completed orders yet' : 'No matching orders'}
             </h3>
-
-            <p style={styles.emptyText}>
+            <p className="m-0 text-gray-500 text-[13px]">
               {settlements.length === 0
                 ? 'Your earnings and settlement details will appear here after an order is delivered.'
                 : 'Try changing the search or settlement filter.'}
             </p>
-
           </div>
-
         ) : (
-
-          <div style={styles.orderList}>
-
+          <div className="mt-[18px] flex flex-col gap-4">
             {filteredSettlements.map((item) => {
-
-              const isPaid =
-                item.settlement_status === 'paid'
+              const isPaid = item.settlement_status === 'paid'
 
               return (
-                <div
-                  key={item.id}
-                  style={styles.orderCard}
-                >
-
-                  {/* =================================================
-                      ORDER HEADER
-                  ================================================= */}
-
-                  <div style={styles.orderHeader}>
-
+                <div key={item.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm">
+                  <div className="bg-[#fafcf9] border-b border-gray-200 p-4 sm:p-[15px_18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-[15px] flex-wrap">
                     <div>
-
-                      <p style={styles.orderId}>
-                        Order #{item.order_id.slice(0, 8)}
+                      <p className="m-0 text-sm font-bold text-gray-800">Order #{item.order_id.slice(0, 8)}</p>
+                      <p className="m-0 mt-1 text-[11px] text-gray-400 font-medium">
+                        {formatDate(item.order_created_at)}
                       </p>
-
-                      <p style={styles.orderDate}>
-                        {formatDate(
-                          item.order_created_at
-                        )}
-                      </p>
-
                     </div>
-
-                    <div style={styles.badges}>
-
-                      <span
-                        style={{
-                          ...styles.statusBadge,
-                          ...styles.deliveredBadge,
-                        }}
-                      >
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="px-2.5 py-1.5 rounded-full text-[11px] font-bold bg-green-100 text-green-800">
                         ✓ Delivered
                       </span>
-
                       <span
-                        style={{
-                          ...styles.statusBadge,
-                          ...(isPaid
-                            ? styles.paidBadge
-                            : styles.pendingBadge),
-                        }}
+                        className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold ${
+                          isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}
                       >
-                        {isPaid
-                          ? '✓ Settlement Paid'
-                          : '⏳ Settlement Pending'}
+                        {isPaid ? '✓ Settlement Paid' : '⏳ Settlement Pending'}
                       </span>
-
                     </div>
-
                   </div>
 
-                  {/* =================================================
-                      CUSTOMER
-                  ================================================= */}
-
-                  <div style={styles.customerSection}>
-
-                    <div style={styles.customerIcon}>
+                  <div className="p-4 sm:p-[17px_18px] border-b border-gray-100 flex items-start sm:items-center gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">
                       👤
                     </div>
-
-                    <div style={styles.customerInfo}>
-
-                      <h3 style={styles.customerName}>
-                        {item.customer_name}
-                      </h3>
-
-                      {item.customer_phone && (
-                        <p style={styles.customerPhone}>
-                          📱 {item.customer_phone}
-                        </p>
-                      )}
-
-                      {(item.village ||
-                        item.district) && (
-                        <p style={styles.customerLocation}>
-                          📍{' '}
-                          {[
-                            item.village,
-                            item.district,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                      )}
-
-                    </div>
-
-                  </div>
-
-                  {/* =================================================
-                      PRODUCT
-                  ================================================= */}
-
-                  <div style={styles.productSection}>
-
-                    <div style={styles.productInfo}>
-
-                      <h3 style={styles.productName}>
-                        🌾 {item.product_name}
-                      </h3>
-
-                      <p style={styles.quantityText}>
-                        Quantity: {item.quantity}{' '}
-                        {item.unit}
-                      </p>
-
-                    </div>
-
-                    <div style={styles.priceGrid}>
-
-                      <div style={styles.priceItem}>
-
-                        <span style={styles.priceLabel}>
-                          Customer Price
-                        </span>
-
-                        <strong style={styles.priceValue}>
-                          ₹{formatMoney(item.price)}
-                          {' / '}
-                          {item.unit || 'unit'}
-                        </strong>
-
-                      </div>
-
-                      <div style={styles.priceItem}>
-
-                        <span style={styles.priceLabel}>
-                          Farmer Price
-                        </span>
-
-                        <strong style={styles.priceValue}>
-                          ₹{formatMoney(
-                            item.farmer_price
-                          )}
-                          {' / '}
-                          {item.unit || 'unit'}
-                        </strong>
-
-                      </div>
-
-                      <div style={styles.priceItem}>
-
-                        <span style={styles.priceLabel}>
-                          Commission
-                        </span>
-
-                        <strong style={styles.priceValue}>
-                          ₹{formatMoney(
-                            item.commission_per_unit
-                          )}
-                          {' / '}
-                          {item.unit || 'unit'}
-                        </strong>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {/* =================================================
-                      TOTALS
-                  ================================================= */}
-
-                  <div style={styles.totalGrid}>
-
-                    <div style={styles.totalItem}>
-
-                      <span style={styles.totalLabel}>
-                        Customer Total
-                      </span>
-
-                      <strong style={styles.totalValue}>
-                        ₹{formatMoney(
-                          item.calculated_customer_total
-                        )}
-                      </strong>
-
-                    </div>
-
-                    <div style={styles.totalItem}>
-
-                      <span style={styles.totalLabel}>
-                        Farmer Earnings
-                      </span>
-
-                      <strong
-                        style={{
-                          ...styles.totalValue,
-                          color: '#166534',
-                        }}
-                      >
-                        ₹{formatMoney(
-                          item.calculated_farmer_amount
-                        )}
-                      </strong>
-
-                    </div>
-
-                    <div style={styles.totalItem}>
-
-                      <span style={styles.totalLabel}>
-                        Total Commission
-                      </span>
-
-                      <strong style={styles.totalValue}>
-                        ₹{formatMoney(
-                          item.calculated_commission
-                        )}
-                      </strong>
-
-                    </div>
-
-                  </div>
-
-                  {/* =================================================
-                      SETTLEMENT
-                  ================================================= */}
-
-                  <div style={styles.settlementBottom}>
-
                     <div>
+                      <h3 className="m-0 text-sm sm:text-[15px] text-gray-800 font-bold">{item.customer_name}</h3>
+                      {item.customer_phone && (
+                        <p className="m-0 mt-1 text-xs sm:text-[13px] text-gray-500 font-medium">📱 {item.customer_phone}</p>
+                      )}
+                      {(item.village || item.district) && (
+                        <p className="m-0 mt-1 text-xs sm:text-[13px] text-gray-500 font-medium">
+                          📍 {[item.village, item.district].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-                      <p style={styles.settlementLabel}>
+                  <div className="p-4 sm:p-[17px_18px] border-b border-gray-100 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h3 className="m-0 text-sm sm:text-[15px] text-gray-800 font-bold">🌾 {item.product_name}</h3>
+                      <p className="m-0 mt-1 text-xs sm:text-[13px] text-gray-600 font-medium">
+                        Quantity: {item.quantity} {item.unit}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto mt-2 md:mt-0">
+                      <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Customer Price</span>
+                        <strong className="text-xs sm:text-[13px] text-gray-800 font-bold">
+                          ₹{formatMoney(item.price)} / {item.unit || 'unit'}
+                        </strong>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-gray-200 border-l-4 border-l-green-600">
+                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Farmer Price</span>
+                        <strong className="text-xs sm:text-[13px] text-green-800 font-bold">
+                          ₹{formatMoney(item.farmer_price)} / {item.unit || 'unit'}
+                        </strong>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Commission</span>
+                        <strong className="text-xs sm:text-[13px] text-gray-800 font-bold">
+                          ₹{formatMoney(item.commission_per_unit)} / {item.unit || 'unit'}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 sm:p-[18px] border-b border-gray-100 flex justify-end">
+                    <div className="flex gap-4 sm:gap-6 flex-wrap justify-end">
+                      <div className="text-right">
+                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Customer Total</span>
+                        <strong className="text-sm sm:text-[15px] text-gray-800 font-bold">
+                          ₹{formatMoney(item.calculated_customer_total)}
+                        </strong>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Total Commission</span>
+                        <strong className="text-sm sm:text-[15px] text-gray-800 font-bold">
+                          ₹{formatMoney(item.calculated_commission)}
+                        </strong>
+                      </div>
+                      <div className="text-right pl-4 sm:pl-6 border-l border-gray-200">
+                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Farmer Earnings</span>
+                        <strong className="text-sm sm:text-[16px] text-green-800 font-bold">
+                          ₹{formatMoney(item.calculated_farmer_amount)}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 sm:p-[15px_18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isPaid ? 'bg-[#f0f7ef]' : 'bg-[#fffbeb]'}`}>
+                    <div>
+                      <p className={`m-0 text-[11px] font-bold uppercase tracking-wider mb-1 ${isPaid ? 'text-green-700' : 'text-yellow-700'}`}>
                         Farmer Settlement Amount
                       </p>
-
-                      <h2 style={styles.settlementAmount}>
-                        ₹{formatMoney(
-                          item.final_settlement_amount
-                        )}
+                      <h2 className={`m-0 text-xl sm:text-[22px] font-bold ${isPaid ? 'text-green-800' : 'text-yellow-800'}`}>
+                        ₹{formatMoney(item.final_settlement_amount)}
                       </h2>
-
                     </div>
-
-                    <div style={styles.settlementRight}>
-
+                    <div className="text-left sm:text-right flex flex-col items-start sm:items-end gap-1">
                       {isPaid ? (
                         <>
-                          <span
-                            style={styles.completedBadge}
-                          >
+                          <span className="inline-block px-3 py-1.5 rounded-lg bg-green-200 text-green-800 text-[12px] font-bold">
                             ✓ Settlement Completed
                           </span>
-
                           {item.settlement_paid_at && (
-                            <span style={styles.paidAt}>
-                              Paid on:{' '}
-                              {formatDateTime(
-                                item.settlement_paid_at
-                              )}
+                            <span className="text-[11px] text-green-700 font-medium">
+                              Paid on: {formatDateTime(item.settlement_paid_at)}
                             </span>
                           )}
                         </>
                       ) : (
                         <>
-                          <span
-                            style={styles.pendingBadgeLarge}
-                          >
+                          <span className="inline-block px-3 py-1.5 rounded-lg bg-yellow-200 text-yellow-800 text-[12px] font-bold">
                             ⏳ Pending Settlement
                           </span>
-
-                          <span style={styles.paidAt}>
+                          <span className="text-[11px] text-yellow-700 font-medium">
                             Waiting for admin settlement.
                           </span>
                         </>
                       )}
-
                     </div>
-
                   </div>
-
                 </div>
               )
             })}
-
           </div>
         )}
-
       </section>
-
     </main>
   )
-}
-
-// =========================================================
-// STYLES
-// =========================================================
-
-const styles = {
-
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingBox: {
-    textAlign: 'center',
-  },
-
-  loadingIcon: {
-    fontSize: '45px',
-    marginBottom: '10px',
-  },
-
-  loadingText: {
-    fontSize: '16px',
-    color: '#6b7280',
-  },
-
-  accessBox: {
-    textAlign: 'center',
-    maxWidth: '500px',
-    padding: '30px',
-  },
-
-  accessIcon: {
-    fontSize: '50px',
-    marginBottom: '15px',
-  },
-
-  accessTitle: {
-    margin: '0 0 10px',
-    color: '#1f2937',
-  },
-
-  accessText: {
-    margin: '0 0 25px',
-    color: '#6b7280',
-    fontSize: '15px',
-  },
-
-  primaryButton: {
-    padding: '11px 20px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  navbar: {
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '16px 6%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-
-  logoButton: {
-    border: 'none',
-    background: 'transparent',
-    color: '#166534',
-    fontSize: '22px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    padding: 0,
-  },
-
-  navRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-
-  backButton: {
-    padding: '9px 15px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  logoutButton: {
-    padding: '9px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  container: {
-    width: '90%',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '35px 0 50px',
-  },
-
-  headerCard: {
-    background: '#166534',
-    color: '#ffffff',
-    padding: '30px',
-    borderRadius: '16px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '20px',
-    flexWrap: 'wrap',
-  },
-
-  smallTitle: {
-    fontSize: '12px',
-    fontWeight: '700',
-    letterSpacing: '1px',
-    margin: '0 0 8px',
-    opacity: 0.85,
-  },
-
-  title: {
-    fontSize: '30px',
-    margin: '0 0 8px',
-  },
-
-  subtitle: {
-    margin: 0,
-    opacity: 0.9,
-    fontSize: '15px',
-  },
-
-  refreshButton: {
-    padding: '10px 16px',
-    border: '1px solid rgba(255,255,255,0.5)',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#166534',
-    cursor: 'pointer',
-    fontWeight: '700',
-  },
-
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(4, minmax(0, 1fr))',
-    gap: '18px',
-    marginTop: '22px',
-  },
-
-  summaryCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '20px',
-  },
-
-  summaryIcon: {
-    fontSize: '27px',
-  },
-
-  summaryLabel: {
-    margin: '10px 0 5px',
-    fontSize: '12px',
-    color: '#6b7280',
-  },
-
-  summaryNumber: {
-    margin: 0,
-    fontSize: '23px',
-    color: '#1f2937',
-  },
-
-  settlementSummary: {
-    marginTop: '20px',
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '20px',
-    flexWrap: 'wrap',
-  },
-
-  summarySmallLabel: {
-    margin: 0,
-    color: '#6b7280',
-    fontSize: '12px',
-  },
-
-  settlementTitle: {
-    margin: '5px 0 0',
-    fontSize: '20px',
-    color: '#1f2937',
-  },
-
-  settlementStats: {
-    display: 'flex',
-    gap: '30px',
-    flexWrap: 'wrap',
-  },
-
-  settlementStat: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '3px',
-  },
-
-  settlementStatNumber: {
-    fontSize: '19px',
-    fontWeight: '700',
-  },
-
-  settlementStatLabel: {
-    fontSize: '11px',
-    color: '#6b7280',
-  },
-
-  filterCard: {
-    marginTop: '22px',
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '16px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-
-  searchWrapper: {
-    flex: 1,
-    minWidth: '280px',
-    display: 'flex',
-    alignItems: 'center',
-    border: '1px solid #d1d5db',
-    borderRadius: '9px',
-    padding: '0 12px',
-    background: '#ffffff',
-  },
-
-  searchIcon: {
-    fontSize: '17px',
-  },
-
-  searchInput: {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    padding: '11px 10px',
-    fontSize: '14px',
-    background: 'transparent',
-  },
-
-  filterButtons: {
-    display: 'flex',
-    gap: '8px',
-  },
-
- filterButton: {
-  padding: '9px 14px',
-  border: '1px solid #d1d5db',
-  borderRadius: '8px',
-  background: '#ffffff',
-  color: '#374151',
-  cursor: 'pointer',
-  fontWeight: '600',
-},
-
-activeFilter: {
-  background: '#166534',
-  color: '#ffffff',
-  border: '1px solid #166534',
-},
-
-  resultHeader: {
-    marginTop: '30px',
-  },
-
-  sectionTitle: {
-    margin: 0,
-    color: '#1f2937',
-    fontSize: '23px',
-  },
-
-  resultText: {
-    margin: '5px 0 0',
-    color: '#6b7280',
-    fontSize: '13px',
-  },
-
-  emptyBox: {
-    marginTop: '18px',
-    padding: '50px 20px',
-    textAlign: 'center',
-    background: '#ffffff',
-    border: '1px dashed #d1d5db',
-    borderRadius: '14px',
-  },
-
-  emptyIcon: {
-    fontSize: '45px',
-    marginBottom: '8px',
-  },
-
-  emptyTitle: {
-    margin: '5px 0',
-    color: '#374151',
-  },
-
-  emptyText: {
-    margin: 0,
-    color: '#6b7280',
-    fontSize: '13px',
-  },
-
-  orderList: {
-    marginTop: '18px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-
-  orderCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    overflow: 'hidden',
-  },
-
-  orderHeader: {
-    background: '#fafcf9',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '15px 18px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-
-  orderId: {
-    margin: 0,
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-
-  orderDate: {
-    margin: '4px 0 0',
-    color: '#9ca3af',
-    fontSize: '11px',
-  },
-
-  badges: {
-    display: 'flex',
-    gap: '7px',
-    flexWrap: 'wrap',
-  },
-
-  statusBadge: {
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-  },
-
-  deliveredBadge: {
-    background: '#d4edda',
-    color: '#155724',
-  },
-
-  paidBadge: {
-    background: '#d4edda',
-    color: '#155724',
-  },
-
-  pendingBadge: {
-    background: '#fff3cd',
-    color: '#856404',
-  },
-
-  customerSection: {
-    padding: '17px 18px',
-    borderBottom: '1px solid #f0f0f0',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '13px',
-  },
-
-  customerIcon: {
-    width: '42px',
-    height: '42px',
-    borderRadius: '50%',
-    background: '#f0f7ef',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '20px',
-    flexShrink: 0,
-  },
-
-  customerInfo: {
-    minWidth: 0,
-  },
-
-  customerName: {
-    margin: 0,
-    fontSize: '16px',
-    color: '#1f2937',
-  },
-
-  customerPhone: {
-    margin: '4px 0 0',
-    fontSize: '12px',
-    color: '#6b7280',
-  },
-
-  customerLocation: {
-    margin: '3px 0 0',
-    fontSize: '12px',
-    color: '#6b7280',
-  },
-
-  productSection: {
-    padding: '18px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '20px',
-    flexWrap: 'wrap',
-  },
-
-  productInfo: {
-    flex: 1,
-    minWidth: '200px',
-  },
-
-  productName: {
-    margin: 0,
-    fontSize: '17px',
-    color: '#1f2937',
-  },
-
-  quantityText: {
-    margin: '7px 0 0',
-    fontSize: '13px',
-    color: '#6b7280',
-  },
-
-  priceGrid: {
-    display: 'flex',
-    gap: '28px',
-    flexWrap: 'wrap',
-  },
-
-  priceItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px',
-  },
-
-  priceLabel: {
-    fontSize: '10px',
-    color: '#9ca3af',
-  },
-
-  priceValue: {
-    fontSize: '14px',
-    color: '#1f2937',
-  },
-
-  totalGrid: {
-    margin: '0 18px 18px',
-    padding: '15px',
-    background: '#fafafa',
-    border: '1px solid #eeeeee',
-    borderRadius: '10px',
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(3, minmax(0, 1fr))',
-    gap: '15px',
-  },
-
-  totalItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px',
-  },
-
-  totalLabel: {
-    fontSize: '10px',
-    color: '#9ca3af',
-  },
-
-  totalValue: {
-    fontSize: '17px',
-    color: '#1f2937',
-  },
-
-  settlementBottom: {
-    margin: '0 18px 18px',
-    padding: '16px',
-    borderRadius: '10px',
-    background: '#f7faf7',
-    border: '1px solid #dfe8df',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-
-  settlementLabel: {
-    margin: 0,
-    fontSize: '11px',
-    color: '#6b7280',
-  },
-
-  settlementAmount: {
-    margin: '5px 0 0',
-    fontSize: '24px',
-    color: '#166534',
-  },
-
-  settlementRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '6px',
-  },
-
-  completedBadge: {
-    background: '#d4edda',
-    color: '#155724',
-    padding: '7px 11px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-  },
-
-  pendingBadgeLarge: {
-    background: '#fff3cd',
-    color: '#856404',
-    padding: '7px 11px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-  },
-
-  paidAt: {
-    fontSize: '10px',
-    color: '#777777',
-    textAlign: 'right',
-  },
 }

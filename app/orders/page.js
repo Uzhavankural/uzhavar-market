@@ -69,116 +69,97 @@ export default function OrdersPage() {
     return status
   }
 
-  function getStatusColor(status) {
-    if (status === 'pending') return '#856404'
-    if (status === 'confirmed') return '#004085'
-    if (status === 'shipped') return '#155724'
-    if (status === 'delivered') return '#155724'
-    if (status === 'completed') return '#155724'
+  function getStatusColorClass(status) {
+    if (status === 'pending') return 'text-[#856404] bg-[#fff3cd]'
+    if (status === 'confirmed') return 'text-[#004085] bg-[#cce5ff]'
+    if (status === 'shipped') return 'text-[#155724] bg-[#d4edda]'
+    if (status === 'delivered') return 'text-[#155724] bg-[#d4edda]'
+    if (status === 'completed') return 'text-[#155724] bg-[#d4edda]'
 
-    return '#555'
-  }
-
-  function getStatusBackground(status) {
-    if (status === 'pending') return '#fff3cd'
-    if (status === 'confirmed') return '#cce5ff'
-    if (status === 'shipped') return '#d4edda'
-    if (status === 'delivered') return '#d4edda'
-    if (status === 'completed') return '#d4edda'
-
-    return '#eee'
+    return 'text-gray-700 bg-gray-200'
   }
 
   if (loading) {
     return (
-      <main style={styles.page}>
-        <h1>My Orders</h1>
-        <p>Loading your orders...</p>
+      <main className="min-h-screen bg-[#f6f7f9] py-8 px-4 sm:py-10 sm:px-6 font-sans">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">My Orders</h1>
+        <p className="text-gray-600">Loading your orders...</p>
       </main>
     )
   }
 
   return (
-    <main style={styles.page}>
-      <div style={styles.container}>
+    <main className="min-h-screen bg-[#f6f7f9] py-8 px-4 sm:py-10 sm:px-6 font-sans">
+      <div className="max-w-4xl mx-auto w-full">
 
-        <div style={styles.header}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 style={styles.title}>My Orders</h1>
-            <p style={styles.subtitle}>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Orders</h1>
+            <p className="mt-1 text-gray-600 text-sm sm:text-base">
               Track your orders and payment status
             </p>
           </div>
 
           <button
             onClick={loadOrders}
-            style={styles.refreshButton}
+            className="px-4 py-2 border border-gray-300 bg-white rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >
             ↻ Refresh
           </button>
         </div>
 
         {message && (
-          <div style={styles.message}>
+          <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6 border border-red-100">
             {message}
           </div>
         )}
 
         {orders.length === 0 && !message && (
-          <div style={styles.emptyBox}>
-            <div style={styles.emptyIcon}>📦</div>
-            <h2>No orders yet</h2>
-            <p>
+          <div className="bg-white p-10 sm:p-16 text-center rounded-xl shadow-sm border border-gray-100">
+            <div className="text-5xl mb-4">📦</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">No orders yet</h2>
+            <p className="text-gray-500 mb-4">
               Your placed orders will appear here.
             </p>
 
             <a
               href="/"
-              style={styles.shopButton}
+              className="inline-block mt-4 px-5 py-2.5 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 transition-colors"
             >
               Continue Shopping
             </a>
           </div>
         )}
 
-        <div style={styles.ordersList}>
+        <div className="flex flex-col gap-6">
           {orders.map((order) => (
             <div
               key={order.id}
-              style={styles.orderCard}
+              className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100"
             >
 
-              <div style={styles.orderHeader}>
+              <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-gray-100 pb-5">
 
                 <div>
-                  <p style={styles.orderLabel}>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">
                     Order ID
                   </p>
 
-                  <p style={styles.orderId}>
+                  <p className="text-sm font-mono text-gray-800 break-all mb-1">
                     {order.id}
                   </p>
 
-                  <p style={styles.date}>
+                  <p className="text-sm text-gray-500">
                     {new Date(
                       order.created_at
                     ).toLocaleString()}
                   </p>
                 </div>
 
-                <div style={styles.statusArea}>
+                <div className="flex flex-row sm:flex-col gap-2 sm:items-end flex-wrap">
 
                   <span
-                    style={{
-                      ...styles.statusBadge,
-                      color: getStatusColor(
-                        order.order_status
-                      ),
-                      background:
-                        getStatusBackground(
-                          order.order_status
-                        ),
-                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColorClass(order.order_status)}`}
                   >
                     {getStatusText(
                       order.order_status
@@ -186,17 +167,11 @@ export default function OrdersPage() {
                   </span>
 
                   <span
-                    style={{
-                      ...styles.paymentBadge,
-                      background:
-                        order.payment_status === 'paid'
-                          ? '#d4edda'
-                          : '#fff3cd',
-                      color:
-                        order.payment_status === 'paid'
-                          ? '#155724'
-                          : '#856404',
-                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      order.payment_status === 'paid'
+                        ? 'bg-[#d4edda] text-[#155724]'
+                        : 'bg-[#fff3cd] text-[#856404]'
+                    }`}
                   >
                     {order.payment_status === 'paid'
                       ? '✓ Payment Verified'
@@ -207,30 +182,30 @@ export default function OrdersPage() {
 
               </div>
 
-              <div style={styles.section}>
-                <h3 style={styles.sectionTitle}>
+              <div className="mt-6">
+                <h3 className="text-base font-semibold text-gray-800 mb-3">
                   Products
                 </h3>
 
                 {order.order_items?.map((item) => (
                   <div
                     key={item.id}
-                    style={styles.productRow}
+                    className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 py-3 border-b border-gray-50 last:border-0"
                   >
 
-                    <div style={styles.productInfo}>
-                      <strong>
+                    <div className="flex flex-col gap-1">
+                      <strong className="text-gray-800">
                         {item.product_name}
                       </strong>
 
-                      <span style={styles.productMeta}>
+                      <span className="text-sm text-gray-500">
                         ₹{Number(item.price).toFixed(2)}
                         {' × '}
                         {item.quantity} {item.unit}
                       </span>
                     </div>
 
-                    <strong>
+                    <strong className="text-gray-800">
                       ₹{Number(item.item_total).toFixed(2)}
                     </strong>
 
@@ -238,7 +213,7 @@ export default function OrdersPage() {
                 ))}
               </div>
 
-              <div style={styles.totalRow}>
+              <div className="flex justify-between pt-5 mt-3 border-t-2 border-gray-100 text-lg font-bold text-gray-900">
                 <span>Total Amount</span>
 
                 <strong>
@@ -248,104 +223,92 @@ export default function OrdersPage() {
                 </strong>
               </div>
 
-              <div style={styles.section}>
-                <h3 style={styles.sectionTitle}>
+              <div className="mt-6">
+                <h3 className="text-base font-semibold text-gray-800 mb-3">
                   Delivery Details
                 </h3>
 
-                <div style={styles.deliveryBox}>
+                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 flex flex-col gap-2">
                   <p>
-                    <strong>Name:</strong>{' '}
+                    <strong className="text-gray-900">Name:</strong>{' '}
                     {order.customer_name}
                   </p>
 
                   <p>
-                    <strong>Phone:</strong>{' '}
+                    <strong className="text-gray-900">Phone:</strong>{' '}
                     {order.customer_phone}
                   </p>
 
                   <p>
-                    <strong>Address:</strong>{' '}
+                    <strong className="text-gray-900">Address:</strong>{' '}
                     {order.delivery_address}
                   </p>
 
                   <p>
-                    <strong>District:</strong>{' '}
+                    <strong className="text-gray-900">District:</strong>{' '}
                     {order.district}
                   </p>
 
                   <p>
-                    <strong>Village:</strong>{' '}
+                    <strong className="text-gray-900">Village:</strong>{' '}
                     {order.village}
                   </p>
                 </div>
               </div>
 
-              <div style={styles.timeline}>
+              <div className="flex items-center mt-6 overflow-x-auto pb-2 min-w-full text-xs sm:text-sm">
 
                 <div
-                  style={{
-                    ...styles.timelineItem,
-                    opacity:
-                      order.order_status === 'pending'
-                        ? 1
-                        : 0.55,
-                  }}
+                  className={`min-w-[70px] sm:min-w-[90px] text-center flex flex-col items-center gap-1 ${
+                    order.order_status === 'pending'
+                      ? 'opacity-100'
+                      : 'opacity-50'
+                  }`}
                 >
-                  <span>1</span>
-                  <p>Order Placed</p>
+                  <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-semibold mb-1">1</span>
+                  <p className="font-medium">Order Placed</p>
                 </div>
 
-                <div
-                  style={{
-                    ...styles.timelineLine,
-                  }}
-                />
+                <div className="h-0.5 min-w-[20px] sm:min-w-[30px] flex-1 bg-gray-200 mb-5" />
 
                 <div
-                  style={{
-                    ...styles.timelineItem,
-                    opacity:
-                      ['confirmed', 'shipped', 'delivered', 'completed']
-                        .includes(order.order_status)
-                        ? 1
-                        : 0.4,
-                  }}
+                  className={`min-w-[70px] sm:min-w-[90px] text-center flex flex-col items-center gap-1 ${
+                    ['confirmed', 'shipped', 'delivered', 'completed']
+                      .includes(order.order_status)
+                      ? 'opacity-100'
+                      : 'opacity-40'
+                  }`}
                 >
-                  <span>2</span>
-                  <p>Confirmed</p>
+                  <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-semibold mb-1">2</span>
+                  <p className="font-medium">Confirmed</p>
                 </div>
 
-                <div style={styles.timelineLine} />
+                <div className="h-0.5 min-w-[20px] sm:min-w-[30px] flex-1 bg-gray-200 mb-5" />
 
                 <div
-                  style={{
-                    ...styles.timelineItem,
-                    opacity:
-                      ['shipped', 'delivered', 'completed']
-                        .includes(order.order_status)
-                        ? 1
-                        : 0.4,
-                  }}
+                  className={`min-w-[70px] sm:min-w-[90px] text-center flex flex-col items-center gap-1 ${
+                    ['shipped', 'delivered', 'completed']
+                      .includes(order.order_status)
+                      ? 'opacity-100'
+                      : 'opacity-40'
+                  }`}
                 >
-                  <span>3</span>
-                  <p>Shipped</p>
+                  <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-semibold mb-1">3</span>
+                  <p className="font-medium">Shipped</p>
                 </div>
 
-                <div style={styles.timelineLine} />
+                <div className="h-0.5 min-w-[20px] sm:min-w-[30px] flex-1 bg-gray-200 mb-5" />
 
                 <div
-                  style={{
-                    ...styles.timelineItem,
-                    opacity:
-                      ['delivered', 'completed']
-                        .includes(order.order_status)
-                        ? 1
-                        : 0.4,
-                  }}
+                  className={`min-w-[70px] sm:min-w-[90px] text-center flex flex-col items-center gap-1 ${
+                    ['delivered', 'completed']
+                      .includes(order.order_status)
+                      ? 'opacity-100'
+                      : 'opacity-40'
+                  }`}
                 >
-                  <span>4</span>
-                  <p>Delivered</p>
+                  <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-semibold mb-1">4</span>
+                  <p className="font-medium">Delivered</p>
                 </div>
 
               </div>
@@ -357,196 +320,4 @@ export default function OrdersPage() {
       </div>
     </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f6f7f9',
-    padding: '40px 20px',
-  },
-
-  container: {
-    maxWidth: '1000px',
-    margin: '0 auto',
-  },
-
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '20px',
-    marginBottom: '30px',
-  },
-
-  title: {
-    margin: 0,
-    fontSize: '32px',
-  },
-
-  subtitle: {
-    marginTop: '8px',
-    color: '#666',
-  },
-
-  refreshButton: {
-    padding: '10px 18px',
-    border: '1px solid #ddd',
-    background: '#fff',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  message: {
-    background: '#f8d7da',
-    color: '#721c24',
-    padding: '15px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-  },
-
-  emptyBox: {
-    background: '#fff',
-    padding: '60px 20px',
-    textAlign: 'center',
-    borderRadius: '12px',
-  },
-
-  emptyIcon: {
-    fontSize: '50px',
-  },
-
-  shopButton: {
-    display: 'inline-block',
-    marginTop: '15px',
-    padding: '12px 20px',
-    background: '#198754',
-    color: '#fff',
-    textDecoration: 'none',
-    borderRadius: '8px',
-  },
-
-  ordersList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '25px',
-  },
-
-  orderCard: {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '25px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-  },
-
-  orderHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '20px',
-    borderBottom: '1px solid #eee',
-    paddingBottom: '20px',
-  },
-
-  orderLabel: {
-    margin: 0,
-    fontSize: '12px',
-    color: '#777',
-  },
-
-  orderId: {
-    margin: '5px 0',
-    fontSize: '13px',
-    fontFamily: 'monospace',
-    wordBreak: 'break-all',
-  },
-
-  date: {
-    margin: 0,
-    color: '#777',
-    fontSize: '13px',
-  },
-
-  statusArea: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    alignItems: 'flex-end',
-  },
-
-  statusBadge: {
-    padding: '7px 12px',
-    borderRadius: '20px',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-
-  paymentBadge: {
-    padding: '7px 12px',
-    borderRadius: '20px',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-
-  section: {
-    marginTop: '20px',
-  },
-
-  sectionTitle: {
-    fontSize: '16px',
-    marginBottom: '12px',
-  },
-
-  productRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '15px',
-    padding: '12px 0',
-    borderBottom: '1px solid #f1f1f1',
-  },
-
-  productInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px',
-  },
-
-  productMeta: {
-    fontSize: '13px',
-    color: '#666',
-  },
-
-  totalRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    paddingTop: '20px',
-    marginTop: '10px',
-    borderTop: '2px solid #eee',
-    fontSize: '18px',
-  },
-
-  deliveryBox: {
-    background: '#f8f9fa',
-    padding: '15px',
-    borderRadius: '8px',
-  },
-
-  timeline: {
-    display: 'flex',
-    alignItems: 'center',
-    marginTop: '25px',
-    overflowX: 'auto',
-    paddingBottom: '5px',
-  },
-
-  timelineItem: {
-    minWidth: '90px',
-    textAlign: 'center',
-  },
-
-  timelineLine: {
-    height: '2px',
-    minWidth: '30px',
-    background: '#ddd',
-  },
 }

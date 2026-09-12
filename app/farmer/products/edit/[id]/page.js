@@ -18,11 +18,29 @@ export default function EditProduct() {
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
+  const [unitCount, setUnitCount] = useState('1')
   const [unit, setUnit] = useState('')
   const [stock, setStock] = useState('')
+  const [deliveryPrice, setDeliveryPrice] = useState('')
+  
+  const [newVariants, setNewVariants] = useState([])
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const handleNewVariantChange = (index, field, value) => {
+    const updated = [...newVariants]
+    updated[index][field] = value
+    setNewVariants(updated)
+  }
+
+  const addNewVariant = () => {
+    setNewVariants([...newVariants, { price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
+  }
+
+  const removeNewVariant = (index) => {
+    setNewVariants(newVariants.filter((_, i) => i !== index))
+  }
 
   useEffect(() => {
     if (params?.id) {
@@ -49,36 +67,28 @@ export default function EditProduct() {
       .eq('id', user.id)
       .single()
 
-    if (
-      profileError ||
-      !profile ||
-      profile.role !== 'farmer'
-    ) {
+    if (profileError || !profile || profile.role !== 'farmer') {
       router.replace('/')
       return
     }
 
-    const { data: productData, error: productError } =
-      await supabase
-        .from('products')
-        .select('*')
-        .eq('id', params.id)
-        .eq('farmer_id', user.id)
-        .single()
+    const { data: productData, error: productError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', params.id)
+      .eq('farmer_id', user.id)
+      .single()
 
     if (productError || !productData) {
-      setError(
-        'Product not found or you do not have permission to edit it.'
-      )
+      setError('Product not found or you do not have permission to edit it.')
       setLoading(false)
       return
     }
 
-    const { data: categoryData, error: categoryError } =
-      await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
+    const { data: categoryData, error: categoryError } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name')
 
     if (categoryError) {
       console.log('CATEGORY ERROR:', categoryError)
@@ -91,8 +101,10 @@ export default function EditProduct() {
     setCategoryId(productData.category_id || '')
     setDescription(productData.description || '')
     setPrice(productData.price ?? '')
+    setUnitCount(productData.unit_count ?? '1')
     setUnit(productData.unit || '')
     setStock(productData.stock_quantity ?? '')
+    setDeliveryPrice(productData.delivery_price ?? '0')
 
     setLoading(false)
   }
@@ -115,29 +127,17 @@ export default function EditProduct() {
     const trimmedUnit = unit.trim()
     const trimmedDescription = description.trim()
 
-    if (!trimmedName) {
-      setError('Please enter product name.')
+    if (!trimmedName || !categoryId || !price || !trimmedUnit || !unitCount || stock === '') {
+      setError('Please fill all required fields for the main product.')
       return
     }
 
-    if (!categoryId) {
-      setError('Please select a category.')
-      return
-    }
-
-    if (!price || Number(price) < 0) {
-      setError('Please enter a valid price.')
-      return
-    }
-
-    if (!trimmedUnit) {
-      setError('Please enter the product unit.')
-      return
-    }
-
-    if (stock === '' || Number(stock) < 0) {
-      setError('Please enter a valid stock quantity.')
-      return
+    for (let i = 0; i < newVariants.length; i++) {
+      const v = newVariants[i]
+      if (!v.price || !v.unit || !v.unitCount) {
+        setError(`Please fill all fields for New Variant ${i + 1}.`)
+        return
+      }
     }
 
     setSaving(true)
@@ -151,6 +151,7 @@ export default function EditProduct() {
       return
     }
 
+    // Update existing product
     const { error: updateError } = await supabase
       .from('products')
       .update({
@@ -158,7 +159,9 @@ export default function EditProduct() {
         category_id: categoryId,
         description: trimmedDescription,
         price: Number(price),
+        unit_count: Number(unitCount),
         unit: trimmedUnit,
+        delivery_price: Number(deliveryPrice || 0),
         stock_quantity: Number(stock),
       })
       .eq('id', params.id)
@@ -166,16 +169,42 @@ export default function EditProduct() {
 
     if (updateError) {
       console.log('UPDATE ERROR:', updateError)
-
-      setError(
-        'Unable to update product. Please try again.'
-      )
-
+      setError('Unable to update product. Please try again.')
       setSaving(false)
       return
     }
 
-    setSuccess('Product updated successfully!')
+    // Insert new variants if any
+    if (newVariants.length > 0) {
+      const rowsToInsert = newVariants.map((v) => ({
+        farmer_id: user.id,
+        category_id: categoryId,
+        name: `${trimmedName} - ${v.unitCount} ${v.unit}`,
+        description: trimmedDescription,
+        price: Number(v.price),
+        unit_count: Number(v.unitCount),
+        unit: v.unit,
+        delivery_price: Number(v.deliveryPrice || 0),
+        stock_quantity: Number(stock),
+        image_url: product.image_url,
+        status: 'active',
+        approval_status: 'pending',
+        commission_amount: 0,
+      }))
+
+      const { error: insertError } = await supabase
+        .from('products')
+        .insert(rowsToInsert)
+
+      if (insertError) {
+        console.log('INSERT ERROR:', insertError)
+        setError('Main product updated, but failed to create new variants.')
+        setSaving(false)
+        return
+      }
+    }
+
+    setSuccess('Product and variants saved successfully!')
 
     setTimeout(() => {
       router.push('/farmer/products')
@@ -192,26 +221,23 @@ export default function EditProduct() {
 
   function getApprovalStyle(status) {
     if (status === 'active') {
-      return styles.approvedBadge
+      return 'bg-green-100 text-green-800'
     }
-
     if (status === 'pending') {
-      return styles.pendingBadge
+      return 'bg-yellow-100 text-yellow-800'
     }
-
     if (status === 'rejected') {
-      return styles.rejectedBadge
+      return 'bg-red-100 text-red-800'
     }
-
-    return styles.neutralBadge
+    return 'bg-gray-100 text-gray-800'
   }
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loadingCard}>
-          <div style={styles.loadingIcon}>🌾</div>
-          <p>Loading product...</p>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="bg-white p-9 sm:p-12 rounded-2xl border border-gray-200 text-center text-gray-700">
+          <div className="text-[40px] mb-2.5">🌾</div>
+          <p className="m-0 text-base">Loading product...</p>
         </div>
       </main>
     )
@@ -219,19 +245,13 @@ export default function EditProduct() {
 
   if (!product) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loadingCard}>
-          <div style={styles.loadingIcon}>⚠️</div>
-
-          <p style={styles.notFoundText}>
-            {error || 'Product not found.'}
-          </p>
-
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="bg-white p-9 sm:p-12 rounded-2xl border border-gray-200 text-center text-gray-700">
+          <div className="text-[40px] mb-2.5">⚠️</div>
+          <p className="mb-5 text-gray-500">{error || 'Product not found.'}</p>
           <button
-            onClick={() =>
-              router.push('/farmer/products')
-            }
-            style={styles.backToProductsButton}
+            onClick={() => router.push('/farmer/products')}
+            className="px-[18px] py-[10px] border-none rounded-lg bg-green-800 text-white cursor-pointer font-semibold"
           >
             ← My Products
           </button>
@@ -241,648 +261,308 @@ export default function EditProduct() {
   }
 
   return (
-    <main style={styles.page}>
-      {/* NAVBAR */}
-      <nav style={styles.navbar}>
-        <div style={styles.logo}>
-          🌾 Uzhavar Market
-        </div>
-
+    <main className="min-h-screen bg-[#f7f8f5] font-sans pb-10">
+      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center gap-4 flex-wrap">
+        <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 Uzhavar Market</div>
         <button
-          onClick={() =>
-            router.push('/farmer/products')
-          }
-          style={styles.backButton}
+          onClick={() => router.push('/farmer/products')}
+          className="px-4 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
         >
           ← My Products
         </button>
       </nav>
 
-      <section style={styles.container}>
-        {/* HEADER */}
-        <div style={styles.header}>
+      <section className="w-[95%] sm:w-[90%] max-w-[800px] mx-auto pt-[30px] sm:pt-[40px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-[15px] mb-[25px] flex-wrap">
           <div>
-            <h1 style={styles.title}>
-              Edit Product
-            </h1>
-
-            <p style={styles.subtitle}>
-              Update your product details and stock.
-            </p>
+            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] text-gray-800 font-bold">Edit Product</h1>
+            <p className="m-0 text-gray-500 text-sm sm:text-base">Update your product details or add new variants.</p>
           </div>
-
-          <div
-            style={getApprovalStyle(
-              product.approval_status
-            )}
-          >
-            {getApprovalLabel(
-              product.approval_status
-            )}
+          <div className={`px-3 py-1.5 rounded-full font-bold text-xs shadow-sm ${getApprovalStyle(product.approval_status)}`}>
+            {getApprovalLabel(product.approval_status)}
           </div>
         </div>
 
-        {/* ERROR */}
         {error && (
-          <div style={styles.errorBox}>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 sm:px-[16px] sm:py-[13px] rounded-xl mb-[18px] text-sm sm:text-base">
             ⚠️ {error}
           </div>
         )}
 
-        {/* SUCCESS */}
         {success && (
-          <div style={styles.successBox}>
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 sm:px-[16px] sm:py-[13px] rounded-xl mb-[18px] text-sm sm:text-base">
             ✓ {success}
           </div>
         )}
 
-        <form
-          onSubmit={handleUpdate}
-          style={styles.form}
-        >
-          {/* PRODUCT IMAGE */}
+        <form onSubmit={handleUpdate} className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-[30px] shadow-sm">
           {product.image_url ? (
-            <div style={styles.imageSection}>
+            <div className="mb-5 sm:mb-[20px]">
               <img
                 src={product.image_url}
                 alt={product.name}
-                style={styles.productImage}
+                className="w-full h-[200px] sm:h-[260px] object-cover rounded-xl block"
               />
             </div>
           ) : (
-            <div style={styles.noImage}>
+            <div className="h-[150px] sm:h-[180px] flex justify-center items-center bg-green-50 rounded-xl text-[50px] sm:text-[55px] mb-5 sm:mb-[20px]">
               🌱
             </div>
           )}
 
-          {/* PRODUCT NAME */}
-          <label style={styles.label}>
-            Product Name *
-          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 sm:mt-[18px]">
+            <div>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Product Name *</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                placeholder="Enter product name"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Total Stock Quantity *</label>
+              <input
+                type="number"
+                value={stock}
+                onChange={(e) => setStock(e.target.value)}
+                className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                placeholder="50"
+                min="0"
+                step="0.01"
+              />
+            </div>
+          </div>
 
-          <input
-            type="text"
-            value={name}
-            onChange={(e) =>
-              setName(e.target.value)
-            }
-            style={styles.input}
-            placeholder="Enter product name"
-          />
-
-          {/* CATEGORY */}
-          <label style={styles.label}>
-            Category *
-          </label>
-
+          <label className="block mb-2 mt-4 sm:mt-[18px] font-semibold text-gray-700 text-sm sm:text-base">Category *</label>
           <select
             value={categoryId}
-            onChange={(e) =>
-              setCategoryId(e.target.value)
-            }
-            style={styles.input}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
           >
-            <option value="">
-              Select category
-            </option>
-
+            <option value="">Select category</option>
             {categories.map((category) => (
-              <option
-                key={category.id}
-                value={category.id}
-              >
-                {category.icon
-                  ? `${category.icon} `
-                  : ''}
+              <option key={category.id} value={category.id}>
+                {category.icon ? `${category.icon} ` : ''}
                 {category.name}
               </option>
             ))}
           </select>
 
-          {/* DESCRIPTION */}
-          <label style={styles.label}>
-            Description
-          </label>
-
+          <label className="block mb-2 mt-4 sm:mt-[18px] font-semibold text-gray-700 text-sm sm:text-base">Description</label>
           <textarea
             value={description}
-            onChange={(e) =>
-              setDescription(e.target.value)
-            }
-            style={styles.textarea}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full min-h-[100px] sm:min-h-[120px] p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none resize-y focus:border-green-600 focus:ring-1 focus:ring-green-600 font-sans"
             placeholder="Describe your product"
           />
 
-          {/* PRICE + UNIT */}
-          <div style={styles.twoColumn}>
+          <div className="mt-8 mb-2 font-bold text-lg border-b pb-2">Main Variant</div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-[15px] mt-4 sm:mt-[18px]">
             <div>
-              <label style={styles.label}>
-                Farmer Price *
-              </label>
-
-              <div style={styles.inputWithPrefix}>
-                <span style={styles.prefix}>₹</span>
-
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Farmer Price *</label>
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white focus-within:border-green-600 focus-within:ring-1 focus-within:ring-green-600">
+                <span className="pl-3 text-gray-500 font-semibold text-sm sm:text-base">₹</span>
                 <input
                   type="number"
                   value={price}
-                  onChange={(e) =>
-                    setPrice(e.target.value)
-                  }
-                  style={styles.priceInput}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full p-2.5 sm:p-[12px_10px] border-none outline-none text-sm sm:text-[15px]"
                   placeholder="60"
                   min="0"
                   step="0.01"
                 />
               </div>
             </div>
-
             <div>
-              <label style={styles.label}>
-                Unit *
-              </label>
-
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit Count *</label>
               <input
-                type="text"
-                value={unit}
-                onChange={(e) =>
-                  setUnit(e.target.value)
-                }
-                style={styles.input}
-                placeholder="kg"
+                type="number"
+                value={unitCount}
+                onChange={(e) => setUnitCount(e.target.value)}
+                className="w-full p-2.5 sm:p-[13px_10px] border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                placeholder="1"
+                min="0"
+                step="0.01"
               />
             </div>
+            <div>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit *</label>
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full p-2.5 sm:p-[13px_10px] border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+              >
+                <option value="kg">kg</option>
+                <option value="g">gram</option>
+                <option value="litre">litre</option>
+                <option value="ml">ml</option>
+                <option value="piece">piece</option>
+                <option value="packet">packet</option>
+                <option value="box">box</option>
+                <option value="dozen">dozen</option>
+              </select>
+            </div>
+            <div>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Delivery Price</label>
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white focus-within:border-green-600 focus-within:ring-1 focus-within:ring-green-600">
+                <span className="pl-3 text-gray-500 font-semibold text-sm sm:text-base">₹</span>
+                <input
+                  type="number"
+                  value={deliveryPrice}
+                  onChange={(e) => setDeliveryPrice(e.target.value)}
+                  className="w-full p-2.5 sm:p-[12px_10px] border-none outline-none text-sm sm:text-[15px]"
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* STOCK */}
-          <label style={styles.label}>
-            Stock Quantity *
-          </label>
+          <div className="mt-8 mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800 m-0">Add New Variants</h3>
+              <button
+                type="button"
+                onClick={addNewVariant}
+                className="px-3 py-1.5 bg-green-100 text-green-800 rounded-md text-sm font-bold hover:bg-green-200 transition-colors"
+              >
+                + Add Variant
+              </button>
+            </div>
+            
+            {newVariants.map((v, index) => (
+              <div key={index} className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 relative">
+                <button
+                  type="button"
+                  onClick={() => removeNewVariant(index)}
+                  className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xs font-bold"
+                >
+                  ✕ Remove
+                </button>
+                
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                  New Variant {index + 1}
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Price *</label>
+                    <input
+                      type="number"
+                      value={v.price}
+                      onChange={(e) => handleNewVariantChange(index, 'price', e.target.value)}
+                      placeholder="Price"
+                      min="0"
+                      step="0.01"
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Unit Count *</label>
+                    <input
+                      type="number"
+                      value={v.unitCount}
+                      onChange={(e) => handleNewVariantChange(index, 'unitCount', e.target.value)}
+                      placeholder="1"
+                      min="0"
+                      step="0.01"
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Unit *</label>
+                    <select
+                      value={v.unit}
+                      onChange={(e) => handleNewVariantChange(index, 'unit', e.target.value)}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                      required
+                    >
+                      <option value="kg">kg</option>
+                      <option value="g">gram</option>
+                      <option value="litre">litre</option>
+                      <option value="ml">ml</option>
+                      <option value="piece">piece</option>
+                      <option value="packet">packet</option>
+                      <option value="box">box</option>
+                      <option value="dozen">dozen</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">Delivery Price *</label>
+                    <input
+                      type="number"
+                      value={v.deliveryPrice}
+                      onChange={(e) => handleNewVariantChange(index, 'deliveryPrice', e.target.value)}
+                      placeholder="e.g. 20"
+                      min="0"
+                      step="0.01"
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          <input
-            type="number"
-            value={stock}
-            onChange={(e) =>
-              setStock(e.target.value)
-            }
-            style={styles.input}
-            placeholder="50"
-            min="0"
-            step="0.01"
-          />
-
-          {/* PRICE SUMMARY */}
-          <div style={styles.priceSummary}>
-            <h3 style={styles.summaryTitle}>
-              Price Summary
-            </h3>
-
-            <div style={styles.summaryRow}>
+          <div className="mt-6 sm:mt-[25px] bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-[16px]">
+            <h3 className="m-0 mb-3 sm:mb-[15px] text-base font-bold text-gray-800">Main Variant Summary</h3>
+            <div className="flex justify-between gap-4 text-gray-500 text-sm mb-2 sm:mb-[9px]">
               <span>Farmer Price</span>
-
-              <strong>
-                ₹
-                {Number(price || 0).toLocaleString(
-                  'en-IN'
-                )}
-                {unit ? ` / ${unit}` : ''}
-              </strong>
+              <strong className="text-gray-800">₹{Number(price || 0).toLocaleString('en-IN')}{unit ? ` / ${unit}` : ''}</strong>
             </div>
-
-            <div style={styles.summaryRow}>
+            <div className="flex justify-between gap-4 text-gray-500 text-sm mb-2 sm:mb-[9px]">
               <span>Platform Commission</span>
-
-              <strong>
-                ₹
-                {commission.toLocaleString(
-                  'en-IN'
-                )}
-              </strong>
+              <strong className="text-gray-800">₹{commission.toLocaleString('en-IN')}</strong>
             </div>
-
-            <div style={styles.summaryDivider} />
-
-            <div style={styles.customerPriceRow}>
+            <div className="border-t border-gray-200 my-3 sm:my-[12px]" />
+            <div className="flex justify-between gap-4 text-green-800 text-base font-bold">
               <span>Customer Price</span>
-
-              <strong>
-                ₹
-                {customerPrice.toLocaleString(
-                  'en-IN'
-                )}
-                {unit ? ` / ${unit}` : ''}
-              </strong>
+              <strong>₹{customerPrice.toLocaleString('en-IN')}{unit ? ` / ${unit}` : ''}</strong>
             </div>
           </div>
 
-          {/* PRODUCT STATUS */}
-          <div style={styles.statusSection}>
+          <div className="mt-5 sm:mt-[20px] p-4 sm:p-[15px] border border-gray-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-[15px] bg-white">
             <div>
-              <span style={styles.statusLabel}>
-                Product Status
-              </span>
-
-              <strong style={styles.statusValue}>
-                {product.status === 'active'
-                  ? '🟢 Active'
-                  : '🔴 Inactive'}
-              </strong>
+              <span className="block mb-1 sm:mb-[6px] text-xs sm:text-[13px] text-gray-500 font-bold uppercase tracking-wider">Product Status</span>
+              <strong className="text-gray-800 text-sm sm:text-base">{product.status === 'active' ? '🟢 Active' : '🔴 Inactive'}</strong>
             </div>
-
             <div>
-              <span style={styles.statusLabel}>
-                Approval Status
-              </span>
-
-              <strong>
-                {getApprovalLabel(
-                  product.approval_status
-                )}
-              </strong>
+              <span className="block mb-1 sm:mb-[6px] text-xs sm:text-[13px] text-gray-500 font-bold uppercase tracking-wider">Approval Status</span>
+              <strong className="text-gray-800 text-sm sm:text-base">{getApprovalLabel(product.approval_status)}</strong>
             </div>
           </div>
 
-          {/* INFO */}
-          <div style={styles.infoBox}>
-            ℹ️ <span>
-              Commission and approval status are
-              managed by the platform admin.
-            </span>
+          <div className="mt-4 sm:mt-[15px] p-3 sm:p-[12px_15px] bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-xs sm:text-[14px] flex gap-2">
+            <span>ℹ️</span> <span>Commission and approval status are managed by the platform admin.</span>
           </div>
 
-          {/* BUTTONS */}
-          <div style={styles.buttonRow}>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-[15px] mt-[30px] pt-[20px] border-t border-gray-200">
             <button
               type="button"
-              onClick={() =>
-                router.push('/farmer/products')
-              }
-              style={styles.cancelButton}
+              onClick={() => router.push('/farmer/products')}
               disabled={saving}
+              className="flex-1 px-[20px] py-[12px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-bold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
-
             <button
               type="submit"
               disabled={saving}
-              style={{
-                ...styles.saveButton,
-                opacity: saving ? 0.7 : 1,
-              }}
+              className={`flex-1 px-[20px] py-[12px] border-none rounded-lg bg-green-800 text-white cursor-pointer font-bold text-sm sm:text-base transition-colors ${
+                saving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
+              }`}
             >
-              {saving
-                ? 'Saving...'
-                : '✓ Save Changes'}
+              {saving ? 'Saving...' : '✓ Save Changes'}
             </button>
           </div>
         </form>
       </section>
     </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingCard: {
-    background: '#ffffff',
-    padding: '35px 50px',
-    borderRadius: '14px',
-    border: '1px solid #e5e7eb',
-    textAlign: 'center',
-    color: '#374151',
-  },
-
-  loadingIcon: {
-    fontSize: '40px',
-    marginBottom: '10px',
-  },
-
-  notFoundText: {
-    color: '#6b7280',
-    marginBottom: '20px',
-  },
-
-  backToProductsButton: {
-    padding: '10px 18px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  navbar: {
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '18px 6%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-  backButton: {
-    padding: '9px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  container: {
-    width: '90%',
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '40px 0',
-  },
-
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '15px',
-    marginBottom: '25px',
-    flexWrap: 'wrap',
-  },
-
-  title: {
-    margin: '0 0 8px',
-    fontSize: '32px',
-    color: '#1f2937',
-  },
-
-  subtitle: {
-    margin: 0,
-    color: '#6b7280',
-  },
-
-  errorBox: {
-    background: '#fef2f2',
-    border: '1px solid #fecaca',
-    color: '#b91c1c',
-    padding: '13px 16px',
-    borderRadius: '10px',
-    marginBottom: '18px',
-  },
-
-  successBox: {
-    background: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    color: '#166534',
-    padding: '13px 16px',
-    borderRadius: '10px',
-    marginBottom: '18px',
-  },
-
-  form: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '30px',
-  },
-
-  imageSection: {
-    marginBottom: '20px',
-  },
-
-  productImage: {
-    width: '100%',
-    height: '260px',
-    objectFit: 'cover',
-    borderRadius: '10px',
-    display: 'block',
-  },
-
-  noImage: {
-    height: '180px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f0fdf4',
-    borderRadius: '10px',
-    fontSize: '55px',
-    marginBottom: '20px',
-  },
-
-  label: {
-    display: 'block',
-    marginBottom: '8px',
-    marginTop: '18px',
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  input: {
-    width: '100%',
-    padding: '12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '15px',
-    background: '#ffffff',
-    boxSizing: 'border-box',
-    outline: 'none',
-  },
-
-  textarea: {
-    width: '100%',
-    minHeight: '120px',
-    padding: '12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '15px',
-    resize: 'vertical',
-    boxSizing: 'border-box',
-    outline: 'none',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  twoColumn: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '15px',
-  },
-
-  inputWithPrefix: {
-    display: 'flex',
-    alignItems: 'center',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    overflow: 'hidden',
-  },
-
-  prefix: {
-    paddingLeft: '12px',
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-
-  priceInput: {
-    width: '100%',
-    padding: '12px 10px',
-    border: 'none',
-    outline: 'none',
-    fontSize: '15px',
-  },
-
-  priceSummary: {
-    marginTop: '25px',
-    background: '#f9fafb',
-    border: '1px solid #e5e7eb',
-    borderRadius: '10px',
-    padding: '16px',
-  },
-
-  summaryTitle: {
-    margin: '0 0 15px',
-    fontSize: '16px',
-    color: '#1f2937',
-  },
-
-  summaryRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '15px',
-    color: '#6b7280',
-    fontSize: '14px',
-    marginBottom: '9px',
-  },
-
-  summaryDivider: {
-    borderTop: '1px solid #e5e7eb',
-    margin: '12px 0',
-  },
-
-  customerPriceRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '15px',
-    color: '#166534',
-    fontSize: '16px',
-  },
-
-  statusSection: {
-    marginTop: '20px',
-    padding: '15px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '10px',
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '15px',
-  },
-
-  statusLabel: {
-    display: 'block',
-    fontSize: '12px',
-    color: '#6b7280',
-    marginBottom: '5px',
-  },
-
-  statusValue: {
-    color: '#1f2937',
-  },
-
-  infoBox: {
-    marginTop: '18px',
-    background: '#eff6ff',
-    border: '1px solid #bfdbfe',
-    color: '#1e40af',
-    padding: '12px 14px',
-    borderRadius: '9px',
-    fontSize: '13px',
-    lineHeight: '1.5',
-  },
-
-  approvedBadge: {
-    background: '#dcfce7',
-    color: '#166534',
-    padding: '6px 11px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  pendingBadge: {
-    background: '#fef3c7',
-    color: '#92400e',
-    padding: '6px 11px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  rejectedBadge: {
-    background: '#fee2e2',
-    color: '#b91c1c',
-    padding: '6px 11px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  neutralBadge: {
-    background: '#f3f4f6',
-    color: '#4b5563',
-    padding: '6px 11px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  buttonRow: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px',
-    marginTop: '30px',
-    flexWrap: 'wrap',
-  },
-
-  cancelButton: {
-    padding: '12px 20px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  saveButton: {
-    padding: '12px 20px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
 }

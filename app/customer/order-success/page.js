@@ -9,113 +9,41 @@ export default function OrderSuccessPage() {
   const orderId = searchParams.get("order_id");
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f7f7f7",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          padding: "40px",
-          borderRadius: "15px",
-          border: "1px solid #e5e5e5",
-          textAlign: "center",
-          maxWidth: "500px",
-          width: "100%",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "60px",
-            marginBottom: "15px",
-          }}
-        >
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 sm:p-10 rounded-2xl border border-gray-200 text-center max-w-lg w-full shadow-sm">
+        <div className="text-6xl sm:text-7xl mb-4">
           ✅
         </div>
 
-        <h1
-          style={{
-            margin: "0 0 10px",
-          }}
-        >
+        <h1 className="m-0 mb-3 text-2xl sm:text-3xl font-bold">
           Order Placed Successfully!
         </h1>
 
-        <p
-          style={{
-            color: "#666",
-            lineHeight: "1.6",
-          }}
-        >
+        <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
           Your order has been successfully placed.
-           Payment verification and order confirmation are pending.
-              You can track your order status from My Orders.
+          Payment verification and order confirmation are pending.
+          You can track your order status from My Orders.
         </p>
 
         {orderId && (
-          <div
-            style={{
-              background: "#f5f5f5",
-              padding: "12px",
-              borderRadius: "8px",
-              margin: "20px 0",
-              wordBreak: "break-all",
-            }}
-          >
-            <strong>Order ID</strong>
-
-            <div
-              style={{
-                marginTop: "5px",
-                fontSize: "13px",
-                color: "#555",
-              }}
-            >
+          <div className="bg-gray-50 p-4 rounded-xl my-6 break-all border border-gray-100">
+            <strong className="text-gray-800 block mb-1">Order ID</strong>
+            <div className="text-sm text-gray-500">
               {orderId}
             </div>
           </div>
         )}
 
         <button
-          onClick={() =>
-            router.push("/customer/products")
-          }
-          style={{
-            width: "100%",
-            padding: "13px",
-            border: "none",
-            borderRadius: "8px",
-            background: "#1f7a3f",
-            color: "white",
-            fontWeight: "700",
-            fontSize: "16px",
-            cursor: "pointer",
-            marginBottom: "10px",
-          }}
+          onClick={() => router.push("/customer/products")}
+          className="w-full py-3 px-4 border-none rounded-xl bg-green-700 text-white font-bold text-base cursor-pointer mb-3 hover:bg-green-800 transition-colors"
         >
           Continue Shopping
         </button>
 
         <button
-          onClick={() =>
-            router.push("/customer")
-          }
-          style={{
-            width: "100%",
-            padding: "13px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            background: "white",
-            fontWeight: "600",
-            fontSize: "15px",
-            cursor: "pointer",
-          }}
+          onClick={() => router.push("/customer")}
+          className="w-full py-3 px-4 border border-gray-300 rounded-xl bg-white font-semibold text-gray-700 text-base cursor-pointer hover:bg-gray-50 transition-colors"
         >
           Go to Dashboard
         </button>

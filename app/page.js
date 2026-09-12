@@ -91,40 +91,26 @@ export default function Home() {
   useEffect(() => {
     async function getData() {
       // Categories
-      const {
-        data: categoryData,
-        error: categoryError,
-      } = await supabase
+      const { data: categoryData, error: categoryError } = await supabase
         .from("categories")
         .select("*")
         .order("name");
 
       if (categoryError) {
-        console.log(
-          "Category error:",
-          categoryError.message
-        );
+        console.log("Category error:", categoryError.message);
       } else {
         setCategories(categoryData || []);
       }
 
       // Products
-      const {
-        data: productData,
-        error: productError,
-      } = await supabase
+      const { data: productData, error: productError } = await supabase
         .from("products")
         .select("*")
         .eq("status", "active")
-        .order("created_at", {
-          ascending: false,
-        });
+        .order("created_at", { ascending: false });
 
       if (productError) {
-        console.log(
-          "Product error:",
-          productError.message
-        );
+        console.log("Product error:", productError.message);
       } else {
         setProducts(productData || []);
       }
@@ -137,18 +123,13 @@ export default function Home() {
   // CATEGORY FILTER
   // =========================
   const selectedCategoryId = categories.find(
-    (category) =>
-      category.name === selectedCategory
+    (category) => category.name === selectedCategory
   )?.id;
 
   const filteredProducts =
     selectedCategory === "All"
       ? products
-      : products.filter(
-          (product) =>
-            product.category_id ===
-            selectedCategoryId
-        );
+      : products.filter((product) => product.category_id === selectedCategoryId);
 
   // =========================
   // LOGOUT
@@ -167,73 +148,44 @@ export default function Home() {
   // ADD TO CART
   // =========================
   function handleAddToCart(product) {
-    // Login check
     if (!user) {
       alert("Please login to add products to cart.");
       router.push("/login");
       return;
     }
 
-    const stock = Number(
-      product.stock_quantity || 0
-    );
+    const stock = Number(product.stock_quantity || 0);
 
     if (stock <= 0) {
       alert("This product is currently out of stock.");
       return;
     }
 
-    // User-specific cart
     const cartKey = `uzhavar_cart_${user.id}`;
-
     let existingCart = [];
 
     try {
-      const storedCart =
-        localStorage.getItem(cartKey);
-
-      existingCart = storedCart
-        ? JSON.parse(storedCart)
-        : [];
-
+      const storedCart = localStorage.getItem(cartKey);
+      existingCart = storedCart ? JSON.parse(storedCart) : [];
       if (!Array.isArray(existingCart)) {
         existingCart = [];
       }
     } catch (error) {
-      console.log(
-        "Cart read error:",
-        error
-      );
-
+      console.log("Cart read error:", error);
       existingCart = [];
     }
 
-    const existingItem =
-      existingCart.find(
-        (item) => item.id === product.id
-      );
-
+    const existingItem = existingCart.find((item) => item.id === product.id);
     let updatedCart;
 
     if (existingItem) {
-      const newQuantity =
-        Number(existingItem.quantity || 0) + 1;
-
+      const newQuantity = Number(existingItem.quantity || 0) + 1;
       if (newQuantity > stock) {
-        alert(
-          `Only ${stock} ${product.unit || "unit"} available in stock.`
-        );
+        alert(`Only ${stock} ${product.unit || "unit"} available in stock.`);
         return;
       }
-
-      updatedCart = existingCart.map(
-        (item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                quantity: newQuantity,
-              }
-            : item
+      updatedCart = existingCart.map((item) =>
+        item.id === product.id ? { ...item, quantity: newQuantity } : item
       );
     } else {
       updatedCart = [
@@ -241,727 +193,315 @@ export default function Home() {
         {
           id: product.id,
           name: product.name,
-          description:
-            product.description || "",
+          description: product.description || "",
           price: Number(product.price || 0),
-          commission_amount: Number(
-            product.commission_amount || 0
-          ),
+          commission_amount: Number(product.commission_amount || 0),
           unit: product.unit || "unit",
-          image_url:
-            product.image_url || "",
+          image_url: product.image_url || "",
           stock_quantity: stock,
-          farmer_id:
-            product.farmer_id,
+          farmer_id: product.farmer_id,
           quantity: 1,
         },
       ];
     }
 
-    localStorage.setItem(
-      cartKey,
-      JSON.stringify(updatedCart)
-    );
-
+    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
     alert("Product added to cart! 🛒");
   }
 
-  return (
-    <main style={styles.page}>
+  function handleBuyNow(product) {
+    if (!user) {
+      alert("Please login to buy products.");
+      router.push("/login");
+      return;
+    }
 
+    const stock = Number(product.stock_quantity || 0);
+
+    if (stock <= 0) {
+      alert("This product is currently out of stock.");
+      return;
+    }
+
+    const cartKey = `uzhavar_cart_${user.id}`;
+    let existingCart = [];
+
+    try {
+      const storedCart = localStorage.getItem(cartKey);
+      existingCart = storedCart ? JSON.parse(storedCart) : [];
+      if (!Array.isArray(existingCart)) {
+        existingCart = [];
+      }
+    } catch (error) {
+      existingCart = [];
+    }
+
+    const existingItem = existingCart.find((item) => item.id === product.id);
+    let updatedCart;
+
+    if (existingItem) {
+      const newQuantity = Number(existingItem.quantity || 0) + 1;
+      if (newQuantity <= stock) {
+        updatedCart = existingCart.map((item) =>
+          item.id === product.id ? { ...item, quantity: newQuantity } : item
+        );
+      } else {
+        updatedCart = existingCart;
+      }
+    } else {
+      updatedCart = [
+        ...existingCart,
+        {
+          id: product.id,
+          name: product.name,
+          description: product.description || "",
+          price: Number(product.price || 0),
+          commission_amount: Number(product.commission_amount || 0),
+          unit: product.unit || "unit",
+          image_url: product.image_url || "",
+          stock_quantity: stock,
+          farmer_id: product.farmer_id,
+          quantity: 1,
+        },
+      ];
+    }
+
+    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
+    router.push("/customer/checkout");
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f7f8f5] text-gray-800 font-sans flex flex-col">
       {/* =========================
           NAVBAR
       ========================= */}
-      <nav
-        className="navbar"
-        style={styles.navbar}
-      >
+      <nav className="min-h-[70px] bg-white flex flex-col sm:flex-row items-center justify-between px-4 sm:px-[7%] py-4 sm:py-0 border-b border-gray-200 sticky top-0 z-50 shadow-sm gap-4 sm:gap-0">
         <div
-          style={styles.logo}
+          className="text-xl sm:text-2xl font-bold cursor-pointer whitespace-nowrap"
           onClick={() => router.push("/")}
         >
           🌾 Uzhavar Market
         </div>
 
-        <div
-          className="nav-links"
-          style={styles.navLinks}
-        >
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <a href="/" className="hover:text-green-700 transition-colors">Home</a>
+          <a href="#categories" className="hover:text-green-700 transition-colors">Categories</a>
+          <a href="#products" className="hover:text-green-700 transition-colors">Products</a>
 
-          <a href="/">
-            Home
-          </a>
-
-          <a href="#categories">
-            Categories
-          </a>
-
-          <a href="#products">
-            Products
-          </a>
-
-          {/* =========================
-              CUSTOMER NAVIGATION
-          ========================= */}
-          {!authLoading &&
-            user &&
-            role === "customer" && (
-              <>
-                <button
-                  onClick={() =>
-                    router.push(
-                      "/customer/cart"
-                    )
-                  }
-                  style={styles.navButton}
-                >
-                  🛒 My Cart
-                </button>
-
-                <button
-                  onClick={() =>
-                    router.push(
-                      "/customer/orders"
-                    )
-                  }
-                  style={styles.navButton}
-                >
-                  📦 My Orders
-                </button>
-              </>
-            )}
-
-          {/* =========================
-              FARMER NAVIGATION
-          ========================= */}
-          {!authLoading &&
-            user &&
-            role === "farmer" && (
+          {!authLoading && user && role === "customer" && (
+            <>
               <button
-                onClick={() =>
-                  router.push("/farmer")
-                }
-                style={styles.navButton}
+                onClick={() => router.push("/customer/cart")}
+                className="hover:text-green-700 transition-colors"
               >
-                🌾 Farmer Dashboard
+                🛒 My Cart
               </button>
-            )}
-
-          {/* =========================
-              ADMIN NAVIGATION
-          ========================= */}
-          {!authLoading &&
-            user &&
-            role === "admin" && (
               <button
-                onClick={() =>
-                  router.push("/admin")
-                }
-                style={styles.navButton}
+                onClick={() => router.push("/customer/orders")}
+                className="hover:text-green-700 transition-colors"
               >
-                ⚙️ Admin Dashboard
+                📦 My Orders
               </button>
-            )}
+            </>
+          )}
 
-          {/* =========================
-              LOGIN
-          ========================= */}
+          {!authLoading && user && role === "farmer" && (
+            <button
+              onClick={() => router.push("/farmer")}
+              className="hover:text-green-700 transition-colors"
+            >
+              🌾 Farmer Dashboard
+            </button>
+          )}
+
+          {!authLoading && user && role === "admin" && (
+            <button
+              onClick={() => router.push("/admin")}
+              className="hover:text-green-700 transition-colors"
+            >
+              ⚙️ Admin Dashboard
+            </button>
+          )}
+
           {!authLoading && !user && (
             <button
-              onClick={() =>
-                router.push("/login")
-              }
-              style={styles.loginButton}
+              onClick={() => router.push("/login")}
+              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors"
             >
               Login
             </button>
           )}
 
-          {/* =========================
-              LOGOUT
-          ========================= */}
           {!authLoading && user && (
             <button
               onClick={handleLogout}
-              style={styles.loginButton}
+              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors"
             >
               Logout
             </button>
           )}
-
         </div>
       </nav>
 
       {/* =========================
           HERO
       ========================= */}
-      <section
-        className="hero"
-        style={styles.hero}
-      >
-        <div>
-
-          <p style={styles.smallTitle}>
+      <section className="py-16 sm:py-24 px-4 sm:px-[7%] bg-[#e9f5e1] flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
+        <div className="max-w-2xl">
+          <p className="text-xs sm:text-sm font-bold tracking-[2px] mb-4 text-green-900">
             FARMERS DIRECTLY TO YOU
           </p>
-
-          <h1 style={styles.heroTitle}>
-            Fresh products.
-            <br />
-            Direct from farmers.
+          <h1 className="text-4xl sm:text-5xl md:text-6xl leading-tight mb-5 font-bold text-gray-900">
+            Fresh products.<br />Direct from farmers.
           </h1>
-
-          <p style={styles.heroText}>
-            Buy farm products directly from
-            farmers and support local agriculture.
+          <p className="text-base sm:text-lg leading-relaxed mb-6 text-gray-700">
+            Buy farm products directly from farmers and support local agriculture.
           </p>
-
           <button
-            style={styles.shopButton}
+            className="px-6 py-3 rounded-lg bg-green-800 text-white text-base font-medium hover:bg-green-700 transition-colors"
             onClick={() => {
-              document
-                .getElementById("products")
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                });
+              document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
             }}
           >
             Explore Products
           </button>
-
         </div>
       </section>
 
       {/* =========================
           CATEGORIES
       ========================= */}
-      <section
-        id="categories"
-        className="section"
-        style={styles.section}
-      >
-
-        <h2 style={styles.sectionTitle}>
-          Shop by Category
-        </h2>
-
-        <div
-          className="category-grid"
-          style={styles.categoryGrid}
-        >
-
-          {/* All Products */}
+      <section id="categories" className="py-12 sm:py-16 px-4 sm:px-[7%]">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center sm:text-left">Shop by Category</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <button
-            style={{
-              ...styles.categoryCard,
-
-              ...(selectedCategory === "All"
-                ? styles.selectedCategory
-                : {}),
-            }}
-            onClick={() => {
-              setSelectedCategory("All");
-            }}
+            className={`p-4 sm:p-6 bg-white border rounded-xl flex flex-col items-center justify-center transition-all ${
+              selectedCategory === "All"
+                ? "bg-green-100 border-2 border-green-800 font-bold"
+                : "border-gray-200 hover:border-green-600 hover:shadow-sm"
+            }`}
+            onClick={() => setSelectedCategory("All")}
           >
-
-            <div style={styles.categoryIcon}>
-              🛒
-            </div>
-
-            <span>
-              All Products
-            </span>
-
+            <div className="text-3xl mb-2">🛒</div>
+            <span className="text-sm sm:text-base text-center">All Products</span>
           </button>
 
-          {/* Database Categories */}
-          {categories.map(
-            (category) => (
-              <button
-                key={category.id}
-                style={{
-                  ...styles.categoryCard,
-
-                  ...(selectedCategory ===
-                  category.name
-                    ? styles.selectedCategory
-                    : {}),
-                }}
-                onClick={() => {
-                  setSelectedCategory(
-                    category.name
-                  );
-
-                  setTimeout(() => {
-                    document
-                      .getElementById(
-                        "products"
-                      )
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      });
-                  }, 50);
-                }}
-              >
-
-                <div
-                  style={
-                    styles.categoryIcon
-                  }
-                >
-                  {category.icon ||
-                    "🌱"}
-                </div>
-
-                <span>
-                  {category.name}
-                </span>
-
-              </button>
-            )
-          )}
-
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              className={`p-4 sm:p-6 bg-white border rounded-xl flex flex-col items-center justify-center transition-all ${
+                selectedCategory === category.name
+                  ? "bg-green-100 border-2 border-green-800 font-bold"
+                  : "border-gray-200 hover:border-green-600 hover:shadow-sm"
+              }`}
+              onClick={() => {
+                setSelectedCategory(category.name);
+                setTimeout(() => {
+                  document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+                }, 50);
+              }}
+            >
+              <div className="text-3xl mb-2">{category.icon || "🌱"}</div>
+              <span className="text-sm sm:text-base text-center">{category.name}</span>
+            </button>
+          ))}
         </div>
       </section>
 
       {/* =========================
           PRODUCTS
       ========================= */}
-      <section
-        id="products"
-        className="section"
-        style={styles.section}
-      >
-
-        <div
-          style={styles.productHeader}
-        >
-
-          <h2
-            style={styles.sectionTitle}
-          >
-            {selectedCategory === "All"
-              ? "Featured Products"
-              : selectedCategory}
+      <section id="products" className="py-12 sm:py-16 px-4 sm:px-[7%] flex-1">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-0">
+            {selectedCategory === "All" ? "Featured Products" : selectedCategory}
           </h2>
-
-          <span
-            style={styles.productCount}
-          >
+          <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
             {filteredProducts.length} products
           </span>
-
         </div>
 
-        {filteredProducts.length ===
-        0 ? (
-
-          <p
-            style={styles.noProducts}
-          >
-            No products available in this
-            category.
-          </p>
-
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+            <p className="text-gray-500 text-lg">No products available in this category.</p>
+          </div>
         ) : (
-
-          <div
-            className="product-grid"
-            style={styles.productGrid}
-          >
-
-            {filteredProducts.map(
-              (product) => (
-
-                <div
-                  key={product.id}
-                  style={{
-                    ...styles.productCard,
-                    cursor: "pointer",
-                  }}
-                  onClick={() =>
-                    router.push(
-                      `/products/${product.id}`
-                    )
-                  }
-                >
-
-                  {/* Product Image */}
-                  <div
-                    style={
-                      styles.productImage
-                    }
-                  >
-
-                    {product.image_url ? (
-
-                      <img
-                        src={
-                          product.image_url
-                        }
-                        alt={
-                          product.name
-                        }
-                        style={
-                          styles.productImageStyle
-                        }
-                      />
-
-                    ) : (
-
-                      <span>
-                        🌾
-                      </span>
-
-                    )}
-
-                  </div>
-
-                  {/* Product Details */}
-                  <div
-                    style={
-                      styles.productContent
-                    }
-                  >
-
-                    <p
-                      style={
-                        styles.productCategory
-                      }
-                    >
-                      Farm Product
-                    </p>
-
-                    <h3
-                      style={
-                        styles.productName
-                      }
-                    >
-                      {product.name}
-                    </h3>
-
-                    <p
-                      style={
-                        styles.productDescription
-                      }
-                    >
-                      {product.description}
-                    </p>
-
-                    <div
-                      style={
-                        styles.priceRow
-                      }
-                    >
-
-                      <strong>
-                        ₹
-                        {(
-                          Number(
-                            product.price ||
-                              0
-                          ) +
-                          Number(
-                            product.commission_amount ||
-                              0
-                          )
-                        ).toFixed(2)}
-                      </strong>
-
-                      <span>
-                        /{" "}
-                        {product.unit}
-                      </span>
-
-                    </div>
-
-                    <p
-                      style={
-                        styles.stock
-                      }
-                    >
-                      Stock:{" "}
-                      {
-                        product.stock_quantity
-                      }
-                    </p>
-
-                    {/* Add to Cart */}
-                    <button
-                      style={
-                        styles.cartButton
-                      }
-                      onClick={(e) => {
-                        e.stopPropagation();
-
-                        handleAddToCart(
-                          product
-                        );
-                      }}
-                    >
-                      Add to Cart
-                    </button>
-
-                  </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white rounded-xl overflow-hidden border border-gray-200 flex flex-col hover:shadow-lg transition-shadow cursor-pointer group"
+                onClick={() => router.push(`/products/${product.id}`)}
+              >
+                <div className="h-32 sm:h-48 bg-[#e8f1df] flex items-center justify-center text-4xl sm:text-6xl relative overflow-hidden">
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <span className="group-hover:scale-110 transition-transform duration-300">🌾</span>
+                  )}
                 </div>
 
-              )
-            )}
+                <div className="p-3 sm:p-5 flex-1 flex flex-col">
+                  <p className="text-[10px] sm:text-xs uppercase text-green-700 font-semibold mb-1">Farm Product</p>
+                  <h3 className="text-sm sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
+                  <p className="hidden sm:block text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-4">
+                    {product.description}
+                  </p>
 
+                  <div className="mt-auto">
+                    <div className="flex items-end gap-1 mb-1 sm:mb-2">
+                      <strong className="text-base sm:text-2xl font-bold text-gray-900">
+                        ₹
+                        {(
+                          Number(product.price || 0) + Number(product.commission_amount || 0)
+                        ).toFixed(2)}
+                      </strong>
+                      <span className="text-[10px] sm:text-sm text-gray-500 pb-0.5">/ {product.unit}</span>
+                    </div>
+                    <p className="text-[10px] sm:text-sm text-gray-500 mb-2 sm:mb-4">
+                      <span className={product.stock_quantity > 0 ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
+                        {product.stock_quantity > 0 ? `In Stock: ${product.stock_quantity}` : "Out of Stock"}
+                      </span>
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-100 text-green-800 text-xs sm:text-sm font-bold hover:bg-green-200 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(product);
+                        }}
+                      >
+                        Cart
+                      </button>
+                      <button
+                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-800 text-white text-xs sm:text-sm font-bold hover:bg-green-700 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-900 shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBuyNow(product);
+                        }}
+                      >
+                        Buy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-
         )}
-
       </section>
 
       {/* =========================
           FOOTER
       ========================= */}
-      <footer
-        style={styles.footer}
-      >
-
-        <h3>
-          🌾 Uzhavar Market
-        </h3>
-
-        <p>
-          Connecting farmers directly
-          with customers.
-        </p>
-
+      <footer className="py-10 px-4 sm:px-[7%] bg-[#17251a] text-white text-center mt-auto">
+        <h3 className="text-xl font-bold mb-2">🌾 Uzhavar Market</h3>
+        <p className="text-gray-400 text-sm">Connecting farmers directly with customers.</p>
       </footer>
-
     </main>
   );
 }
-
-
-/* =========================
-   STYLES
-========================= */
-
-const styles = {
-
-  page: {
-    minHeight: "100vh",
-    background: "#f7f8f5",
-    color: "#1f2937",
-    fontFamily: "Arial, sans-serif",
-  },
-
-  navbar: {
-    minHeight: "70px",
-    background: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 7%",
-    borderBottom:
-      "1px solid #e5e7eb",
-    position: "sticky",
-    top: 0,
-    zIndex: 10,
-  },
-
-  logo: {
-    fontSize: "22px",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-
-  navLinks: {
-    display: "flex",
-    alignItems: "center",
-    gap: "25px",
-  },
-
-  navButton: {
-    padding: "8px 12px",
-    border: "none",
-    background: "transparent",
-    color: "#1f2937",
-    cursor: "pointer",
-    fontSize: "15px",
-  },
-
-  loginButton: {
-    padding: "10px 18px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#166534",
-    color: "#ffffff",
-    cursor: "pointer",
-  },
-
-  hero: {
-    padding: "90px 7%",
-    background: "#e9f5e1",
-  },
-
-  smallTitle: {
-    fontSize: "13px",
-    fontWeight: "700",
-    letterSpacing: "2px",
-    marginBottom: "15px",
-  },
-
-  heroTitle: {
-    fontSize: "52px",
-    lineHeight: "1.1",
-    margin: "0 0 20px",
-    maxWidth: "650px",
-  },
-
-  heroText: {
-    fontSize: "18px",
-    lineHeight: "1.6",
-    maxWidth: "550px",
-  },
-
-  shopButton: {
-    marginTop: "20px",
-    padding: "14px 25px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#166534",
-    color: "#ffffff",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-
-  section: {
-    padding: "60px 7%",
-  },
-
-  sectionTitle: {
-    fontSize: "30px",
-    marginBottom: "30px",
-  },
-
-  categoryGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(150px, 1fr))",
-    gap: "15px",
-  },
-
-  categoryCard: {
-    padding: "25px 15px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontSize: "15px",
-    transition: "0.2s",
-  },
-
-  selectedCategory: {
-    background: "#dcfce7",
-    border:
-      "2px solid #166534",
-    fontWeight: "700",
-  },
-
-  categoryIcon: {
-    fontSize: "30px",
-    marginBottom: "10px",
-  },
-
-  productHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  productCount: {
-    fontSize: "14px",
-    color: "#6b7280",
-  },
-
-  productGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(4, minmax(0, 1fr))",
-    gap: "25px",
-  },
-
-  productCard: {
-    background: "#ffffff",
-    borderRadius: "14px",
-    overflow: "hidden",
-    border:
-      "1px solid #e5e7eb",
-  },
-
-  productImage: {
-    height: "180px",
-    background: "#e8f1df",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "60px",
-  },
-
-  productImageStyle: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-
-  productContent: {
-    padding: "20px",
-  },
-
-  productCategory: {
-    fontSize: "12px",
-    margin: "0 0 8px",
-    textTransform: "uppercase",
-  },
-
-  productName: {
-    fontSize: "20px",
-    margin: "0 0 8px",
-  },
-
-  productDescription: {
-    fontSize: "14px",
-    lineHeight: "1.5",
-    minHeight: "42px",
-  },
-
-  priceRow: {
-    marginTop: "15px",
-    fontSize: "18px",
-    display: "flex",
-    gap: "5px",
-    alignItems: "baseline",
-  },
-
-  stock: {
-    fontSize: "13px",
-  },
-
-  cartButton: {
-    width: "100%",
-    padding: "12px",
-    marginTop: "10px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#166534",
-    color: "#ffffff",
-    cursor: "pointer",
-  },
-
-  noProducts: {
-    fontSize: "16px",
-    color: "#6b7280",
-  },
-
-  footer: {
-    padding: "40px 7%",
-    background: "#17251a",
-    color: "#ffffff",
-    textAlign: "center",
-  },
-};

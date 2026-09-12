@@ -66,21 +66,10 @@ export default function MyProducts() {
   }
 
   const stats = useMemo(() => {
-    const active = products.filter(
-      (product) => product.status === 'active'
-    ).length
-
-    const inactive = products.filter(
-      (product) => product.status !== 'active'
-    ).length
-
-    const pending = products.filter(
-      (product) => product.approval_status === 'pending'
-    ).length
-
-    const rejected = products.filter(
-      (product) => product.approval_status === 'rejected'
-    ).length
+    const active = products.filter((product) => product.status === 'active').length
+    const inactive = products.filter((product) => product.status !== 'active').length
+    const pending = products.filter((product) => product.approval_status === 'pending').length
+    const rejected = products.filter((product) => product.approval_status === 'rejected').length
 
     return {
       total: products.length,
@@ -130,10 +119,10 @@ export default function MyProducts() {
   }
 
   function getApprovalStyle(status) {
-    if (status === 'active') return styles.approvedBadge
-    if (status === 'rejected') return styles.rejectedBadge
-    if (status === 'pending') return styles.pendingBadge
-    return styles.neutralBadge
+    if (status === 'active') return 'bg-green-100 text-green-800'
+    if (status === 'rejected') return 'bg-red-100 text-red-800'
+    if (status === 'pending') return 'bg-yellow-100 text-yellow-800'
+    return 'bg-gray-100 text-gray-800'
   }
 
   function getStatusLabel(status) {
@@ -149,166 +138,150 @@ export default function MyProducts() {
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loadingCard}>
-          <div style={styles.loadingIcon}>🌾</div>
-          <p>Loading your products...</p>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="bg-white p-9 sm:p-12 rounded-2xl border border-gray-200 text-center text-gray-700">
+          <div className="text-[40px] mb-2.5">🌾</div>
+          <p className="m-0 text-base">Loading your products...</p>
         </div>
       </main>
     )
   }
 
   return (
-    <main style={styles.page}>
-      <nav style={styles.navbar}>
-        <div style={styles.logo}>🌾 Uzhavar Market</div>
-
+    <main className="min-h-screen bg-[#f7f8f5] font-sans pb-10">
+      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center gap-4 flex-wrap">
+        <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 Uzhavar Market</div>
         <button
           onClick={() => router.push('/farmer')}
-          style={styles.backButton}
+          className="px-4 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
         >
           ← Dashboard
         </button>
       </nav>
 
-      <section style={styles.container}>
-        {/* HEADER */}
-        <div style={styles.header}>
+      <section className="w-[95%] sm:w-[90%] max-w-[1250px] mx-auto pt-[30px] sm:pt-[40px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-[30px] gap-4 sm:gap-5 flex-wrap">
           <div>
-            <h1 style={styles.title}>My Products</h1>
-
-            <p style={styles.subtitle}>
-              Manage the products you have added.
-            </p>
+            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] text-gray-800 font-bold">My Products</h1>
+            <p className="m-0 text-gray-500 text-sm sm:text-base">Manage the products you have added.</p>
           </div>
-
-          <div style={styles.headerActions}>
+          <div className="flex gap-2.5 flex-wrap w-full sm:w-auto">
             <button
               onClick={() => loadProducts(true)}
               disabled={refreshing}
-              style={styles.refreshButton}
+              className={`flex-1 sm:flex-none px-4 py-2.5 sm:px-[18px] sm:py-[11px] border border-gray-300 rounded-lg bg-white text-gray-700 font-semibold text-sm sm:text-base cursor-pointer hover:bg-gray-50 transition-colors ${
+                refreshing ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
               {refreshing ? 'Refreshing...' : '↻ Refresh'}
             </button>
-
             <button
               onClick={() => router.push('/farmer/add-product')}
-              style={styles.addButton}
+              className="flex-1 sm:flex-none px-4 py-2.5 sm:px-[18px] sm:py-[11px] border-none rounded-lg bg-green-800 text-white font-semibold text-sm sm:text-base cursor-pointer hover:bg-green-700 transition-colors"
             >
               + Add Product
             </button>
           </div>
         </div>
 
-        {/* ERROR */}
         {error && (
-          <div style={styles.errorBox}>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 sm:px-[16px] sm:py-[13px] rounded-xl mb-5 text-sm sm:text-base">
             ⚠️ {error}
           </div>
         )}
 
-        {/* SUMMARY */}
-        <div style={styles.summaryGrid}>
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>📦</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-[15px] mb-6 sm:mb-[25px]">
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
+            <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">📦</div>
             <div>
-              <div style={styles.summaryNumber}>{stats.total}</div>
-              <div style={styles.summaryLabel}>Total Products</div>
+              <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.total}</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Total Products</div>
             </div>
           </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>🟢</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
+            <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">🟢</div>
             <div>
-              <div style={styles.summaryNumber}>{stats.active}</div>
-              <div style={styles.summaryLabel}>Active</div>
+              <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.active}</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Active</div>
             </div>
           </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>⏳</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
+            <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">⏳</div>
             <div>
-              <div style={styles.summaryNumber}>{stats.pending}</div>
-              <div style={styles.summaryLabel}>Pending Approval</div>
+              <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.pending}</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Pending Approval</div>
             </div>
           </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>🔴</div>
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
+            <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">🔴</div>
             <div>
-              <div style={styles.summaryNumber}>{stats.inactive}</div>
-              <div style={styles.summaryLabel}>Inactive</div>
+              <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.inactive}</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Inactive</div>
             </div>
           </div>
         </div>
 
-        {/* SEARCH + FILTER */}
         {products.length > 0 && (
-          <div style={styles.controls}>
-            <div style={styles.searchBox}>
-              <span style={styles.searchIcon}>🔍</span>
-
+          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-[18px] mb-6 sm:mb-[25px]">
+            <div className="flex items-center border border-gray-300 rounded-lg px-3 mb-4 bg-white transition-colors focus-within:bg-gray-50 focus-within:border-green-600 focus-within:ring-1 focus-within:ring-green-600">
+              <span className="text-base">🔍</span>
               <input
                 type="text"
                 placeholder="Search products..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={styles.searchInput}
+                className="w-full border-none outline-none py-2.5 px-2.5 text-[15px] bg-transparent"
               />
             </div>
 
-            <div style={styles.filterRow}>
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setFilter('all')}
-                style={
+                className={`px-3 py-1.5 sm:px-[13px] sm:py-[8px] border rounded-full text-xs sm:text-[13px] font-semibold cursor-pointer transition-colors ${
                   filter === 'all'
-                    ? styles.filterActive
-                    : styles.filterButton
-                }
+                    ? 'bg-green-800 text-white border-green-800'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
               >
                 All ({stats.total})
               </button>
-
               <button
                 onClick={() => setFilter('active')}
-                style={
+                className={`px-3 py-1.5 sm:px-[13px] sm:py-[8px] border rounded-full text-xs sm:text-[13px] font-semibold cursor-pointer transition-colors ${
                   filter === 'active'
-                    ? styles.filterActive
-                    : styles.filterButton
-                }
+                    ? 'bg-green-800 text-white border-green-800'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Active ({stats.active})
               </button>
-
               <button
                 onClick={() => setFilter('inactive')}
-                style={
+                className={`px-3 py-1.5 sm:px-[13px] sm:py-[8px] border rounded-full text-xs sm:text-[13px] font-semibold cursor-pointer transition-colors ${
                   filter === 'inactive'
-                    ? styles.filterActive
-                    : styles.filterButton
-                }
+                    ? 'bg-green-800 text-white border-green-800'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Inactive ({stats.inactive})
               </button>
-
               <button
                 onClick={() => setFilter('pending')}
-                style={
+                className={`px-3 py-1.5 sm:px-[13px] sm:py-[8px] border rounded-full text-xs sm:text-[13px] font-semibold cursor-pointer transition-colors ${
                   filter === 'pending'
-                    ? styles.filterActive
-                    : styles.filterButton
-                }
+                    ? 'bg-green-800 text-white border-green-800'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Pending ({stats.pending})
               </button>
-
               <button
                 onClick={() => setFilter('rejected')}
-                style={
+                className={`px-3 py-1.5 sm:px-[13px] sm:py-[8px] border rounded-full text-xs sm:text-[13px] font-semibold cursor-pointer transition-colors ${
                   filter === 'rejected'
-                    ? styles.filterActive
-                    : styles.filterButton
-                }
+                    ? 'bg-green-800 text-white border-green-800'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Rejected ({stats.rejected})
               </button>
@@ -316,201 +289,113 @@ export default function MyProducts() {
           </div>
         )}
 
-        {/* EMPTY */}
         {products.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <div style={styles.emptyIcon}>📦</div>
-
-            <h2 style={styles.emptyTitle}>No products yet</h2>
-
-            <p style={styles.emptyText}>
-              You haven't added any products yet.
-            </p>
-
+          <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-[40px_20px] sm:p-[60px_20px] text-center mt-[30px]">
+            <div className="text-[50px] mb-[15px]">📦</div>
+            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">No products yet</h2>
+            <p className="m-0 mb-5 text-gray-500 text-[15px]">You haven't added any products yet.</p>
             <button
               onClick={() => router.push('/farmer/add-product')}
-              style={styles.addButton}
+              className="px-[20px] py-[12px] border-none rounded-lg bg-green-800 text-white font-bold cursor-pointer hover:bg-green-700 transition-colors"
             >
               Add Your First Product
             </button>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <div style={styles.emptyIcon}>🔍</div>
-
-            <h2 style={styles.emptyTitle}>
-              No matching products
-            </h2>
-
-            <p style={styles.emptyText}>
-              Search or filter change panni try pannunga.
-            </p>
-
+          <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-[40px_20px] sm:p-[60px_20px] text-center mt-[30px]">
+            <div className="text-[50px] mb-[15px]">🔍</div>
+            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">No matching products</h2>
+            <p className="m-0 mb-5 text-gray-500 text-[15px]">Search or filter change panni try pannunga.</p>
             <button
               onClick={() => {
                 setSearch('')
                 setFilter('all')
               }}
-              style={styles.resetButton}
+              className="px-[20px] py-[12px] border border-gray-300 rounded-lg bg-white text-gray-700 font-bold cursor-pointer hover:bg-gray-50 transition-colors"
             >
               Reset Filters
             </button>
           </div>
         ) : (
           <>
-            <div style={styles.resultText}>
-              Showing {filteredProducts.length} of {products.length}{' '}
-              products
+            <div className="mb-4 sm:mb-[15px] text-gray-500 text-sm">
+              Showing {filteredProducts.length} of {products.length} products
             </div>
 
-            {/* PRODUCTS */}
-            <div style={styles.grid}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
               {filteredProducts.map((product) => {
-                const commission = Number(
-                  product.commission_amount || 0
-                )
-
+                const commission = Number(product.commission_amount || 0)
                 const farmerPrice = Number(product.price || 0)
-
                 const customerPrice = getCustomerPrice(product)
-
-                const stock = Number(
-                  product.stock_quantity || 0
-                )
+                const stock = Number(product.stock_quantity || 0)
 
                 return (
-                  <div
-                    key={product.id}
-                    style={styles.card}
-                  >
-                    {/* IMAGE */}
+                  <div key={product.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
                     {product.image_url ? (
-                      <div style={styles.imageWrapper}>
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          style={styles.image}
-                        />
-
-                        <div style={styles.imageStatus}>
+                      <div className="relative">
+                        <img src={product.image_url} alt={product.name} className="w-full h-32 sm:h-[220px] object-cover block" />
+                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white px-1.5 py-0.5 sm:px-2.5 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] font-bold shadow-md">
                           {getStatusLabel(product.status)}
                         </div>
                       </div>
                     ) : (
-                      <div style={styles.noImage}>
+                      <div className="h-32 sm:h-[220px] flex justify-center items-center bg-green-50 text-4xl sm:text-[50px] relative">
                         <span>🌱</span>
-
-                        <div style={styles.noImageStatus}>
+                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white px-1.5 py-0.5 sm:px-2.5 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] font-bold shadow-md">
                           {getStatusLabel(product.status)}
                         </div>
                       </div>
                     )}
 
-                    <div style={styles.cardContent}>
-                      {/* NAME */}
-                      <div style={styles.nameRow}>
-                        <h2 style={styles.productName}>
-                          {product.name}
-                        </h2>
-
-                        <span
-                          style={getApprovalStyle(
-                            product.approval_status
-                          )}
-                        >
-                          {getApprovalLabel(
-                            product.approval_status
-                          )}
-                        </span>
+                    <div className="p-2 sm:p-5 flex flex-col flex-1">
+                      <div className="flex justify-between items-start gap-1 sm:gap-2 mb-1 sm:mb-2">
+                        <h2 className="m-0 text-sm sm:text-[20px] text-gray-800 font-bold line-clamp-2 leading-tight">{product.name}</h2>
                       </div>
 
-                      {/* DESCRIPTION */}
-                      <p style={styles.description}>
-                        {product.description ||
-                          'No description available'}
-                      </p>
+                      <div className="hidden sm:block mb-4 text-[13px] text-gray-500 line-clamp-2 flex-1">
+                        {product.description || 'No description available'}
+                      </div>
 
-                      {/* PRICE DETAILS */}
-                      <div style={styles.priceSection}>
-                        <div style={styles.priceRow}>
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg sm:rounded-xl p-2 sm:p-3 mb-2 sm:mb-4">
+                        <div className="hidden sm:flex justify-between text-[13px] text-gray-600 mb-1.5">
                           <span>Farmer Price</span>
-                          <strong>
-                            ₹{farmerPrice.toLocaleString('en-IN')}
-                            {product.unit
-                              ? ` / ${product.unit}`
-                              : ''}
-                          </strong>
+                          <strong className="text-gray-800">₹{farmerPrice.toLocaleString('en-IN')}{product.unit ? ` / ${product.unit_count || 1} ${product.unit}` : ''}</strong>
                         </div>
-
-                        <div style={styles.priceRow}>
+                        <div className="hidden sm:flex justify-between text-[13px] text-gray-600 mb-1.5">
                           <span>Commission</span>
-                          <span>
-                            ₹{commission.toLocaleString('en-IN')}
-                          </span>
+                          <span className="text-gray-800">₹{commission.toLocaleString('en-IN')}</span>
                         </div>
-
-                        <div style={styles.divider} />
-
-                        <div style={styles.customerPriceRow}>
-                          <span>Customer Price</span>
-                          <strong>
-                            ₹
-                            {customerPrice.toLocaleString(
-                              'en-IN'
-                            )}
-                            {product.unit
-                              ? ` / ${product.unit}`
-                              : ''}
-                          </strong>
+                        <div className="hidden sm:flex justify-between text-[13px] text-gray-600 mb-3">
+                          <span>Delivery</span>
+                          <span className="text-gray-800">₹{Number(product.delivery_price || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="hidden sm:block border-t border-gray-200 my-2" />
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-[11px] sm:text-[14px]">
+                          <span className="text-gray-700 font-semibold hidden sm:inline">Price</span>
+                          <strong className="text-green-800 text-[13px] sm:text-[15px]">₹{customerPrice.toLocaleString('en-IN')}{product.unit ? ` / ${product.unit_count || 1} ${product.unit}` : ''}</strong>
                         </div>
                       </div>
 
-                      {/* STOCK */}
-                      <div style={styles.stockBox}>
+                      <div className="flex justify-between items-center mb-2 sm:mb-4 text-[10px] sm:text-[13px]">
                         <div>
-                          <span style={styles.stockLabel}>
-                            Stock
-                          </span>
-
-                          <strong style={styles.stockValue}>
-                            {stock} {product.unit || ''}
-                          </strong>
+                          <strong className="text-gray-800">{stock} available</strong>
                         </div>
-
-                        <div
-                          style={
-                            stock > 0
-                              ? styles.stockAvailable
-                              : styles.stockEmpty
-                          }
-                        >
-                          {stock > 0
-                            ? 'In Stock'
-                            : 'Out of Stock'}
+                        <div className={`px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded font-bold text-[9px] sm:text-[11px] ${stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {stock > 0 ? 'In Stock' : 'Out'}
                         </div>
                       </div>
 
-                      {/* APPROVAL */}
-                      <div style={styles.approvalInfo}>
-                        <span>Approval Status</span>
-
-                        <strong>
-                          {getApprovalLabel(
-                            product.approval_status
-                          )}
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-gray-50 p-1.5 sm:p-2.5 rounded text-[10px] sm:text-[12px] mb-2 sm:mb-4">
+                        <strong className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-[10px] font-bold whitespace-nowrap self-start sm:self-auto ${getApprovalStyle(product.approval_status)}`}>
+                          {getApprovalLabel(product.approval_status)}
                         </strong>
                       </div>
 
-                      {/* EDIT */}
                       <button
-                        onClick={() =>
-                          router.push(
-                            `/farmer/products/edit/${product.id}`
-                          )
-                        }
-                        style={styles.editButton}
+                        onClick={() => router.push(`/farmer/products/edit/${product.id}`)}
+                        className="w-full py-1.5 sm:py-2.5 border border-gray-300 rounded-md sm:rounded-lg bg-white text-gray-700 font-bold cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-colors mt-auto text-[11px] sm:text-[14px]"
                       >
-                        ✏️ Edit Product
+                        ✏️ Edit
                       </button>
                     </div>
                   </div>
@@ -522,474 +407,4 @@ export default function MyProducts() {
       </section>
     </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingCard: {
-    background: '#ffffff',
-    padding: '35px 50px',
-    borderRadius: '14px',
-    border: '1px solid #e5e7eb',
-    textAlign: 'center',
-    color: '#374151',
-  },
-
-  loadingIcon: {
-    fontSize: '40px',
-    marginBottom: '10px',
-  },
-
-  navbar: {
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '18px 6%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '15px',
-  },
-
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-  backButton: {
-    padding: '9px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  container: {
-    width: '90%',
-    maxWidth: '1250px',
-    margin: '0 auto',
-    padding: '40px 0',
-  },
-
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '30px',
-    gap: '20px',
-    flexWrap: 'wrap',
-  },
-
-  title: {
-    margin: '0 0 8px',
-    fontSize: '32px',
-    color: '#1f2937',
-  },
-
-  subtitle: {
-    margin: 0,
-    color: '#6b7280',
-  },
-
-  headerActions: {
-    display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap',
-  },
-
-  addButton: {
-    padding: '11px 18px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  refreshButton: {
-    padding: '11px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  errorBox: {
-    background: '#fef2f2',
-    border: '1px solid #fecaca',
-    color: '#b91c1c',
-    padding: '13px 16px',
-    borderRadius: '10px',
-    marginBottom: '20px',
-  },
-
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '15px',
-    marginBottom: '25px',
-  },
-
-  summaryCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '18px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-  },
-
-  summaryIcon: {
-    width: '45px',
-    height: '45px',
-    borderRadius: '10px',
-    background: '#f0fdf4',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontSize: '22px',
-  },
-
-  summaryNumber: {
-    fontSize: '23px',
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-
-  summaryLabel: {
-    fontSize: '13px',
-    color: '#6b7280',
-    marginTop: '3px',
-  },
-
-  controls: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '18px',
-    marginBottom: '25px',
-  },
-
-  searchBox: {
-    display: 'flex',
-    alignItems: 'center',
-    border: '1px solid #d1d5db',
-    borderRadius: '9px',
-    padding: '0 12px',
-    background: '#ffffff',
-    marginBottom: '15px',
-  },
-
-  searchIcon: {
-    fontSize: '16px',
-  },
-
-  searchInput: {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    padding: '11px',
-    fontSize: '15px',
-  },
-
-  filterRow: {
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-  },
-
-  filterButton: {
-    padding: '8px 13px',
-    border: '1px solid #d1d5db',
-    borderRadius: '20px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-
-  filterActive: {
-    padding: '8px 13px',
-    border: '1px solid #166534',
-    borderRadius: '20px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-
-  resultText: {
-    marginBottom: '15px',
-    color: '#6b7280',
-    fontSize: '14px',
-  },
-
-  grid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '25px',
-  },
-
-  card: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    overflow: 'hidden',
-  },
-
-  imageWrapper: {
-    position: 'relative',
-  },
-
-  image: {
-    width: '100%',
-    height: '220px',
-    objectFit: 'cover',
-    display: 'block',
-  },
-
-  imageStatus: {
-    position: 'absolute',
-    top: '12px',
-    right: '12px',
-    background: '#ffffff',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-  },
-
-  noImage: {
-    height: '220px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f0fdf4',
-    fontSize: '50px',
-    position: 'relative',
-  },
-
-  noImageStatus: {
-    position: 'absolute',
-    top: '12px',
-    right: '12px',
-    background: '#ffffff',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-  },
-
-  cardContent: {
-    padding: '20px',
-  },
-
-  nameRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '10px',
-  },
-
-  productName: {
-    margin: '0 0 10px',
-    fontSize: '21px',
-    color: '#1f2937',
-  },
-
-  description: {
-    margin: '0 0 18px',
-    color: '#6b7280',
-    fontSize: '14px',
-    lineHeight: '1.5',
-    minHeight: '42px',
-  },
-
-  approvedBadge: {
-    background: '#dcfce7',
-    color: '#166534',
-    padding: '5px 9px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  pendingBadge: {
-    background: '#fef3c7',
-    color: '#92400e',
-    padding: '5px 9px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  rejectedBadge: {
-    background: '#fee2e2',
-    color: '#b91c1c',
-    padding: '5px 9px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  neutralBadge: {
-    background: '#f3f4f6',
-    color: '#4b5563',
-    padding: '5px 9px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  priceSection: {
-    background: '#f9fafb',
-    borderRadius: '10px',
-    padding: '13px',
-  },
-
-  priceRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '10px',
-    fontSize: '13px',
-    color: '#6b7280',
-    marginBottom: '8px',
-  },
-
-  divider: {
-    borderTop: '1px solid #e5e7eb',
-    margin: '9px 0',
-  },
-
-  customerPriceRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '10px',
-    color: '#166534',
-    fontSize: '14px',
-  },
-
-  stockBox: {
-    marginTop: '12px',
-    padding: '12px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '9px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '10px',
-  },
-
-  stockLabel: {
-    display: 'block',
-    fontSize: '12px',
-    color: '#6b7280',
-    marginBottom: '3px',
-  },
-
-  stockValue: {
-    fontSize: '15px',
-    color: '#1f2937',
-  },
-
-  stockAvailable: {
-    background: '#dcfce7',
-    color: '#166534',
-    padding: '5px 8px',
-    borderRadius: '15px',
-    fontSize: '11px',
-    fontWeight: '700',
-  },
-
-  stockEmpty: {
-    background: '#fee2e2',
-    color: '#b91c1c',
-    padding: '5px 8px',
-    borderRadius: '15px',
-    fontSize: '11px',
-    fontWeight: '700',
-  },
-
-  approvalInfo: {
-    marginTop: '12px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    fontSize: '13px',
-    color: '#6b7280',
-  },
-
-  editButton: {
-    width: '100%',
-    marginTop: '15px',
-    padding: '11px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  emptyCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '60px 30px',
-    textAlign: 'center',
-  },
-
-  emptyIcon: {
-    fontSize: '50px',
-  },
-
-  emptyTitle: {
-    color: '#1f2937',
-    marginBottom: '8px',
-  },
-
-  emptyText: {
-    color: '#6b7280',
-    marginBottom: '20px',
-  },
-
-  resetButton: {
-    padding: '10px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
 }

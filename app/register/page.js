@@ -48,23 +48,23 @@ export default function Register() {
   }
 
   return (
-    <main style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.logo}>
+    <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans">
+      <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
+        <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6">
           🌾 Uzhavar Market
         </div>
 
-        <h1 style={styles.title}>
+        <h1 className="text-center text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
           Create Account
         </h1>
 
-        <p style={styles.subtitle}>
+        <p className="text-center text-gray-500 mb-8">
           Join Uzhavar Market
         </p>
 
         <form onSubmit={handleRegister}>
 
-          <label style={styles.label}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
             Full Name
           </label>
 
@@ -76,11 +76,11 @@ export default function Register() {
             }
             placeholder="Enter your full name"
             required
-            style={styles.input}
+            className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
           />
 
 
-          <label style={styles.label}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
             Phone Number
           </label>
 
@@ -92,11 +92,11 @@ export default function Register() {
             }
             placeholder="Enter your phone number"
             required
-            style={styles.input}
+            className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
           />
 
 
-          <label style={styles.label}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
             Email
           </label>
 
@@ -108,11 +108,11 @@ export default function Register() {
             }
             placeholder="Enter your email"
             required
-            style={styles.input}
+            className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
           />
 
 
-          <label style={styles.label}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
             Password
           </label>
 
@@ -125,11 +125,11 @@ export default function Register() {
             placeholder="Create a password"
             required
             minLength={6}
-            style={styles.input}
+            className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
           />
 
 
-          <label style={styles.label}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
             Account Type
           </label>
 
@@ -138,7 +138,7 @@ export default function Register() {
             onChange={(e) =>
               setRole(e.target.value)
             }
-            style={styles.input}
+            className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
           >
             <option value="customer">
               Customer
@@ -153,7 +153,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            style={styles.button}
+            className="w-full p-3 mt-6 rounded-lg bg-green-800 text-white text-base font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading
               ? 'Creating Account...'
@@ -164,18 +164,18 @@ export default function Register() {
 
 
         {message && (
-          <p style={styles.message}>
+          <p className="mt-5 text-center text-sm text-green-800 font-medium">
             {message}
           </p>
         )}
 
 
-        <p style={styles.loginText}>
+        <p className="text-center mt-6 text-sm text-gray-500">
           Already have an account?{' '}
 
           <a
             href="/login"
-            style={styles.loginLink}
+            className="text-green-800 font-semibold hover:underline"
           >
             Login
           </a>
@@ -184,99 +184,4 @@ export default function Register() {
       </div>
     </main>
   )
-}
-
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '30px 20px',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  card: {
-    width: '100%',
-    maxWidth: '450px',
-    background: '#ffffff',
-    padding: '35px',
-    borderRadius: '16px',
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-  },
-
-  logo: {
-    textAlign: 'center',
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-    marginBottom: '25px',
-  },
-
-  title: {
-    textAlign: 'center',
-    fontSize: '30px',
-    margin: '0 0 8px',
-    color: '#1f2937',
-  },
-
-  subtitle: {
-    textAlign: 'center',
-    color: '#6b7280',
-    marginBottom: '30px',
-  },
-
-  label: {
-    display: 'block',
-    fontSize: '14px',
-    fontWeight: '600',
-    marginBottom: '7px',
-    marginTop: '16px',
-    color: '#374151',
-  },
-
-  input: {
-    width: '100%',
-    padding: '12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '15px',
-    boxSizing: 'border-box',
-  },
-
-  button: {
-    width: '100%',
-    padding: '13px',
-    marginTop: '25px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-
-  message: {
-    marginTop: '20px',
-    textAlign: 'center',
-    fontSize: '14px',
-    color: '#166534',
-  },
-
-  loginText: {
-    textAlign: 'center',
-    marginTop: '25px',
-    fontSize: '14px',
-    color: '#6b7280',
-  },
-
-  loginLink: {
-    color: '#166534',
-    fontWeight: '600',
-    textDecoration: 'none',
-  },
 }

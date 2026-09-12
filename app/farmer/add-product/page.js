@@ -13,13 +13,28 @@ export default function AddProduct() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [price, setPrice] = useState('')
-  const [unit, setUnit] = useState('kg')
   const [stock, setStock] = useState('')
+  const [variants, setVariants] = useState([{ price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
   const [image, setImage] = useState(null)
 
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const handleVariantChange = (index, field, value) => {
+    const newVariants = [...variants]
+    newVariants[index][field] = value
+    setVariants(newVariants)
+  }
+
+  const addVariant = () => {
+    setVariants([...variants, { price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
+  }
+
+  const removeVariant = (index) => {
+    if (variants.length > 1) {
+      setVariants(variants.filter((_, i) => i !== index))
+    }
+  }
 
   useEffect(() => {
     async function checkFarmerAndLoadCategories() {
@@ -65,9 +80,17 @@ export default function AddProduct() {
 
     setMessage('')
 
-    if (!name || !categoryId || !price || !unit || !stock) {
-      setMessage('Please fill all required fields.')
+    if (!name || !categoryId || !stock) {
+      setMessage('Please fill product name, category, and stock.')
       return
+    }
+
+    for (let i = 0; i < variants.length; i++) {
+      const v = variants[i]
+      if (!v.price || !v.unit || !v.unitCount) {
+        setMessage(`Please fill all fields for Variant ${i + 1}.`)
+        return
+      }
     }
 
     setSaving(true)
@@ -83,7 +106,6 @@ export default function AddProduct() {
 
     let imageUrl = null
 
-    // Upload image if selected
     if (image) {
       const fileExtension = image.name.split('.').pop()
       const fileName = `${user.id}-${Date.now()}.${fileExtension}`
@@ -105,26 +127,25 @@ export default function AddProduct() {
       imageUrl = publicUrlData.publicUrl
     }
 
-    // Save product
+    const rowsToInsert = variants.map((v) => ({
+      farmer_id: user.id,
+      category_id: categoryId,
+      name: variants.length > 1 ? `${name} - ${v.unitCount} ${v.unit}` : name,
+      description: description,
+      price: Number(v.price),
+      unit: v.unit,
+      unit_count: Number(v.unitCount),
+      delivery_price: Number(v.deliveryPrice || 0),
+      stock_quantity: Number(stock),
+      image_url: imageUrl,
+      status: 'active',
+      approval_status: 'pending',
+      commission_amount: 0,
+    }))
+
     const { error: productError } = await supabase
       .from('products')
-      .insert({
-        farmer_id: user.id,
-        category_id: categoryId,
-        name: name,
-        description: description,
-        price: Number(price),
-        unit: unit,
-        stock_quantity: Number(stock),
-        image_url: imageUrl,
-
-        // Product waits for admin approval
-        status: 'active',
-        approval_status: 'pending',
-
-        // Admin will decide commission
-        commission_amount: 0,
-      })
+      .insert(rowsToInsert)
 
     if (productError) {
       setMessage(`Product save failed: ${productError.message}`)
@@ -132,16 +153,13 @@ export default function AddProduct() {
       return
     }
 
-    setMessage(
-      'Product submitted successfully! Waiting for admin approval.'
-    )
+    setMessage('Products submitted successfully! Waiting for admin approval.')
 
     setName('')
     setDescription('')
     setCategoryId('')
-    setPrice('')
-    setUnit('kg')
     setStock('')
+    setVariants([{ price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
     setImage(null)
 
     const fileInput = document.getElementById('product-image')
@@ -155,304 +173,216 @@ export default function AddProduct() {
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <p style={styles.loadingText}>
-          Loading...
-        </p>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5]">
+        <p className="text-base text-gray-500">Loading...</p>
       </main>
     )
   }
 
   return (
-    <main style={styles.page}>
-
-      <nav style={styles.navbar}>
-
-        <div style={styles.logo}>
+    <main className="min-h-screen bg-[#f7f8f5] font-sans">
+      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center">
+        <div className="text-xl sm:text-2xl font-bold text-green-800">
           🌾 Uzhavar Market
         </div>
-
         <button
           onClick={() => router.push('/farmer')}
-          style={styles.backButton}
+          className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
         >
           ← Dashboard
         </button>
-
       </nav>
 
-      <section style={styles.container}>
-
-        <div style={styles.card}>
-
-          <h1 style={styles.title}>
+      <section className="w-[95%] sm:w-[90%] max-w-[700px] mx-auto py-8 sm:py-10">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-9 shadow-md">
+          <h1 className="m-0 mb-2 text-gray-800 text-2xl sm:text-[30px] font-bold">
             Add New Product
           </h1>
-
-          <p style={styles.subtitle}>
-            Add your farm product for admin approval.
+          <p className="m-0 mb-6 sm:mb-[30px] text-gray-500 text-sm sm:text-base">
+            Add your farm product for admin approval. You can add multiple price/unit combinations.
           </p>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="flex flex-col">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-2">
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Example: Organic Tomato"
+                  className="w-full p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
+                  Total Stock Quantity *
+                </label>
+                <input
+                  type="number"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  placeholder="Example: 100"
+                  min="0"
+                  step="0.01"
+                  className="w-full p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+            </div>
 
-            <label style={styles.label}>
-              Product Name *
-            </label>
-
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Example: Organic Tomato"
-              style={styles.input}
-              required
-            />
-
-            <label style={styles.label}>
+            <label className="block mt-4 mb-2 text-sm font-semibold text-gray-700">
               Category *
             </label>
-
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              style={styles.input}
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent transition-all"
               required
             >
-              <option value="">
-                Select Category
-              </option>
-
+              <option value="">Select Category</option>
               {categories.map((category) => (
-                <option
-                  key={category.id}
-                  value={category.id}
-                >
+                <option key={category.id} value={category.id}>
                   {category.icon || '🌱'} {category.name}
                 </option>
               ))}
             </select>
 
-            <label style={styles.label}>
+            <label className="block mt-4 mb-2 text-sm font-semibold text-gray-700">
               Description
             </label>
-
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Tell customers about your product..."
               rows="5"
-              style={styles.textarea}
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] resize-y bg-white outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent transition-all font-sans"
             />
 
-            <label style={styles.label}>
-              Price *
-            </label>
+            <div className="mt-8 mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-800 m-0">Pricing & Variants</h3>
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="px-3 py-1.5 bg-green-100 text-green-800 rounded-md text-sm font-bold hover:bg-green-200 transition-colors"
+                >
+                  + Add Variant
+                </button>
+              </div>
+              
+              {variants.map((v, index) => (
+                <div key={index} className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 relative">
+                  {variants.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(index)}
+                      className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xs font-bold"
+                    >
+                      ✕ Remove
+                    </button>
+                  )}
+                  
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                    Variant {index + 1}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Price *</label>
+                      <input
+                        type="number"
+                        value={v.price}
+                        onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
+                        placeholder="Price"
+                        min="0"
+                        step="0.01"
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Unit Count *</label>
+                      <input
+                        type="number"
+                        value={v.unitCount}
+                        onChange={(e) => handleVariantChange(index, 'unitCount', e.target.value)}
+                        placeholder="e.g. 1"
+                        min="0"
+                        step="0.01"
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                        required
+                      />
+                    </div>
 
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Example: 80"
-              min="0"
-              step="0.01"
-              style={styles.input}
-              required
-            />
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Unit *</label>
+                      <select
+                        value={v.unit}
+                        onChange={(e) => handleVariantChange(index, 'unit', e.target.value)}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                        required
+                      >
+                        <option value="kg">kg</option>
+                        <option value="g">gram</option>
+                        <option value="litre">litre</option>
+                        <option value="ml">ml</option>
+                        <option value="piece">piece</option>
+                        <option value="packet">packet</option>
+                        <option value="box">box</option>
+                        <option value="dozen">dozen</option>
+                      </select>
+                    </div>
 
-            <label style={styles.label}>
-              Unit *
-            </label>
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Delivery Price *</label>
+                      <input
+                        type="number"
+                        value={v.deliveryPrice}
+                        onChange={(e) => handleVariantChange(index, 'deliveryPrice', e.target.value)}
+                        placeholder="e.g. 20"
+                        min="0"
+                        step="0.01"
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-            <select
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              style={styles.input}
-              required
-            >
-              <option value="kg">Kilogram (kg)</option>
-              <option value="gram">Gram</option>
-              <option value="litre">Litre</option>
-              <option value="piece">Piece</option>
-              <option value="packet">Packet</option>
-              <option value="box">Box</option>
-              <option value="bottle">Bottle</option>
-            </select>
-
-            <label style={styles.label}>
-              Stock Quantity *
-            </label>
-
-            <input
-              type="number"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              placeholder="Example: 100"
-              min="0"
-              step="0.01"
-              style={styles.input}
-              required
-            />
-
-            <label style={styles.label}>
+            <label className="block mt-4 mb-2 text-sm font-semibold text-gray-700">
               Product Image
             </label>
-
             <input
               id="product-image"
               type="file"
               accept="image/*"
               onChange={(e) => setImage(e.target.files[0])}
-              style={styles.fileInput}
+              className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100 transition-all cursor-pointer"
             />
 
             <button
               type="submit"
               disabled={saving}
-              style={styles.button}
+              className="w-full p-3.5 mt-7 border-none rounded-lg bg-green-800 text-white text-base font-semibold cursor-pointer hover:bg-green-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {saving ? 'Submitting Product...' : 'Submit Product'}
+              {saving ? 'Submitting Products...' : 'Submit Products'}
             </button>
-
           </form>
 
           {message && (
-            <p style={styles.message}>
+            <p className={`mt-5 text-center text-sm font-medium ${message.includes('failed') || message.includes('Please') ? 'text-red-600' : 'text-green-800'}`}>
               {message}
             </p>
           )}
-
         </div>
-
       </section>
-
     </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f7f8f5',
-  },
-
-  loadingText: {
-    fontSize: '16px',
-    color: '#6b7280',
-  },
-
-  navbar: {
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '18px 6%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-  backButton: {
-    padding: '9px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  container: {
-    width: '90%',
-    maxWidth: '700px',
-    margin: '0 auto',
-    padding: '40px 0',
-  },
-
-  card: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-    padding: '35px',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.05)',
-  },
-
-  title: {
-    margin: '0 0 8px',
-    color: '#1f2937',
-    fontSize: '30px',
-  },
-
-  subtitle: {
-    margin: '0 0 30px',
-    color: '#6b7280',
-  },
-
-  label: {
-    display: 'block',
-    marginTop: '18px',
-    marginBottom: '7px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#374151',
-  },
-
-  input: {
-    width: '100%',
-    padding: '12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '15px',
-    background: '#ffffff',
-    boxSizing: 'border-box',
-  },
-
-  textarea: {
-    width: '100%',
-    padding: '12px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '15px',
-    resize: 'vertical',
-    boxSizing: 'border-box',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  fileInput: {
-    width: '100%',
-    padding: '10px 0',
-    fontSize: '14px',
-  },
-
-  button: {
-    width: '100%',
-    padding: '14px',
-    marginTop: '28px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-
-  message: {
-    marginTop: '20px',
-    textAlign: 'center',
-    fontSize: '14px',
-    color: '#166534',
-  },
 }

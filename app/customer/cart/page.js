@@ -126,7 +126,7 @@ export default function CustomerCartPage() {
   };
 
   const getItemTotal = (item) => {
-    return getItemPrice(item) * Number(item.quantity || 1);
+    return (getItemPrice(item) * Number(item.quantity || 1)) + Number(item.delivery_price || 0);
   };
 
   const cartTotal = cart.reduce(
@@ -156,17 +156,8 @@ export default function CustomerCartPage() {
   // =========================
   if (loading) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#f6f8f5",
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        <p>Loading cart...</p>
+      <main className="min-h-screen flex items-center justify-center bg-[#f6f8f5] font-sans">
+        <p className="text-lg text-gray-600 font-medium animate-pulse">Loading cart...</p>
       </main>
     );
   }
@@ -176,81 +167,26 @@ export default function CustomerCartPage() {
   // =========================
   if (cart.length === 0) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#f6f8f5",
-          padding: "40px 20px",
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "900px",
-            margin: "0 auto",
-          }}
-        >
+      <main className="min-h-screen bg-[#f6f8f5] px-4 py-10 sm:p-10 font-sans">
+        <div className="max-w-4xl mx-auto">
           <button
             onClick={() => router.push("/customer/products")}
-            style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontSize: "16px",
-              marginBottom: "30px",
-            }}
+            className="mb-8 text-gray-700 font-medium hover:text-green-800 transition-colors"
           >
-            ← Continue Shopping
+            &larr; Continue Shopping
           </button>
 
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "16px",
-              padding: "60px 20px",
-              textAlign: "center",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "70px",
-                marginBottom: "15px",
-              }}
-            >
-              🛒
-            </div>
-
-            <h1
-              style={{
-                margin: "0 0 10px",
-                fontSize: "30px",
-              }}
-            >
+          <div className="bg-white rounded-2xl p-10 sm:p-16 text-center shadow-sm border border-gray-100">
+            <div className="text-7xl sm:text-8xl mb-6">🛒</div>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3">
               Your Cart is Empty
             </h1>
-
-            <p
-              style={{
-                color: "#666",
-                marginBottom: "25px",
-              }}
-            >
+            <p className="text-gray-500 mb-8 text-sm sm:text-base">
               Add fresh products from our farmers to your cart.
             </p>
-
             <button
               onClick={() => router.push("/customer/products")}
-              style={{
-                background: "#2e7d32",
-                color: "#fff",
-                border: "none",
-                padding: "13px 24px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "bold",
-              }}
+              className="bg-green-800 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base transition-colors shadow-sm"
             >
               Browse Products
             </button>
@@ -264,91 +200,36 @@ export default function CustomerCartPage() {
   // CART PAGE
   // =========================
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f6f8f5",
-        padding: "30px 20px 60px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-        }}
-      >
+    <main className="min-h-screen bg-[#f6f8f5] px-4 py-8 sm:p-10 font-sans">
+      <div className="max-w-6xl mx-auto">
         {/* HEADER */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "15px",
-            flexWrap: "wrap",
-            marginBottom: "25px",
-          }}
-        >
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <button
               onClick={() => router.push("/customer/products")}
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                fontSize: "15px",
-                padding: 0,
-                marginBottom: "10px",
-              }}
+              className="text-gray-600 hover:text-green-800 font-medium text-sm sm:text-base mb-3 transition-colors"
             >
-              ← Continue Shopping
+              &larr; Continue Shopping
             </button>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "32px",
-              }}
-            >
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 m-0">
               🛒 My Cart
             </h1>
-
-            <p
-              style={{
-                color: "#666",
-                marginTop: "8px",
-              }}
-            >
+            <p className="text-gray-500 mt-2 text-sm sm:text-base">
               {totalItems} item{totalItems !== 1 ? "s" : ""} in your cart
             </p>
           </div>
-
           <button
             onClick={clearCart}
-            style={{
-              background: "#fff",
-              color: "#d32f2f",
-              border: "1px solid #d32f2f",
-              padding: "10px 16px",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
+            className="bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 px-4 py-2.5 rounded-lg font-medium text-sm sm:text-base transition-colors w-full sm:w-auto"
           >
             Clear Cart
           </button>
         </div>
 
-        {/* MAIN GRID */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) 320px",
-            gap: "25px",
-            alignItems: "start",
-          }}
-        >
+        {/* MAIN LAYOUT */}
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
           {/* CART ITEMS */}
-          <div>
+          <div className="flex-1 w-full flex flex-col gap-4">
             {cart.map((item, index) => {
               const price = getItemPrice(item);
               const itemTotal = getItemTotal(item);
@@ -356,197 +237,86 @@ export default function CustomerCartPage() {
               return (
                 <div
                   key={`${item.id}-${index}`}
-                  style={{
-                    background: "#fff",
-                    borderRadius: "14px",
-                    padding: "18px",
-                    marginBottom: "15px",
-                    boxShadow: "0 3px 15px rgba(0,0,0,0.07)",
-                    display: "flex",
-                    gap: "18px",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                  }}
+                  className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center relative"
                 >
                   {/* IMAGE */}
-                  <div
-                    style={{
-                      width: "110px",
-                      height: "110px",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                      background: "#eee",
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
                         alt={item.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "35px",
-                        }}
-                      >
-                        🌾
-                      </div>
+                      <div className="text-4xl sm:text-5xl">🌾</div>
                     )}
                   </div>
 
                   {/* PRODUCT INFO */}
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: "220px",
-                    }}
-                  >
-                    <h2
-                      style={{
-                        margin: "0 0 8px",
-                        fontSize: "20px",
-                      }}
-                    >
+                  <div className="flex-1 min-w-0 w-full pr-8 sm:pr-0">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">
                       {item.name}
                     </h2>
-
                     {item.farm_name && (
-                      <p
-                        style={{
-                          margin: "4px 0",
-                          color: "#666",
-                          fontSize: "14px",
-                        }}
-                      >
-                        🌱 {item.farm_name}
+                      <p className="text-xs sm:text-sm text-gray-500 mb-2 truncate">
+                        👨‍🌾 {item.farm_name}
                       </p>
                     )}
-
-                    <p
-                      style={{
-                        margin: "8px 0",
-                        fontWeight: "bold",
-                        color: "#2e7d32",
-                      }}
-                    >
-                      ₹{price.toFixed(2)} / {item.unit || "unit"}
+                    <p className="text-green-800 font-bold mb-1">
+                      ₹{price.toFixed(2)} <span className="text-gray-500 text-sm font-normal">/ {item.unit_count || 1} {item.unit || "unit"}</span>
                     </p>
-
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: "13px",
-                        color: "#777",
-                      }}
-                    >
+                    {Number(item.delivery_price) > 0 ? (
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">
+                        + ₹{Number(item.delivery_price).toFixed(2)} delivery
+                      </p>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-green-600 font-medium mb-1">
+                        Free delivery
+                      </p>
+                    )}
+                    <p className="text-xs sm:text-sm text-gray-500">
                       Stock: {item.stock_quantity ?? "Available"}
                     </p>
                   </div>
 
-                  {/* QUANTITY */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <button
-                      onClick={() =>
-                        updateQuantity(
-                          index,
-                          Number(item.quantity || 1) - 1
-                        )
-                      }
-                      disabled={Number(item.quantity || 1) <= 1}
-                      style={{
-                        width: "34px",
-                        height: "34px",
-                        border: "1px solid #ccc",
-                        borderRadius: "6px",
-                        background: "#fff",
-                        cursor:
-                          Number(item.quantity || 1) <= 1
-                            ? "not-allowed"
-                            : "pointer",
-                        fontSize: "18px",
-                      }}
-                    >
-                      −
-                    </button>
+                  {/* BOTTOM ROW (MOBILE) OR RIGHT SECTION (DESKTOP) */}
+                  <div className="w-full sm:w-auto flex flex-row items-center justify-between sm:justify-end sm:flex-col gap-4 sm:gap-6 border-t border-gray-100 sm:border-0 pt-4 sm:pt-0 mt-2 sm:mt-0">
+                    {/* QUANTITY */}
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1">
+                      <button
+                        onClick={() =>
+                          updateQuantity(index, Number(item.quantity || 1) - 1)
+                        }
+                        disabled={Number(item.quantity || 1) <= 1}
+                        className="w-8 h-8 flex items-center justify-center rounded bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-200"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2rem] text-center font-bold text-gray-800 text-sm sm:text-base">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          updateQuantity(index, Number(item.quantity || 1) + 1)
+                        }
+                        className="w-8 h-8 flex items-center justify-center rounded bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-200"
+                      >
+                        +
+                      </button>
+                    </div>
 
-                    <span
-                      style={{
-                        minWidth: "25px",
-                        textAlign: "center",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {item.quantity}
-                    </span>
-
-                    <button
-                      onClick={() =>
-                        updateQuantity(
-                          index,
-                          Number(item.quantity || 1) + 1
-                        )
-                      }
-                      style={{
-                        width: "34px",
-                        height: "34px",
-                        border: "1px solid #ccc",
-                        borderRadius: "6px",
-                        background: "#fff",
-                        cursor: "pointer",
-                        fontSize: "18px",
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  {/* ITEM TOTAL */}
-                  <div
-                    style={{
-                      minWidth: "110px",
-                      textAlign: "right",
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: "18px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      ₹{itemTotal.toFixed(2)}
-                    </p>
-
-                    <button
-                      onClick={() => removeItem(index)}
-                      style={{
-                        marginTop: "8px",
-                        border: "none",
-                        background: "transparent",
-                        color: "#d32f2f",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                      }}
-                    >
-                      Remove
-                    </button>
+                    {/* ITEM TOTAL & REMOVE */}
+                    <div className="text-right flex flex-col items-end">
+                      <p className="text-lg sm:text-xl font-bold text-gray-900">
+                        ₹{itemTotal.toFixed(2)}
+                      </p>
+                      <button
+                        onClick={() => removeItem(index)}
+                        className="text-red-500 hover:text-red-700 text-xs sm:text-sm font-medium mt-1 sm:mt-2 transition-colors absolute top-4 right-4 sm:static"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -554,106 +324,40 @@ export default function CustomerCartPage() {
           </div>
 
           {/* ORDER SUMMARY */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "14px",
-              padding: "22px",
-              boxShadow: "0 3px 15px rgba(0,0,0,0.07)",
-              position: "sticky",
-              top: "20px",
-            }}
-          >
-            <h2
-              style={{
-                marginTop: 0,
-                marginBottom: "20px",
-                fontSize: "22px",
-              }}
-            >
+          <div className="w-full lg:w-80 xl:w-96 bg-white rounded-xl p-6 shadow-sm border border-gray-100 sticky top-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
               Order Summary
             </h2>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "12px",
-                color: "#555",
-              }}
-            >
+            <div className="flex justify-between items-center text-gray-600 mb-3 text-sm sm:text-base">
               <span>Items</span>
-              <span>{totalItems}</span>
+              <span className="font-medium text-gray-900">{totalItems}</span>
             </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "15px",
-                color: "#555",
-              }}
-            >
+            <div className="flex justify-between items-center text-gray-600 mb-5 text-sm sm:text-base">
               <span>Subtotal</span>
-              <span>₹{cartTotal.toFixed(2)}</span>
+              <span className="font-medium text-gray-900">₹{cartTotal.toFixed(2)}</span>
+            </div>
+            
+            <hr className="border-t border-gray-100 my-5" />
+            
+            <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-6">
+              <span className="text-gray-900">Total</span>
+              <span className="text-green-800">₹{cartTotal.toFixed(2)}</span>
             </div>
 
-            <hr
-              style={{
-                border: "none",
-                borderTop: "1px solid #eee",
-                margin: "15px 0",
-              }}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "20px",
-                fontSize: "20px",
-                fontWeight: "bold",
-              }}
-            >
-              <span>Total</span>
-              <span style={{ color: "#2e7d32" }}>
-                ₹{cartTotal.toFixed(2)}
-              </span>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-green-800 hover:bg-green-700 text-white py-3.5 rounded-xl font-bold text-base transition-colors focus:ring-4 focus:ring-green-100 shadow-sm"
+              >
+                Proceed to Checkout &rarr;
+              </button>
+              <button
+                onClick={() => router.push("/customer/products")}
+                className="w-full bg-white hover:bg-gray-50 text-green-800 border border-green-800 py-3 rounded-xl font-semibold text-sm sm:text-base transition-colors"
+              >
+                Continue Shopping
+              </button>
             </div>
-
-            <button
-              onClick={handleCheckout}
-              style={{
-                width: "100%",
-                background: "#2e7d32",
-                color: "#fff",
-                border: "none",
-                padding: "14px",
-                borderRadius: "9px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "bold",
-              }}
-            >
-              Proceed to Checkout →
-            </button>
-
-            <button
-              onClick={() => router.push("/customer/products")}
-              style={{
-                width: "100%",
-                marginTop: "10px",
-                background: "#fff",
-                color: "#2e7d32",
-                border: "1px solid #2e7d32",
-                padding: "12px",
-                borderRadius: "9px",
-                cursor: "pointer",
-                fontSize: "15px",
-              }}
-            >
-              Continue Shopping
-            </button>
           </div>
         </div>
       </div>

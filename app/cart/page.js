@@ -67,18 +67,18 @@ export default function Cart() {
   )
 
   return (
-    <main style={styles.page}>
+    <main className="min-h-screen bg-[#f7f8f5] font-sans text-gray-800 flex flex-col">
 
       {/* Navbar */}
-      <nav style={styles.navbar}>
+      <nav className="min-h-[70px] bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-[7%]">
 
-        <div style={styles.logo}>
+        <div className="text-xl sm:text-2xl font-bold text-green-800">
           🌾 Uzhavar Market
         </div>
 
         <button
           onClick={() => router.push('/')}
-          style={styles.backButton}
+          className="px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg bg-white cursor-pointer font-semibold text-sm sm:text-base hover:bg-gray-50"
         >
           ← Continue Shopping
         </button>
@@ -87,31 +87,31 @@ export default function Cart() {
 
 
       {/* Cart */}
-      <section style={styles.container}>
+      <section className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
 
-        <h1 style={styles.title}>
+        <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">
           🛒 Your Cart
         </h1>
 
         {cart.length === 0 ? (
 
-          <div style={styles.emptyCart}>
+          <div className="bg-white border border-gray-200 rounded-2xl py-12 sm:py-20 px-4 text-center">
 
-            <div style={styles.emptyIcon}>
+            <div className="text-5xl sm:text-6xl mb-4">
               🛒
             </div>
 
-            <h2>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-2">
               Your cart is empty
             </h2>
 
-            <p>
+            <p className="text-gray-500 mb-6">
               Add some farm products to your cart.
             </p>
 
             <button
               onClick={() => router.push('/')}
-              style={styles.shopButton}
+              className="px-6 py-3 bg-green-800 text-white font-semibold rounded-lg hover:bg-green-700"
             >
               Start Shopping
             </button>
@@ -120,32 +120,32 @@ export default function Cart() {
 
         ) : (
 
-          <div style={styles.cartLayout}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
 
             {/* Cart Items */}
-            <div style={styles.itemsSection}>
+            <div className="lg:col-span-2 flex flex-col gap-4 sm:gap-6">
 
               {cart.map((item) => (
 
                 <div
                   key={item.id}
-                  style={styles.cartItem}
+                  className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
                 >
 
                   {/* Product Image */}
-                  <div style={styles.imageBox}>
+                  <div className="w-full sm:w-28 h-48 sm:h-28 rounded-lg overflow-hidden bg-[#e8f1df] flex items-center justify-center shrink-0">
 
                     {item.image_url ? (
 
                       <img
                         src={item.image_url}
                         alt={item.name}
-                        style={styles.image}
+                        className="w-full h-full object-cover"
                       />
 
                     ) : (
 
-                      <span style={styles.noImage}>
+                      <span className="text-4xl">
                         🌾
                       </span>
 
@@ -155,30 +155,30 @@ export default function Cart() {
 
 
                   {/* Product Details */}
-                  <div style={styles.itemDetails}>
+                  <div className="flex-1 text-center sm:text-left w-full">
 
-                    <h2 style={styles.itemName}>
+                    <h2 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">
                       {item.name}
                     </h2>
 
-                    <p style={styles.itemPrice}>
+                    <p className="text-gray-500 mb-3 sm:mb-4">
                       ₹{item.price} / {item.unit}
                     </p>
 
 
                     {/* Quantity */}
-                    <div style={styles.quantityRow}>
+                    <div className="flex items-center justify-center sm:justify-start gap-3">
 
                       <button
                         onClick={() =>
                           decreaseQuantity(item.id)
                         }
-                        style={styles.quantityButton}
+                        className="w-8 h-8 border border-gray-300 rounded-md bg-white font-semibold text-lg flex items-center justify-center hover:bg-gray-50"
                       >
                         −
                       </button>
 
-                      <span style={styles.quantity}>
+                      <span className="min-w-[25px] text-center font-semibold">
                         {item.quantity}
                       </span>
 
@@ -186,7 +186,7 @@ export default function Cart() {
                         onClick={() =>
                           increaseQuantity(item.id)
                         }
-                        style={styles.quantityButton}
+                        className="w-8 h-8 border border-gray-300 rounded-md bg-white font-semibold text-lg flex items-center justify-center hover:bg-gray-50"
                       >
                         +
                       </button>
@@ -197,19 +197,17 @@ export default function Cart() {
 
 
                   {/* Item Total */}
-                  <div style={styles.itemRight}>
+                  <div className="w-full sm:w-auto mt-4 sm:mt-0 flex flex-row sm:flex-col justify-between sm:justify-end items-center sm:items-end">
 
-                    <strong style={styles.itemTotal}>
-                      ₹
-                      {Number(item.price) *
-                        item.quantity}
+                    <strong className="block text-lg sm:text-xl font-bold text-green-800 sm:mb-3">
+                      ₹{Number(item.price) * item.quantity}
                     </strong>
 
                     <button
                       onClick={() =>
                         removeItem(item.id)
                       }
-                      style={styles.removeButton}
+                      className="text-red-600 font-semibold hover:text-red-700"
                     >
                       Remove
                     </button>
@@ -224,13 +222,13 @@ export default function Cart() {
 
 
             {/* Summary */}
-            <div style={styles.summary}>
+            <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:sticky lg:top-24">
 
-              <h2 style={styles.summaryTitle}>
+              <h2 className="text-lg sm:text-xl font-semibold mb-6">
                 Order Summary
               </h2>
 
-              <div style={styles.summaryRow}>
+              <div className="flex justify-between mb-4 text-gray-600">
 
                 <span>
                   Items
@@ -246,7 +244,7 @@ export default function Cart() {
 
               </div>
 
-              <div style={styles.summaryRow}>
+              <div className="flex justify-between mb-4 text-gray-600">
 
                 <span>
                   Subtotal
@@ -258,9 +256,9 @@ export default function Cart() {
 
               </div>
 
-              <div style={styles.divider}></div>
+              <div className="h-px bg-gray-200 my-5"></div>
 
-              <div style={styles.totalRow}>
+              <div className="flex justify-between text-lg sm:text-xl font-bold text-green-800">
 
                 <strong>
                   Total
@@ -274,7 +272,7 @@ export default function Cart() {
 
               <button
                 onClick={() => router.push('/checkout')}
-                style={styles.checkoutButton}
+                className="w-full mt-6 py-3 sm:py-4 bg-green-800 text-white font-bold rounded-lg hover:bg-green-700"
               >
                 Proceed to Checkout
               </button>
@@ -289,278 +287,18 @@ export default function Cart() {
 
 
       {/* Footer */}
-      <footer style={styles.footer}>
+      <footer className="py-10 px-4 sm:px-[7%] bg-[#17251a] text-white text-center mt-auto">
 
-        <h3>
+        <h3 className="text-lg font-semibold mb-2">
           🌾 Uzhavar Market
         </h3>
 
-        <p>
-          Connecting farmers directly
-          with customers.
+        <p className="text-gray-400">
+          Connecting farmers directly with customers.
         </p>
 
       </footer>
 
     </main>
   )
-}
-
-
-const styles = {
-
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-    color: '#1f2937',
-  },
-
-
-  navbar: {
-    minHeight: '70px',
-    background: '#ffffff',
-    borderBottom:
-      '1px solid #e5e7eb',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0 7%',
-  },
-
-
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-
-  backButton: {
-    padding: '10px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-
-  container: {
-    width: '90%',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '50px 0',
-  },
-
-
-  title: {
-    fontSize: '34px',
-    marginBottom: '30px',
-  },
-
-
-  cartLayout: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: '30px',
-    alignItems: 'start',
-  },
-
-
-  itemsSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-  },
-
-
-  cartItem: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '18px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-  },
-
-
-  imageBox: {
-    width: '110px',
-    height: '110px',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    background: '#e8f1df',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-
-
-  image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-
-
-  noImage: {
-    fontSize: '45px',
-  },
-
-
-  itemDetails: {
-    flex: 1,
-  },
-
-
-  itemName: {
-    fontSize: '20px',
-    margin: '0 0 8px',
-  },
-
-
-  itemPrice: {
-    color: '#6b7280',
-    margin: '0 0 15px',
-  },
-
-
-  quantityRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-
-
-  quantityButton: {
-    width: '32px',
-    height: '32px',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontSize: '18px',
-    fontWeight: '600',
-  },
-
-
-  quantity: {
-    minWidth: '25px',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-
-
-  itemRight: {
-    textAlign: 'right',
-  },
-
-
-  itemTotal: {
-    display: 'block',
-    fontSize: '20px',
-    color: '#166534',
-    marginBottom: '12px',
-  },
-
-
-  removeButton: {
-    border: 'none',
-    background: 'transparent',
-    color: '#dc2626',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-
-  summary: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '25px',
-    position: 'sticky',
-    top: '90px',
-  },
-
-
-  summaryTitle: {
-    margin: '0 0 25px',
-    fontSize: '22px',
-  },
-
-
-  summaryRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '15px',
-    color: '#4b5563',
-  },
-
-
-  divider: {
-    height: '1px',
-    background: '#e5e7eb',
-    margin: '20px 0',
-  },
-
-
-  totalRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '20px',
-    color: '#166534',
-  },
-
-
-  checkoutButton: {
-    width: '100%',
-    marginTop: '25px',
-    padding: '14px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    fontSize: '16px',
-    fontWeight: '700',
-    cursor: 'pointer',
-  },
-
-
-  emptyCart: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '70px 20px',
-    textAlign: 'center',
-  },
-
-
-  emptyIcon: {
-    fontSize: '60px',
-    marginBottom: '15px',
-  },
-
-
-  shopButton: {
-    marginTop: '20px',
-    padding: '12px 22px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-
-  footer: {
-    padding: '40px 7%',
-    background: '#17251a',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-
 }

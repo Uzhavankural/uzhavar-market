@@ -12,9 +12,11 @@ export default function ProductDetails() {
   const [farmer, setFarmer] = useState(null)
   const [category, setCategory] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     loadProduct()
+    checkUser()
   }, [])
 
   async function loadProduct() {
@@ -49,24 +51,139 @@ export default function ProductDetails() {
     setLoading(false)
   }
 
+  async function checkUser() {
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user || null)
+  }
+
+  function handleAddToCart() {
+    if (!user) {
+      alert("Please login to add products to cart.");
+      router.push("/login");
+      return;
+    }
+
+    const stock = Number(product.stock_quantity || 0);
+    if (stock <= 0) {
+      alert("This product is currently out of stock.");
+      return;
+    }
+
+    const cartKey = `uzhavar_cart_${user.id}`;
+    let existingCart = [];
+    try {
+      const storedCart = localStorage.getItem(cartKey);
+      existingCart = storedCart ? JSON.parse(storedCart) : [];
+      if (!Array.isArray(existingCart)) existingCart = [];
+    } catch (error) {
+      existingCart = [];
+    }
+
+    const existingItem = existingCart.find((item) => item.id === product.id);
+    let updatedCart;
+    if (existingItem) {
+      const newQuantity = Number(existingItem.quantity || 0) + 1;
+      if (newQuantity > stock) {
+        alert(`Only ${stock} ${product.unit || "unit"} available in stock.`);
+        return;
+      }
+      updatedCart = existingCart.map((item) =>
+        item.id === product.id ? { ...item, quantity: newQuantity } : item
+      );
+    } else {
+      updatedCart = [
+        ...existingCart,
+        {
+          id: product.id,
+          name: product.name,
+          description: product.description || "",
+          price: Number(product.price || 0),
+          commission_amount: Number(product.commission_amount || 0),
+          unit: product.unit || "unit",
+          image_url: product.image_url || "",
+          stock_quantity: stock,
+          farmer_id: product.farmer_id,
+          quantity: 1,
+        },
+      ];
+    }
+    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
+    alert("Product added to cart! 🛒");
+  }
+
+  function handleBuyNow() {
+    if (!user) {
+      alert("Please login to buy products.");
+      router.push("/login");
+      return;
+    }
+
+    const stock = Number(product.stock_quantity || 0);
+    if (stock <= 0) {
+      alert("This product is currently out of stock.");
+      return;
+    }
+
+    const cartKey = `uzhavar_cart_${user.id}`;
+    let existingCart = [];
+    try {
+      const storedCart = localStorage.getItem(cartKey);
+      existingCart = storedCart ? JSON.parse(storedCart) : [];
+      if (!Array.isArray(existingCart)) existingCart = [];
+    } catch (error) {
+      existingCart = [];
+    }
+
+    const existingItem = existingCart.find((item) => item.id === product.id);
+    let updatedCart;
+    if (existingItem) {
+      const newQuantity = Number(existingItem.quantity || 0) + 1;
+      if (newQuantity <= stock) {
+        updatedCart = existingCart.map((item) =>
+          item.id === product.id ? { ...item, quantity: newQuantity } : item
+        );
+      } else {
+        updatedCart = existingCart;
+      }
+    } else {
+      updatedCart = [
+        ...existingCart,
+        {
+          id: product.id,
+          name: product.name,
+          description: product.description || "",
+          price: Number(product.price || 0),
+          commission_amount: Number(product.commission_amount || 0),
+          unit: product.unit || "unit",
+          image_url: product.image_url || "",
+          stock_quantity: stock,
+          farmer_id: product.farmer_id,
+          quantity: 1,
+        },
+      ];
+    }
+    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
+    router.push("/customer/checkout");
+  }
+
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <p>Loading product...</p>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <p className="text-lg text-gray-600 font-medium animate-pulse">Loading product...</p>
       </main>
     )
   }
 
   if (!product) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.notFound}>
-          <h2>Product not found</h2>
+      <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Product not found</h2>
           <button
             onClick={() => router.push('/')}
-            style={styles.backButton}
+            className="px-5 py-2.5 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-700 font-semibold transition-colors"
           >
-            ← Back to Home
+            &larr; Back to Home
           </button>
         </div>
       </main>
@@ -74,260 +191,107 @@ export default function ProductDetails() {
   }
 
   return (
-    <main style={styles.page}>
-      <nav style={styles.navbar}>
-        <div style={styles.logo}>🌾 Uzhavar Market</div>
+    <main className="min-h-screen bg-[#f7f8f5] font-sans pb-12 flex flex-col">
+      <nav className="bg-white border-b border-gray-200 px-4 sm:px-[6%] py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+        <div className="text-xl sm:text-2xl font-bold text-green-800 cursor-pointer" onClick={() => router.push('/')}>
+          🌾 Uzhavar Market
+        </div>
 
         <button
           onClick={() => router.push('/')}
-          style={styles.backButton}
+          className="px-3 sm:px-5 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm sm:text-base transition-colors"
         >
-          ← Back to Products
+          &larr; Back
         </button>
       </nav>
 
-      <section style={styles.container}>
-        <div style={styles.productSection}>
-          <div style={styles.imageBox}>
+      <section className="w-full sm:w-[90%] max-w-6xl mx-auto px-4 py-8 sm:py-12 flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+          <div className="w-full min-h-[300px] sm:min-h-[450px] rounded-xl overflow-hidden bg-[#f0fdf4] flex items-center justify-center">
             {product.image_url ? (
               <img
                 src={product.image_url}
                 alt={product.name}
-                style={styles.image}
+                className="w-full h-full object-cover"
               />
             ) : (
-              <div style={styles.noImage}>🌱</div>
+              <div className="text-6xl sm:text-8xl">🌱</div>
             )}
           </div>
 
-          <div style={styles.details}>
+          <div className="py-2 flex flex-col">
             {category && (
-              <div style={styles.category}>
-                {category.icon} {category.name}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#f0fdf4] text-green-800 rounded-full text-sm font-semibold mb-4 self-start">
+                <span>{category.icon}</span> {category.name}
               </div>
             )}
 
-            <h1 style={styles.title}>{product.name}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4 leading-tight">{product.name}</h1>
 
-            <p style={styles.description}>
+            <p className="text-base sm:text-lg leading-relaxed text-gray-500 mb-6">
               {product.description || 'No description available.'}
             </p>
 
-            <div style={styles.price}>
-              ₹{(
-  Number(product.price) +
-  Number(product.commission_amount || 0)
-).toFixed(2)}
-              <span style={styles.unit}> / {product.unit}</span>
+            <div className="text-3xl sm:text-4xl font-bold text-green-800 flex items-end gap-2">
+              ₹{(Number(product.price) + Number(product.commission_amount || 0)).toFixed(2)}
+              <span className="text-lg font-normal text-gray-500 pb-1">/ {product.unit}</span>
             </div>
 
-            <div style={styles.stock}>
+            <div className="mt-3 text-green-700 font-semibold flex items-center gap-2">
               🟢 {product.stock_quantity} {product.unit} available
             </div>
 
-            <button
-              onClick={() => alert('Cart feature coming next!')}
-              style={styles.cartButton}
-            >
-              🛒 Add to Cart
-            </button>
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 py-3.5 sm:py-4 rounded-xl bg-green-100 text-green-800 text-lg font-bold hover:bg-green-200 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-300"
+              >
+                🛒 Add to Cart
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="flex-1 py-3.5 sm:py-4 rounded-xl bg-green-800 text-white text-lg font-bold hover:bg-green-700 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-900 shadow-sm"
+              >
+                Buy Now
+              </button>
+            </div>
 
-            <div style={styles.farmerCard}>
-              <h2 style={styles.farmerTitle}>👨‍🌾 Farmer Details</h2>
+            <div className="mt-10 p-5 sm:p-6 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 leading-relaxed">
+              <h2 className="text-xl font-bold text-green-800 mb-4 flex items-center gap-2">👨‍🌾 Farmer Details</h2>
 
-              <p>
-                <strong>Farmer:</strong>{' '}
-                {farmer?.full_name || 'Farmer'}
-              </p>
-
-              {farmer?.farm_name && (
+              <div className="space-y-3">
                 <p>
-                  <strong>Farm:</strong> {farmer.farm_name}
+                  <strong className="text-gray-900">Farmer:</strong> {farmer?.full_name || 'Farmer'}
                 </p>
-              )}
 
-              {farmer?.district && (
-                <p>
-                  <strong>District:</strong> {farmer.district}
-                </p>
-              )}
+                {farmer?.farm_name && (
+                  <p>
+                    <strong className="text-gray-900">Farm:</strong> {farmer.farm_name}
+                  </p>
+                )}
 
-              {farmer?.village && (
-                <p>
-                  <strong>Village:</strong> {farmer.village}
-                </p>
-              )}
+                {farmer?.district && (
+                  <p>
+                    <strong className="text-gray-900">District:</strong> {farmer.district}
+                  </p>
+                )}
 
-              {farmer?.bio && (
-                <p>
-                  <strong>About:</strong> {farmer.bio}
-                </p>
-              )}
+                {farmer?.village && (
+                  <p>
+                    <strong className="text-gray-900">Village:</strong> {farmer.village}
+                  </p>
+                )}
+
+                {farmer?.bio && (
+                  <p className="mt-2 pt-3 border-t border-gray-200">
+                    <strong className="text-gray-900 block mb-1">About:</strong> {farmer.bio}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
     </main>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f7f8f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  navbar: {
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '18px 6%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-  backButton: {
-    padding: '9px 18px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    background: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-
-  container: {
-    width: '90%',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '50px 0',
-  },
-
-  productSection: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '50px',
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-    padding: '30px',
-  },
-
-  imageBox: {
-    width: '100%',
-    minHeight: '450px',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    background: '#f0fdf4',
-  },
-
-  image: {
-    width: '100%',
-    height: '450px',
-    objectFit: 'cover',
-    display: 'block',
-  },
-
-  noImage: {
-    width: '100%',
-    height: '450px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontSize: '80px',
-  },
-
-  details: {
-    padding: '10px 0',
-  },
-
-  category: {
-    display: 'inline-block',
-    padding: '7px 12px',
-    background: '#f0fdf4',
-    color: '#166534',
-    borderRadius: '20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    marginBottom: '15px',
-  },
-
-  title: {
-    margin: '0 0 15px',
-    fontSize: '36px',
-    color: '#1f2937',
-  },
-
-  description: {
-    fontSize: '16px',
-    lineHeight: '1.7',
-    color: '#6b7280',
-    marginBottom: '25px',
-  },
-
-  price: {
-    fontSize: '32px',
-    fontWeight: '700',
-    color: '#166534',
-  },
-
-  unit: {
-    fontSize: '17px',
-    fontWeight: '400',
-    color: '#6b7280',
-  },
-
-  stock: {
-    marginTop: '12px',
-    color: '#166534',
-    fontWeight: '600',
-  },
-
-  cartButton: {
-    width: '100%',
-    marginTop: '25px',
-    padding: '14px',
-    border: 'none',
-    borderRadius: '9px',
-    background: '#166534',
-    color: '#ffffff',
-    fontSize: '16px',
-    fontWeight: '700',
-    cursor: 'pointer',
-  },
-
-  farmerCard: {
-    marginTop: '30px',
-    padding: '20px',
-    background: '#f9fafb',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    lineHeight: '1.6',
-    color: '#374151',
-  },
-
-  farmerTitle: {
-    margin: '0 0 15px',
-    fontSize: '20px',
-    color: '#166534',
-  },
-
-  notFound: {
-    textAlign: 'center',
-  },
 }

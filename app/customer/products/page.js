@@ -90,245 +90,39 @@ export default function CustomerProductsPage() {
     return farmerPrice + commission;
   }
 
-  const pageStyle = {
-    minHeight: "100vh",
-    background: "#f5f7f5",
-    padding: "30px",
-    boxSizing: "border-box",
-  };
-
-  const containerStyle = {
-    maxWidth: "1200px",
-    margin: "0 auto",
-  };
-
-  const headerStyle = {
-    background: "#ffffff",
-    padding: "22px 25px",
-    borderRadius: "14px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "20px",
-    marginBottom: "30px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-  };
-
-  const buttonStyle = {
-    border: "none",
-    borderRadius: "8px",
-    padding: "11px 16px",
-    cursor: "pointer",
-    fontWeight: "600",
-    fontSize: "14px",
-  };
-
-  const backButtonStyle = {
-    ...buttonStyle,
-    background: "#eeeeee",
-  };
-
-  const refreshButtonStyle = {
-    ...buttonStyle,
-    background: "#e8f5e9",
-  };
-
-  const shopHeaderStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "20px",
-    marginBottom: "20px",
-  };
-
-  const filterStyle = {
-    display: "flex",
-    gap: "15px",
-    marginBottom: "25px",
-  };
-
-  const searchStyle = {
-    flex: "1",
-    background: "#ffffff",
-    border: "1px solid #dddddd",
-    borderRadius: "10px",
-    padding: "13px 15px",
-    fontSize: "15px",
-    outline: "none",
-    minWidth: "0",
-  };
-
-  const selectStyle = {
-    minWidth: "220px",
-    background: "#ffffff",
-    border: "1px solid #dddddd",
-    borderRadius: "10px",
-    padding: "13px 15px",
-    fontSize: "15px",
-    outline: "none",
-  };
-
-  const gridStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "20px",
-  };
-
-  const cardStyle = {
-    background: "#ffffff",
-    borderRadius: "14px",
-    overflow: "hidden",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-  };
-
-  const imageBoxStyle = {
-    width: "100%",
-    height: "190px",
-    background: "#f0f2f0",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
-  const imageStyle = {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    display: "block",
-  };
-
-  const contentStyle = {
-    padding: "17px",
-  };
-
-  const categoryStyle = {
-    display: "inline-block",
-    background: "#eef7ee",
-    padding: "5px 9px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    marginBottom: "8px",
-  };
-
-  const descriptionStyle = {
-    color: "#666666",
-    fontSize: "13px",
-    minHeight: "38px",
-    margin: "8px 0",
-    lineHeight: "1.5",
-  };
-
-  const farmerStyle = {
-    fontSize: "13px",
-    color: "#555555",
-    margin: "10px 0",
-  };
-
-  const priceRowStyle = {
-    display: "flex",
-    alignItems: "baseline",
-    gap: "5px",
-    margin: "12px 0",
-  };
-
-  const priceStyle = {
-    fontSize: "21px",
-    fontWeight: "700",
-  };
-
-  const unitStyle = {
-    color: "#777777",
-    fontSize: "13px",
-  };
-
-  const stockStyle = {
-    fontSize: "13px",
-    marginBottom: "12px",
-  };
-
-  const viewButtonStyle = {
-    width: "100%",
-    border: "none",
-    borderRadius: "8px",
-    padding: "12px",
-    cursor: "pointer",
-    fontWeight: "600",
-    background: "#222222",
-    color: "#ffffff",
-    fontSize: "14px",
-  };
-
-  const disabledButtonStyle = {
-    ...viewButtonStyle,
-    background: "#cccccc",
-    cursor: "not-allowed",
-  };
-
-  const messageStyle = {
-    background: "#ffffff",
-    padding: "50px",
-    textAlign: "center",
-    borderRadius: "14px",
-    marginTop: "40px",
-  };
-
   return (
-    <main style={pageStyle}>
-      <div style={containerStyle}>
+    <main className="min-h-screen bg-[#f5f7f5] p-4 sm:p-8 font-sans">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header style={headerStyle}>
+        <header className="bg-white p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 shadow-sm">
           <div>
-            <h1
-              style={{
-                margin: "0",
-                fontSize: "26px",
-              }}
-            >
+            <h1 className="m-0 text-2xl sm:text-3xl font-bold text-gray-900">
               🌾 Uzhavar Market
             </h1>
-
-            <p
-              style={{
-                margin: "6px 0 0",
-                color: "#666666",
-              }}
-            >
+            <p className="mt-2 text-sm sm:text-base text-gray-600">
               Fresh products directly from farmers
             </p>
           </div>
-
           <button
-            style={backButtonStyle}
+            className="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-semibold transition-colors"
             onClick={() => router.push("/customer")}
           >
-            ← Dashboard
+            &larr; Dashboard
           </button>
         </header>
 
         {/* Shop Header */}
-        <section style={shopHeaderStyle}>
+        <section className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h2
-              style={{
-                margin: "0",
-                fontSize: "24px",
-              }}
-            >
+            <h2 className="m-0 text-xl sm:text-2xl font-bold text-gray-900">
               🛒 Products
             </h2>
-
-            <p
-              style={{
-                margin: "5px 0 0",
-                color: "#666666",
-              }}
-            >
+            <p className="mt-1 text-sm sm:text-base text-gray-600">
               Choose fresh products from our farmers
             </p>
           </div>
-
           <button
-            style={refreshButtonStyle}
+            className="w-full sm:w-auto px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-lg font-semibold transition-colors"
             onClick={loadProducts}
           >
             🔄 Refresh
@@ -336,27 +130,22 @@ export default function CustomerProductsPage() {
         </section>
 
         {/* Search and Category */}
-        <section style={filterStyle}>
+        <section className="flex flex-col sm:flex-row gap-4 mb-8">
           <input
             type="text"
             placeholder="🔍 Search products or farmers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={searchStyle}
+            className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
           />
-
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            style={selectStyle}
+            className="min-w-[220px] bg-white border border-gray-300 rounded-xl px-4 py-3 text-base outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
           >
             <option value="all">All Categories</option>
-
             {categories.map((category) => (
-              <option
-                key={category.id}
-                value={category.id}
-              >
+              <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}
@@ -365,29 +154,22 @@ export default function CustomerProductsPage() {
 
         {/* Loading */}
         {loading ? (
-          <div style={messageStyle}>
-            <h3>Loading products...</h3>
-            <p>Please wait.</p>
+          <div className="bg-white p-12 text-center rounded-2xl mt-10">
+            <h3 className="text-xl font-bold text-gray-800">Loading products...</h3>
+            <p className="text-gray-500 mt-2">Please wait.</p>
           </div>
         ) : filteredProducts.length === 0 ? (
           /* No Products */
-          <div style={messageStyle}>
-            <h3>No products found</h3>
-            <p>
-              Try another search or category.
-            </p>
+          <div className="bg-white p-12 text-center rounded-2xl mt-10">
+            <h3 className="text-xl font-bold text-gray-800">No products found</h3>
+            <p className="text-gray-500 mt-2">Try another search or category.</p>
           </div>
         ) : (
-          /* Products */
-          <section style={gridStyle}>
+          /* Products Grid */
+          <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
             {filteredProducts.map((product) => {
-              const customerPrice =
-                getCustomerPrice(product);
-
-              const stock = Number(
-                product.stock_quantity || 0
-              );
-
+              const customerPrice = getCustomerPrice(product);
+              const stock = Number(product.stock_quantity || 0);
               const farmerName =
                 product.profiles?.farm_name ||
                 product.profiles?.full_name ||
@@ -396,99 +178,87 @@ export default function CustomerProductsPage() {
               return (
                 <div
                   key={product.id}
-                  style={cardStyle}
+                  className="bg-white rounded-xl overflow-hidden border border-gray-200 flex flex-col hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => router.push(`/customer/products/${product.id}`)}
                 >
                   {/* Product Image */}
-                  <div style={imageBoxStyle}>
+                  <div className="h-32 sm:h-48 bg-[#f0f2f0] flex items-center justify-center text-4xl sm:text-6xl relative overflow-hidden">
                     {product.image_url ? (
                       <img
                         src={product.image_url}
                         alt={product.name}
-                        style={imageStyle}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div
-                        style={{
-                          fontSize: "55px",
-                        }}
-                      >
-                        🌾
-                      </div>
+                      <div className="group-hover:scale-110 transition-transform duration-300">🌾</div>
                     )}
                   </div>
 
                   {/* Product Content */}
-                  <div style={contentStyle}>
-                    <div style={categoryStyle}>
-                      {product.categories?.name ||
-                        "General"}
+                  <div className="p-3 sm:p-5 flex-1 flex flex-col">
+                    <div className="inline-block self-start bg-green-50 text-green-800 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold mb-2">
+                      {product.categories?.name || "General"}
                     </div>
 
-                    <h3
-                      style={{
-                        margin: "5px 0",
-                        fontSize: "18px",
-                      }}
-                    >
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">
                       {product.name}
                     </h3>
 
-                    <p style={descriptionStyle}>
-                      {product.description ||
-                        "Fresh farm product"}
+                    <p className="hidden sm:block text-xs sm:text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-2">
+                      {product.description || "Fresh farm product"}
                     </p>
 
-                    <div style={farmerStyle}>
+                    <div className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
                       👨‍🌾 {farmerName}
                     </div>
 
-                    <div style={priceRowStyle}>
-                      <strong style={priceStyle}>
-                        ₹{customerPrice.toFixed(2)}
-                      </strong>
+                    <div className="mt-auto">
+                      <div className="flex items-end gap-1 mb-1 sm:mb-2">
+                        <strong className="text-base sm:text-xl font-bold text-gray-900">
+                          ₹{customerPrice.toFixed(2)}
+                        </strong>
+                        <span className="text-[10px] sm:text-xs text-gray-500 pb-0.5">
+                          / {product.unit_count || 1} {product.unit || "unit"}
+                        </span>
+                      </div>
+                      
+                      {Number(product.delivery_price) > 0 ? (
+                        <div className="text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2">
+                          + ₹{Number(product.delivery_price).toFixed(2)} delivery
+                        </div>
+                      ) : (
+                        <div className="text-[10px] sm:text-xs text-green-600 font-medium mb-1 sm:mb-2">
+                          Free delivery
+                        </div>
+                      )}
 
-                      <span style={unitStyle}>
-                        / {product.unit || "unit"}
-                      </span>
+                      {stock > 0 ? (
+                        <div className="text-[10px] sm:text-xs font-medium text-green-700 mb-2 sm:mb-3">
+                          ✓ {stock} available
+                        </div>
+                      ) : (
+                        <div className="text-[10px] sm:text-xs font-medium text-red-600 mb-2 sm:mb-3">
+                          Out of Stock
+                        </div>
+                      )}
+
+                      <button
+                        disabled={stock <= 0}
+                        className={`w-full py-1.5 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg text-white text-xs sm:text-sm font-semibold transition-colors focus:ring-4 focus:ring-green-100 ${
+                          stock > 0
+                            ? "bg-gray-800 hover:bg-gray-900 active:bg-gray-950"
+                            : "bg-gray-300 cursor-not-allowed text-gray-500"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (stock > 0) {
+                            router.push(`/customer/products/${product.id}`);
+                          }
+                        }}
+                      >
+                        {stock > 0 ? "View Product" : "Out of Stock"}
+                      </button>
                     </div>
-
-                    {stock > 0 ? (
-                      <div
-                        style={{
-                          ...stockStyle,
-                          color: "#26733a",
-                        }}
-                      >
-                        ✓ {stock} available
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          ...stockStyle,
-                          color: "#b42318",
-                        }}
-                      >
-                        Out of Stock
-                      </div>
-                    )}
-
-                    <button
-                      disabled={stock <= 0}
-                      style={
-                        stock > 0
-                          ? viewButtonStyle
-                          : disabledButtonStyle
-                      }
-                      onClick={() =>
-                        router.push(
-                          `/customer/products/${product.id}`
-                        )
-                      }
-                    >
-                      {stock > 0
-                        ? "View Product"
-                        : "Out of Stock"}
-                    </button>
                   </div>
                 </div>
               );

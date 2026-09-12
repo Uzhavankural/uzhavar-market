@@ -13,17 +13,13 @@ export default function CustomerOrdersPage() {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [reviewRatings, setReviewRatings] = useState({});
-const [reviewTexts, setReviewTexts] = useState({});
-const [submittedReviews, setSubmittedReviews] = useState({});
-const [reviewSubmitting, setReviewSubmitting] = useState(null);
+  const [reviewTexts, setReviewTexts] = useState({});
+  const [submittedReviews, setSubmittedReviews] = useState({});
+  const [reviewSubmitting, setReviewSubmitting] = useState(null);
 
   useEffect(() => {
     loadOrders();
   }, []);
-
-  // ==================================================
-  // LOAD ORDERS
-  // ==================================================
 
   async function loadOrders() {
     try {
@@ -31,10 +27,7 @@ const [reviewSubmitting, setReviewSubmitting] = useState(null);
       setMessage("");
       setErrorMessage("");
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (userError || !user) {
         router.push("/login");
@@ -42,2013 +35,492 @@ const [reviewSubmitting, setReviewSubmitting] = useState(null);
       }
 
       const { data, error } = await supabase
-  .from("orders")
-  .select(`
-    *,
-    order_items (
-      id,
-      product_id,
-      product_name,
-      quantity,
-      unit,
-      price,
-      item_total
-    )
-  `)
-  .eq("customer_id", user.id)
-  .order("created_at", {
-    ascending: false,
-  });
+        .from("orders")
+        .select(`
+          *,
+          order_items (
+            id,
+            product_id,
+            product_name,
+            quantity,
+            unit,
+            price,
+            item_total
+          )
+        `)
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.error(
-          "ORDERS FETCH ERROR:",
-          JSON.stringify(error, null, 2)
-        );
-
-        setErrorMessage(
-          "Unable to load your orders."
-        );
-
+        console.error("ORDERS FETCH ERROR:", JSON.stringify(error, null, 2));
+        setErrorMessage("Unable to load your orders.");
         return;
       }
 
       setOrders(data || []);
     } catch (error) {
-      console.error(
-        "LOAD ORDERS ERROR:",
-        error
-      );
-
-      setErrorMessage(
-        "Something went wrong while loading your orders."
-      );
+      console.error("LOAD ORDERS ERROR:", error);
+      setErrorMessage("Something went wrong while loading your orders.");
     } finally {
       setLoading(false);
     }
   }
 
-  // ==================================================
-  // CUSTOMER CONFIRM DELIVERY
-  // ==================================================
-
   async function confirmDelivery(order) {
     if (!order?.id) return;
 
-    const currentStatus = String(
-      order.order_status || ""
-    )
-      .trim()
-      .toLowerCase();
+    const currentStatus = String(order.order_status || "").trim().toLowerCase();
 
-    // Customer can confirm ONLY shipped orders
     if (currentStatus !== "shipped") {
-      setErrorMessage(
-        "This order is not ready for delivery confirmation."
-      );
+      setErrorMessage("This order is not ready for delivery confirmation.");
       return;
     }
 
-    // Prevent duplicate clicks
-    if (updatingOrderId === order.id) {
-      return;
-    }
+    if (updatingOrderId === order.id) return;
 
     const confirmed = window.confirm(
       "Have you received this order?\n\nClick OK only after you have received the products."
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setUpdatingOrderId(order.id);
     setMessage("");
     setErrorMessage("");
 
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (userError || !user) {
         router.push("/login");
         return;
       }
 
-      // ------------------------------------------------
-      // IMPORTANT
-      //
-      // RLS policy already checks:
-      //
-      // customer_id = auth.uid()
-      // AND current order_status = shipped
-      //
-      // So we only need to match the order ID here.
-      // ------------------------------------------------
-
-      const {
-        data: updatedOrder,
-        error,
-      } = await supabase
+      const { data: updatedOrder, error } = await supabase
         .from("orders")
-        .update({
-          order_status: "delivered",
-        })
+        .update({ order_status: "delivered" })
         .eq("id", order.id)
-        .select(
-          "id, customer_id, order_status, payment_status"
-        )
+        .select("id, customer_id, order_status, payment_status")
         .maybeSingle();
 
       if (error) {
-        console.error(
-          "DELIVERY CONFIRM ERROR:",
-          JSON.stringify(error, null, 2)
-        );
-
-        setErrorMessage(
-          error.message ||
-            "Unable to confirm delivery. Please try again."
-        );
-
+        console.error("DELIVERY CONFIRM ERROR:", JSON.stringify(error, null, 2));
+        setErrorMessage(error.message || "Unable to confirm delivery. Please try again.");
         return;
       }
-
-      // ------------------------------------------------
-      // If no row was returned, update did not happen.
-      // ------------------------------------------------
 
       if (!updatedOrder) {
-        console.error(
-          "DELIVERY CONFIRM ERROR: No order was updated.",
-          {
-            orderId: order.id,
-            currentStatus,
-            userId: user.id,
-          }
-        );
-
-        setErrorMessage(
-          "Delivery could not be confirmed. The order may no longer be in Shipped status. Please refresh the page and try again."
-        );
-
+        setErrorMessage("Delivery could not be confirmed. The order may no longer be in Shipped status. Please refresh the page and try again.");
         return;
       }
-
-      // ------------------------------------------------
-      // UPDATE LOCAL STATE
-      // ------------------------------------------------
 
       setOrders((currentOrders) =>
         currentOrders.map((item) =>
-          item.id === order.id
-            ? {
-                ...item,
-                order_status:
-                  updatedOrder.order_status,
-              }
-            : item
+          item.id === order.id ? { ...item, order_status: updatedOrder.order_status } : item
         )
       );
 
-      setMessage(
-  "✓ Delivery confirmed successfully. You can now rate your products below."
-);
+      setMessage("✓ Delivery confirmed successfully. You can now rate your products below.");
     } catch (error) {
-      console.error(
-        "CONFIRM DELIVERY ERROR:",
-        error
-      );
-
-      setErrorMessage(
-        "Something went wrong while confirming delivery."
-      );
+      console.error("CONFIRM DELIVERY ERROR:", error);
+      setErrorMessage("Something went wrong while confirming delivery.");
     } finally {
       setUpdatingOrderId(null);
     }
   }
 
-  // ==================================================
-  // STATUS STYLE
-  // ==================================================
-
-  function getStatusStyle(status) {
-    const currentStatus = String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    switch (currentStatus) {
-      case "pending":
-        return {
-          background: "#fff7ed",
-          color: "#c2410c",
-        };
-
-      case "confirmed":
-        return {
-          background: "#eff6ff",
-          color: "#1d4ed8",
-        };
-
-      case "shipped":
-        return {
-          background: "#f5f3ff",
-          color: "#6d28d9",
-        };
-
-      case "delivered":
-        return {
-          background: "#ecfdf5",
-          color: "#047857",
-        };
-
-      case "cancelled":
-        return {
-          background: "#fef2f2",
-          color: "#b91c1c",
-        };
-
-      default:
-        return {
-          background: "#f3f4f6",
-          color: "#374151",
-        };
+  function getStatusClasses(status) {
+    switch (status) {
+      case "pending": return "bg-orange-50 text-orange-700 border-orange-100";
+      case "confirmed": return "bg-blue-50 text-blue-700 border-blue-100";
+      case "shipped": return "bg-purple-50 text-purple-700 border-purple-100";
+      case "delivered": return "bg-green-50 text-green-700 border-green-100";
+      case "cancelled": return "bg-red-50 text-red-700 border-red-100";
+      default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
   }
 
-  // ==================================================
-  // PAYMENT STYLE
-  // ==================================================
-
-  function getPaymentStyle(status) {
-    const currentStatus = String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    if (currentStatus === "paid") {
-      return {
-        background: "#ecfdf5",
-        color: "#047857",
-      };
-    }
-
-    return {
-      background: "#fff7ed",
-      color: "#c2410c",
-    };
+  function getPaymentClasses(status) {
+    if (status === "paid") return "bg-green-50 text-green-700";
+    return "bg-orange-50 text-orange-700";
   }
-
-  // ==================================================
-  // STATUS TEXT
-  // ==================================================
 
   function getStatusText(status) {
-    const currentStatus = String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    switch (currentStatus) {
-      case "pending":
-        return "Payment Pending";
-
-      case "confirmed":
-        return "Order Confirmed";
-
-      case "shipped":
-        return "Shipped";
-
-      case "delivered":
-        return "Delivered";
-
-      case "cancelled":
-        return "Cancelled";
-
-      default:
-        return "Unknown";
+    switch (status) {
+      case "pending": return "Payment Pending";
+      case "confirmed": return "Order Confirmed";
+      case "shipped": return "Shipped";
+      case "delivered": return "Delivered";
+      case "cancelled": return "Cancelled";
+      default: return "Unknown";
     }
   }
-
-  // ==================================================
-  // STATUS DESCRIPTION
-  // ==================================================
 
   function getStatusDescription(status) {
-    const currentStatus = String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    switch (currentStatus) {
-      case "pending":
-        return "Waiting for payment verification and admin confirmation.";
-
-      case "confirmed":
-        return "Your payment is verified. Farmer will prepare and ship your order.";
-
-      case "shipped":
-        return "Your order has been shipped. Confirm after you receive it.";
-
-      case "delivered":
-        return "You confirmed that the order was received.";
-
-      case "cancelled":
-        return "This order has been cancelled.";
-
-      default:
-        return "Order status unavailable.";
+    switch (status) {
+      case "pending": return "Waiting for payment verification and admin confirmation.";
+      case "confirmed": return "Your payment is verified. Farmer will prepare and ship your order.";
+      case "shipped": return "Your order has been shipped. Confirm after you receive it.";
+      case "delivered": return "You confirmed that the order was received.";
+      case "cancelled": return "This order has been cancelled.";
+      default: return "Order status unavailable.";
     }
   }
-
-  // ==================================================
-  // FORMAT DATE
-  // ==================================================
 
   function formatDate(date) {
     if (!date) return "-";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "-";
-    }
-
-    return parsedDate.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
   }
-
-  // ==================================================
-  // FORMAT DATE + TIME
-  // ==================================================
 
   function formatDateTime(date) {
     if (!date) return "-";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "-";
-    }
-
-    return parsedDate.toLocaleString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
   }
-
-  // ==================================================
-  // LOADING
-  // ==================================================
 
   if (loading) {
     return (
-      <main style={styles.page}>
-        <div style={styles.loadingCard}>
-          <div style={styles.loadingIcon}>
-            🌾
-          </div>
-
-          <h2 style={styles.loadingTitle}>
-            Loading Orders...
-          </h2>
-
-          <p style={styles.loadingText}>
-            Please wait.
-          </p>
+      <main className="min-h-screen bg-gray-50 p-6 flex flex-col items-center">
+        <div className="mt-20 bg-white p-10 rounded-2xl shadow-sm text-center max-w-sm w-full">
+          <div className="text-5xl mb-4">🌾</div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Orders...</h2>
+          <p className="text-gray-500">Please wait.</p>
         </div>
       </main>
     );
   }
 
-  // ==================================================
-  // PAGE
-  // ==================================================
-
   return (
-    <main style={styles.page}>
-      <div style={styles.container}>
-
-        {/* ==========================================
-            HEADER
-        ========================================== */}
-
-        <div style={styles.header}>
+    <main className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
           <div>
             <button
-              onClick={() =>
-                router.push("/customer")
-              }
-              style={styles.backButton}
+              onClick={() => router.push("/customer")}
+              className="text-green-700 font-bold mb-2 hover:underline bg-transparent border-none p-0 cursor-pointer"
             >
               ← Customer Dashboard
             </button>
-
-            <h1 style={styles.title}>
-              My Orders
-            </h1>
-
-            <p style={styles.subtitle}>
-              Track your orders and delivery status
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
+            <p className="text-gray-500 mt-1">Track your orders and delivery status</p>
           </div>
-
           <button
-            onClick={() =>
-              router.push("/customer/products")
-            }
-            style={styles.shopButton}
+            onClick={() => router.push("/customer/products")}
+            className="bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-green-800 transition-colors border-none cursor-pointer"
           >
             🛒 Continue Shopping
           </button>
         </div>
 
-        {/* ==========================================
-            SUCCESS MESSAGE
-        ========================================== */}
-
         {message && (
-          <div style={styles.successMessage}>
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-5 font-semibold shadow-sm">
             {message}
           </div>
         )}
 
-        {/* ==========================================
-            ERROR MESSAGE
-        ========================================== */}
-
         {errorMessage && (
-          <div style={styles.errorMessage}>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 font-semibold shadow-sm">
             {errorMessage}
           </div>
         )}
 
-        {/* ==========================================
-            EMPTY ORDERS
-        ========================================== */}
-
         {orders.length === 0 ? (
-          <div style={styles.emptyCard}>
-
-            <div style={styles.emptyIcon}>
-              📦
-            </div>
-
-            <h2 style={styles.emptyTitle}>
-              No Orders Yet
-            </h2>
-
-            <p style={styles.emptyText}>
-              You haven't placed any orders yet.
-            </p>
-
+          <div className="bg-white border border-gray-200 rounded-2xl p-16 text-center shadow-sm">
+            <div className="text-6xl mb-4">📦</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">No Orders Yet</h2>
+            <p className="text-gray-500 mb-6">You haven't placed any orders yet.</p>
             <button
-              onClick={() =>
-                router.push("/customer/products")
-              }
-              style={styles.primaryButton}
+              onClick={() => router.push("/customer/products")}
+              className="bg-green-700 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-800 transition-colors border-none cursor-pointer"
             >
               Browse Products
             </button>
-
           </div>
         ) : (
           <>
-            {/* ======================================
-                ORDER COUNT
-            ====================================== */}
-
-            <div style={styles.orderCount}>
-              <strong>
-                {orders.length}
-              </strong>{" "}
-              {orders.length === 1
-                ? "Order"
-                : "Orders"}
+            <div className="mb-4 text-gray-500 text-sm font-medium">
+              <strong className="text-gray-900 font-bold">{orders.length}</strong> {orders.length === 1 ? "Order" : "Orders"}
             </div>
 
-            {/* ======================================
-                ORDERS LIST
-            ====================================== */}
-
-            <div style={styles.ordersList}>
-
+            <div className="flex flex-col gap-6">
               {orders.map((order) => {
-                const orderStatus =
-                  String(
-                    order.order_status ||
-                      "pending"
-                  )
-                    .trim()
-                    .toLowerCase();
-
-                const paymentStatus =
-                  String(
-                    order.payment_status ||
-                      "pending"
-                  )
-                    .trim()
-                    .toLowerCase();
-
-                const statusStyle =
-                  getStatusStyle(
-                    orderStatus
-                  );
-
-                const paymentStyle =
-                  getPaymentStyle(
-                    paymentStatus
-                  );
-
-                const isUpdating =
-                  updatingOrderId ===
-                  order.id;
-
-                const canConfirmDelivery =
-                  orderStatus === "shipped";
+                const orderStatus = String(order.order_status || "pending").trim().toLowerCase();
+                const paymentStatus = String(order.payment_status || "pending").trim().toLowerCase();
+                const statusClasses = getStatusClasses(orderStatus);
+                const paymentClasses = getPaymentClasses(paymentStatus);
+                const isUpdating = updatingOrderId === order.id;
+                const canConfirmDelivery = orderStatus === "shipped";
 
                 return (
-                  <div
-                    key={order.id}
-                    style={styles.orderCard}
-                  >
-
-                    {/* ==================================
-                        ORDER HEADER
-                    ================================== */}
-
-                    <div style={styles.orderHeader}>
-
-                      <div style={styles.orderHeaderLeft}>
-
-                        <p style={styles.smallLabel}>
-                          ORDER ID
-                        </p>
-
-                        <p style={styles.orderId}>
-                          {order.id}
-                        </p>
-
+                  <div key={order.id} className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100">
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-500 tracking-wider mb-1">ORDER ID</p>
+                        <p className="text-sm font-bold text-gray-800 break-all m-0">{order.id}</p>
                       </div>
-
-                      <div style={styles.orderDateBox}>
-
-                        <p style={styles.smallLabel}>
-                          ORDER DATE
-                        </p>
-
-                        <p style={styles.orderDate}>
-                          {formatDate(
-                            order.created_at
-                          )}
-                        </p>
-
+                      <div className="sm:text-right shrink-0">
+                        <p className="text-xs font-bold text-gray-500 tracking-wider mb-1">ORDER DATE</p>
+                        <p className="text-sm font-bold text-gray-800 m-0">{formatDate(order.created_at)}</p>
                       </div>
-
                     </div>
 
-                    {/* ==================================
-                        STATUS BANNER
-                    ================================== */}
-
-                    <div
-                      style={{
-                        ...styles.statusBanner,
-                        background:
-                          statusStyle.background,
-                        color:
-                          statusStyle.color,
-                      }}
-                    >
-
-                      <div>
-                        <strong
-                          style={
-                            styles.statusBannerTitle
-                          }
-                        >
-                          {getStatusText(
-                            orderStatus
-                          )}
-                        </strong>
-
-                        <p
-                          style={
-                            styles.statusBannerText
-                          }
-                        >
-                          {getStatusDescription(
-                            orderStatus
-                          )}
-                        </p>
-                      </div>
-
+                    {/* Banner */}
+                    <div className={`mt-5 p-4 rounded-xl border ${statusClasses}`}>
+                      <strong className="block text-base mb-1">{getStatusText(orderStatus)}</strong>
+                      <p className="text-sm m-0 leading-relaxed">{getStatusDescription(orderStatus)}</p>
                     </div>
 
-                    {/* ==================================
-                        ORDER INFO
-                    ================================== */}
-
-                    <div style={styles.infoGrid}>
-
-                      {/* TOTAL */}
-
-                      <div style={styles.infoBox}>
-
-                        <span
-                          style={styles.label}
-                        >
-                          Total Amount
-                        </span>
-
-                        <strong
-                          style={
-                            styles.totalAmount
-                          }
-                        >
-                          ₹
-                          {Number(
-                            order.total_amount ||
-                              0
-                          ).toFixed(2)}
-                        </strong>
-
+                    {/* Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-1.5">
+                        <span className="text-xs text-gray-500">Total Amount</span>
+                        <strong className="text-xl text-green-700">₹{Number(order.total_amount || 0).toFixed(2)}</strong>
                       </div>
-
-                      {/* ORDER STATUS */}
-
-                      <div style={styles.infoBox}>
-
-                        <span
-                          style={styles.label}
-                        >
-                          Order Status
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-1.5 items-start">
+                        <span className="text-xs text-gray-500">Order Status</span>
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${statusClasses}`}>
+                          {getStatusText(orderStatus)}
                         </span>
-
-                        <span
-                          style={{
-                            ...styles.badge,
-                            ...statusStyle,
-                          }}
-                        >
-                          {getStatusText(
-                            orderStatus
-                          )}
-                        </span>
-
                       </div>
-
-                      {/* PAYMENT */}
-
-                      <div style={styles.infoBox}>
-
-                        <span
-                          style={styles.label}
-                        >
-                          Payment
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-1.5 items-start">
+                        <span className="text-xs text-gray-500">Payment</span>
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${paymentClasses}`}>
+                          {paymentStatus === "paid" ? "Paid" : "Payment Pending"}
                         </span>
-
-                        <span
-                          style={{
-                            ...styles.badge,
-                            ...paymentStyle,
-                          }}
-                        >
-                          {paymentStatus ===
-                          "paid"
-                            ? "Paid"
-                            : "Payment Pending"}
-                        </span>
-
                       </div>
-
                     </div>
 
-                    {/* ==================================
-                        ORDER PROGRESS
-                    ================================== */}
-
-                    <div
-                      style={
-                        styles.progressSection
-                      }
-                    >
-
-                      <h3
-                        style={
-                          styles.progressTitle
-                        }
-                      >
-                        Order Progress
-                      </h3>
-
-                      <div
-                        style={
-                          styles.progressSteps
-                        }
-                      >
-
-                        {/* STEP 1 */}
-
-                        <div
-                          style={
-                            styles.progressStep
-                          }
-                        >
-                          <div
-                            style={{
-                              ...styles.stepCircle,
-                              ...(orderStatus !==
-                              "pending"
-                                ? styles.stepCompleted
-                                : styles.stepActive),
-                            }}
-                          >
-                            {orderStatus !==
-                            "pending"
-                              ? "✓"
-                              : "1"}
+                    {/* Progress */}
+                    <div className="mt-5 p-4 sm:p-5 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+                      <h3 className="text-base font-bold text-gray-900 mb-4">Order Progress</h3>
+                      <div className="flex items-center w-full overflow-x-auto pb-2">
+                        {/* 1 */}
+                        <div className="flex flex-col items-center min-w-[70px] text-center shrink-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-green-700`}>
+                            {orderStatus !== "pending" ? "✓" : "1"}
                           </div>
-
-                          <span
-                            style={
-                              styles.stepText
-                            }
-                          >
-                            Order Placed
-                          </span>
+                          <span className="text-xs font-semibold text-gray-600 mt-2">Placed</span>
                         </div>
-
-                        {/* LINE */}
-
-                        <div
-                          style={
-                            styles.progressLine
-                          }
-                        />
-
-                        {/* STEP 2 */}
-
-                        <div
-                          style={
-                            styles.progressStep
-                          }
-                        >
-                          <div
-                            style={{
-                              ...styles.stepCircle,
-                              ...(orderStatus ===
-                                "confirmed" ||
-                              orderStatus ===
-                                "shipped" ||
-                              orderStatus ===
-                                "delivered"
-                                ? styles.stepCompleted
-                                : styles.stepInactive),
-                            }}
-                          >
-                            {orderStatus ===
-                              "confirmed" ||
-                            orderStatus ===
-                              "shipped" ||
-                            orderStatus ===
-                              "delivered"
-                              ? "✓"
-                              : "2"}
+                        <div className="h-0.5 bg-gray-300 flex-1 min-w-[30px] mx-2 -mt-6"></div>
+                        {/* 2 */}
+                        <div className="flex flex-col items-center min-w-[70px] text-center shrink-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${["confirmed", "shipped", "delivered"].includes(orderStatus) ? "bg-green-700 text-white" : "bg-gray-200 text-gray-500"}`}>
+                            {["confirmed", "shipped", "delivered"].includes(orderStatus) ? "✓" : "2"}
                           </div>
-
-                          <span
-                            style={
-                              styles.stepText
-                            }
-                          >
-                            Confirmed
-                          </span>
+                          <span className="text-xs font-semibold text-gray-600 mt-2">Confirmed</span>
                         </div>
-
-                        {/* LINE */}
-
-                        <div
-                          style={
-                            styles.progressLine
-                          }
-                        />
-
-                        {/* STEP 3 */}
-
-                        <div
-                          style={
-                            styles.progressStep
-                          }
-                        >
-                          <div
-                            style={{
-                              ...styles.stepCircle,
-                              ...(orderStatus ===
-                                "shipped" ||
-                              orderStatus ===
-                                "delivered"
-                                ? styles.stepCompleted
-                                : styles.stepInactive),
-                            }}
-                          >
-                            {orderStatus ===
-                              "shipped" ||
-                            orderStatus ===
-                              "delivered"
-                              ? "✓"
-                              : "3"}
+                        <div className="h-0.5 bg-gray-300 flex-1 min-w-[30px] mx-2 -mt-6"></div>
+                        {/* 3 */}
+                        <div className="flex flex-col items-center min-w-[70px] text-center shrink-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${["shipped", "delivered"].includes(orderStatus) ? "bg-green-700 text-white" : "bg-gray-200 text-gray-500"}`}>
+                            {["shipped", "delivered"].includes(orderStatus) ? "✓" : "3"}
                           </div>
-
-                          <span
-                            style={
-                              styles.stepText
-                            }
-                          >
-                            Shipped
-                          </span>
+                          <span className="text-xs font-semibold text-gray-600 mt-2">Shipped</span>
                         </div>
-
-                        {/* LINE */}
-
-                        <div
-                          style={
-                            styles.progressLine
-                          }
-                        />
-
-                        {/* STEP 4 */}
-
-                        <div
-                          style={
-                            styles.progressStep
-                          }
-                        >
-                          <div
-                            style={{
-                              ...styles.stepCircle,
-                              ...(orderStatus ===
-                              "delivered"
-                                ? styles.stepCompleted
-                                : styles.stepInactive),
-                            }}
-                          >
-                            {orderStatus ===
-                            "delivered"
-                              ? "✓"
-                              : "4"}
+                        <div className="h-0.5 bg-gray-300 flex-1 min-w-[30px] mx-2 -mt-6"></div>
+                        {/* 4 */}
+                        <div className="flex flex-col items-center min-w-[70px] text-center shrink-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${orderStatus === "delivered" ? "bg-green-700 text-white" : "bg-gray-200 text-gray-500"}`}>
+                            {orderStatus === "delivered" ? "✓" : "4"}
                           </div>
-
-                          <span
-                            style={
-                              styles.stepText
-                            }
-                          >
-                            Delivered
-                          </span>
+                          <span className="text-xs font-semibold text-gray-600 mt-2">Delivered</span>
                         </div>
-
                       </div>
-
                     </div>
 
-                    {/* ==================================
-                        DELIVERY CONFIRMATION
-                    ================================== */}
-
+                    {/* Delivery Confirmation */}
                     {canConfirmDelivery && (
-                      <div
-                        style={
-                          styles.deliveryConfirmCard
-                        }
-                      >
-
+                      <div className="mt-5 p-4 sm:p-5 bg-yellow-50 border border-yellow-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                          <h3
-                            style={
-                              styles.deliveryTitle
-                            }
-                          >
-                            📦 Order Received?
-                          </h3>
-
-                          <p
-                            style={
-                              styles.deliveryText
-                            }
-                          >
-                            Your order has been
-                            shipped. After you
-                            receive the products,
-                            confirm the delivery
-                            below.
+                          <h3 className="text-yellow-800 text-lg font-bold mb-1 mt-0">📦 Order Received?</h3>
+                          <p className="text-yellow-900 text-sm m-0 leading-relaxed max-w-xl">
+                            Your order has been shipped. After you receive the products, confirm the delivery below.
                           </p>
                         </div>
-
                         <button
-                          onClick={() =>
-                            confirmDelivery(
-                              order
-                            )
-                          }
+                          onClick={() => confirmDelivery(order)}
                           disabled={isUpdating}
-                          style={{
-                            ...styles.confirmButton,
-                            opacity: isUpdating
-                              ? 0.7
-                              : 1,
-                            cursor: isUpdating
-                              ? "not-allowed"
-                              : "pointer",
-                          }}
+                          className={`shrink-0 bg-green-700 text-white border-none px-5 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-colors ${
+                            isUpdating ? "opacity-70 cursor-not-allowed" : "hover:bg-green-800 cursor-pointer"
+                          }`}
                         >
-                          {isUpdating
-                            ? "Confirming..."
-                            : "✓ Confirm Order Received"}
+                          {isUpdating ? "Confirming..." : "✓ Confirm Order Received"}
                         </button>
-
                       </div>
                     )}
 
-                    {/* ==================================
-                        DELIVERED MESSAGE
-                    ================================== */}
-
-                    {orderStatus ===
-                      "delivered" && (
-                      <div
-                        style={
-                          styles.deliveredCard
-                        }
-                      >
-                        <div
-                          style={
-                            styles.deliveredIcon
-                          }
-                        >
-                          ✓
-                        </div>
-
+                    {/* Delivered Message */}
+                    {orderStatus === "delivered" && (
+                      <div className="mt-5 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                        <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">✓</div>
                         <div>
-                          <strong
-                            style={
-                              styles.deliveredTitle
-                            }
-                          >
-                            Delivery Confirmed
-                          </strong>
-
-                          <p
-                            style={
-                              styles.deliveredText
-                            }
-                          >
-                            You confirmed that
-                            this order was
-                            received successfully.
-                          </p>
+                          <strong className="block text-green-800 text-sm font-bold mb-0.5">Delivery Confirmed</strong>
+                          <p className="text-green-800 text-xs m-0">You confirmed that this order was received successfully.</p>
                         </div>
                       </div>
                     )}
 
-                    {/* ==================================
-    PRODUCT REVIEWS
-================================== */}
+                    {/* Product Reviews */}
+                    {orderStatus === "delivered" && Array.isArray(order.order_items) && order.order_items.length > 0 && (
+                      <div className="mt-5 p-5 bg-white border border-gray-200 rounded-xl">
+                        <h3 className="text-lg font-bold text-gray-900 m-0 mb-1">⭐ Rate Your Products</h3>
+                        <p className="text-sm text-gray-500 mb-4 mt-1">How was your experience with the products you received?</p>
 
-{orderStatus === "delivered" &&
-  Array.isArray(order.order_items) &&
-  order.order_items.length > 0 && (
-    <div style={styles.reviewSection}>
+                        <div className="flex flex-col gap-3">
+                          {order.order_items.map((item) => {
+                            const selectedRating = reviewRatings[item.id] || 0;
+                            const reviewText = reviewTexts[item.id] || "";
+                            const isSubmitted = submittedReviews[item.id];
+                            const isSubmitting = reviewSubmitting === item.id;
 
-      <h3 style={styles.reviewSectionTitle}>
-        ⭐ Rate Your Products
-      </h3>
+                            return (
+                              <div key={item.id} className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                                <div className="flex flex-col gap-1 mb-2">
+                                  <strong className="text-gray-900 text-sm">{item.product_name}</strong>
+                                  <span className="text-gray-500 text-xs">Qty: {item.quantity} {item.unit || ""}</span>
+                                </div>
 
-      <p style={styles.reviewSectionText}>
-        How was your experience with the products you received?
-      </p>
+                                {!isSubmitted ? (
+                                  <>
+                                    <div className="flex items-center gap-1 mb-2">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                          key={star}
+                                          type="button"
+                                          onClick={() => setReviewRatings((c) => ({ ...c, [item.id]: star }))}
+                                          className={`bg-transparent border-none p-0.5 text-3xl leading-none cursor-pointer focus:outline-none ${
+                                            star <= selectedRating ? "text-yellow-500" : "text-gray-300"
+                                          }`}
+                                        >
+                                          {star <= selectedRating ? "★" : "☆"}
+                                        </button>
+                                      ))}
+                                    </div>
 
-      <div style={styles.reviewItems}>
-
-        {order.order_items.map((item) => {
-          const selectedRating =
-            reviewRatings[item.id] || 0;
-
-          const reviewText =
-            reviewTexts[item.id] || "";
-
-          const isSubmitted =
-            submittedReviews[item.id];
-
-          const isSubmitting =
-            reviewSubmitting === item.id;
-
-          return (
-            <div
-              key={item.id}
-              style={styles.reviewItem}
-            >
-
-              {/* PRODUCT NAME */}
-
-              <div style={styles.reviewItemInfo}>
-
-                <strong
-                  style={styles.reviewProductName}
-                >
-                  {item.product_name}
-                </strong>
-
-                <span
-                  style={styles.reviewProductMeta}
-                >
-                  Qty: {item.quantity}{" "}
-                  {item.unit || ""}
-                </span>
-
-              </div>
-
-              {/* STARS */}
-
-              {!isSubmitted ? (
-                <>
-                  <div style={styles.starRow}>
-
-                    {[1, 2, 3, 4, 5].map(
-                      (star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => {
-                            setReviewRatings(
-                              (current) => ({
-                                ...current,
-                                [item.id]: star,
-                              })
+                                    {selectedRating > 0 && (
+                                      <div className="mt-2">
+                                        <textarea
+                                          value={reviewText}
+                                          onChange={(e) => setReviewTexts((c) => ({ ...c, [item.id]: e.target.value }))}
+                                          placeholder="Share your experience with this product..."
+                                          rows={3}
+                                          maxLength={1000}
+                                          className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500 outline-none"
+                                        />
+                                        <div className="flex justify-between items-center mt-2">
+                                          <span className="text-xs text-gray-400">{reviewText.length}/1000</span>
+                                          <button
+                                            type="button"
+                                            disabled={isSubmitting}
+                                            onClick={async () => {
+                                              if (selectedRating < 1 || selectedRating > 5) return;
+                                              setReviewSubmitting(item.id);
+                                              try {
+                                                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                                                if (userError || !user) {
+                                                  router.push("/login");
+                                                  return;
+                                                }
+                                                const { error: reviewError } = await supabase
+                                                  .from("reviews")
+                                                  .insert({
+                                                    customer_id: user.id,
+                                                    product_id: item.product_id,
+                                                    order_id: order.id,
+                                                    rating: selectedRating,
+                                                    review_text: reviewText.trim() || null,
+                                                    review_type: "product",
+                                                    approval_status: "pending",
+                                                  });
+                                                if (reviewError) {
+                                                  if (reviewError.code === "23505") {
+                                                    setErrorMessage("You have already submitted a review for this product.");
+                                                  } else {
+                                                    setErrorMessage(reviewError.message || "Unable to submit review.");
+                                                  }
+                                                  return;
+                                                }
+                                                setSubmittedReviews((c) => ({ ...c, [item.id]: true }));
+                                                setMessage(`⭐ Review submitted for ${item.product_name}. Waiting for admin approval.`);
+                                              } catch (err) {
+                                                setErrorMessage("Something went wrong while submitting your review.");
+                                              } finally {
+                                                setReviewSubmitting(null);
+                                              }
+                                            }}
+                                            className={`border-none bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                                              isSubmitting ? "opacity-60 cursor-not-allowed" : "hover:bg-green-800 cursor-pointer"
+                                            }`}
+                                          >
+                                            {isSubmitting ? "Submitting..." : "Submit Review"}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex flex-col gap-1 text-sm text-green-800">
+                                    <strong className="font-bold text-sm">✓ Review Submitted</strong>
+                                    <span className="text-xs">Waiting for admin approval.</span>
+                                  </div>
+                                )}
+                              </div>
                             );
-                          }}
-                          style={{
-                            ...styles.starButton,
-                            color:
-                              star <=
-                              selectedRating
-                                ? "#f59e0b"
-                                : "#d1d5db",
-                          }}
-                          aria-label={`${star} star`}
-                        >
-                          {star <=
-                          selectedRating
-                            ? "★"
-                            : "☆"}
-                        </button>
-                      )
+                          })}
+                        </div>
+                      </div>
                     )}
 
-                  </div>
-
-                  {/* TEXT BOX + SUBMIT */}
-
-                  {selectedRating > 0 && (
-                    <div
-                      style={
-                        styles.reviewForm
-                      }
-                    >
-
-                      <textarea
-                        value={reviewText}
-                        onChange={(e) =>
-                          setReviewTexts(
-                            (current) => ({
-                              ...current,
-                              [item.id]:
-                                e.target.value,
-                            })
-                          )
-                        }
-                        placeholder="Share your experience with this product..."
-                        rows={4}
-                        maxLength={1000}
-                        style={
-                          styles.reviewTextarea
-                        }
-                      />
-
-                      <div
-                        style={
-                          styles.reviewFormBottom
-                        }
-                      >
-
-                        <span
-                          style={
-                            styles.reviewCharacterCount
-                          }
-                        >
-                          {reviewText.length}/1000
-                        </span>
-
-                        <button
-                          type="button"
-                          disabled={isSubmitting}
-                          onClick={async () => {
-
-                            if (
-                              selectedRating <
-                                1 ||
-                              selectedRating > 5
-                            ) {
-                              return;
-                            }
-
-                            setReviewSubmitting(
-                              item.id
-                            );
-
-                            try {
-
-                              const {
-                                data: {
-                                  user,
-                                },
-                                error:
-                                  userError,
-                              } =
-                                await supabase.auth.getUser();
-
-                              if (
-                                userError ||
-                                !user
-                              ) {
-                                router.push(
-                                  "/login"
-                                );
-                                return;
-                              }
-
-                              const {
-                                error:
-                                  reviewError,
-                              } =
-                                await supabase
-                                  .from(
-                                    "reviews"
-                                  )
-                                  .insert({
-                                    customer_id:
-                                      user.id,
-                                    product_id:
-                                      item.product_id,
-                                    order_id:
-                                      order.id,
-                                    rating:
-                                      selectedRating,
-                                    review_text:
-                                      reviewText.trim() ||
-                                      null,
-                                    review_type:
-                                      "product",
-                                    approval_status:
-                                      "pending",
-                                  });
-
-                              if (
-                                reviewError
-                              ) {
-                                console.error(
-                                  "REVIEW INSERT ERROR:",
-                                  JSON.stringify(
-                                    reviewError,
-                                    null,
-                                    2
-                                  )
-                                );
-
-                                if (
-                                  reviewError.code ===
-                                  "23505"
-                                ) {
-                                  setErrorMessage(
-                                    "You have already submitted a review for this product."
-                                  );
-                                } else {
-                                  setErrorMessage(
-                                    reviewError.message ||
-                                      "Unable to submit review."
-                                  );
-                                }
-
-                                return;
-                              }
-
-                              setSubmittedReviews(
-                                (current) => ({
-                                  ...current,
-                                  [item.id]:
-                                    true,
-                                })
-                              );
-
-                              setMessage(
-                                `⭐ Review submitted for ${item.product_name}. Waiting for admin approval.`
-                              );
-
-                            } catch (error) {
-
-                              console.error(
-                                "REVIEW SUBMIT ERROR:",
-                                error
-                              );
-
-                              setErrorMessage(
-                                "Something went wrong while submitting your review."
-                              );
-
-                            } finally {
-
-                              setReviewSubmitting(
-                                null
-                              );
-
-                            }
-                          }}
-                          style={{
-                            ...styles.submitReviewButton,
-                            opacity:
-                              isSubmitting
-                                ? 0.6
-                                : 1,
-                            cursor:
-                              isSubmitting
-                                ? "not-allowed"
-                                : "pointer",
-                          }}
-                        >
-                          {isSubmitting
-                            ? "Submitting..."
-                            : "Submit Review"}
-                        </button>
-
-                      </div>
-
-                    </div>
-                  )}
-                </>
-              ) : (
-                /* SUBMITTED */
-
-                <div
-                  style={
-                    styles.reviewSubmitted
-                  }
-                >
-                  <strong>
-                    ✓ Review Submitted
-                  </strong>
-
-                  <span>
-                    Waiting for admin approval.
-                  </span>
-                </div>
-              )}
-
-            </div>
-          );
-        })}
-
-      </div>
-
-    </div>
-  )}
-
-                    {/* ==================================
-                        DELIVERY ADDRESS
-                    ================================== */}
-
-                    <div
-                      style={
-                        styles.deliveryBox
-                      }
-                    >
-
-                      <strong>
-                        📍 Delivery Address
-                      </strong>
-
-                      <p
-                        style={
-                          styles.addressText
-                        }
-                      >
-                        {order.delivery_address ||
-                          "-"}
-                      </p>
-
-                      {(order.village ||
-                        order.district) && (
-                        <p
-                          style={
-                            styles.locationText
-                          }
-                        >
+                    {/* Delivery Address */}
+                    <div className="mt-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <strong className="block text-gray-900 text-sm mb-2">📍 Delivery Address</strong>
+                      <p className="text-gray-700 text-sm m-0 leading-relaxed mb-1">{order.delivery_address || "-"}</p>
+                      {(order.village || order.district) && (
+                        <p className="text-gray-500 text-xs m-0">
                           {order.village || ""}
-
-                          {order.village &&
-                          order.district
-                            ? ", "
-                            : ""}
-
+                          {order.village && order.district ? ", " : ""}
                           {order.district || ""}
                         </p>
                       )}
-
                     </div>
 
-                    {/* ==================================
-                        CUSTOMER DETAILS
-                    ================================== */}
-
-                    <div
-                      style={
-                        styles.customerDetails
-                      }
-                    >
-
+                    {/* Customer Details */}
+                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-gray-700">
                       <div>
-                        <span
-                          style={styles.label}
-                        >
-                          Customer
-                        </span>
-
-                        <strong>
-                          {order.customer_name ||
-                            "-"}
-                        </strong>
+                        <span className="block text-gray-500 text-xs mb-1">Customer</span>
+                        <strong className="font-bold text-gray-900">{order.customer_name || "-"}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={styles.label}
-                        >
-                          Phone
-                        </span>
-
-                        <strong>
-                          {order.customer_phone ||
-                            "-"}
-                        </strong>
+                        <span className="block text-gray-500 text-xs mb-1">Phone</span>
+                        <strong className="font-bold text-gray-900">{order.customer_phone || "-"}</strong>
                       </div>
-
                     </div>
 
-                    {/* ==================================
-                        FOOTER
-                    ================================== */}
-
-                    <div
-                      style={styles.footer}
-                    >
-
+                    {/* Footer */}
+                    <div className="mt-5 pt-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                       <div>
-                        <span
-                          style={styles.footerLabel}
-                        >
-                          Created
-                        </span>
-
-                        <strong>
-                          {formatDateTime(
-                            order.created_at
-                          )}
-                        </strong>
+                        <span className="block text-gray-500 text-xs mb-1">Created</span>
+                        <strong className="text-sm font-bold text-gray-900">{formatDateTime(order.created_at)}</strong>
                       </div>
-
                       <button
-                        onClick={() =>
-                          router.push(
-                            `/customer/orders/${order.id}`
-                          )
-                        }
-                        style={
-                          styles.viewButton
-                        }
+                        onClick={() => router.push(`/customer/orders/${order.id}`)}
+                        className="bg-white border border-green-700 text-green-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-50 transition-colors w-full sm:w-auto cursor-pointer text-center"
                       >
                         View Order →
                       </button>
-
                     </div>
-
                   </div>
                 );
               })}
-
             </div>
           </>
         )}
-
       </div>
     </main>
   );
 }
-
-// ==================================================
-// STYLES
-// ==================================================
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#f5f7f5",
-    padding: "35px 20px",
-    fontFamily:
-      "Arial, Helvetica, sans-serif",
-  },
-
-  container: {
-    maxWidth: "1050px",
-    margin: "0 auto",
-  },
-
-  loadingCard: {
-    maxWidth: "400px",
-    margin: "100px auto",
-    background: "#ffffff",
-    borderRadius: "16px",
-    padding: "45px 25px",
-    textAlign: "center",
-    boxShadow:
-      "0 2px 12px rgba(0,0,0,0.08)",
-  },
-
-  loadingIcon: {
-    fontSize: "48px",
-    marginBottom: "15px",
-  },
-
-  loadingTitle: {
-    margin: "0 0 8px",
-    color: "#1f2937",
-  },
-
-  loadingText: {
-    margin: 0,
-    color: "#6b7280",
-  },
-
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: "20px",
-    flexWrap: "wrap",
-    marginBottom: "30px",
-  },
-
-  backButton: {
-    display: "block",
-    border: "none",
-    background: "transparent",
-    padding: 0,
-    marginBottom: "15px",
-    color: "#166534",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "36px",
-    color: "#1f2937",
-  },
-
-  subtitle: {
-    margin: "8px 0 0",
-    color: "#6b7280",
-    fontSize: "15px",
-  },
-
-  shopButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "9px",
-    background: "#1f7a3f",
-    color: "#ffffff",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-
-  successMessage: {
-    background: "#ecfdf5",
-    border: "1px solid #bbf7d0",
-    color: "#047857",
-    padding: "14px 16px",
-    borderRadius: "10px",
-    marginBottom: "20px",
-    fontWeight: "600",
-  },
-
-  errorMessage: {
-    background: "#fef2f2",
-    border: "1px solid #fecaca",
-    color: "#b91c1c",
-    padding: "14px 16px",
-    borderRadius: "10px",
-    marginBottom: "20px",
-    fontWeight: "600",
-  },
-
-  emptyCard: {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "16px",
-    padding: "65px 25px",
-    textAlign: "center",
-  },
-
-  emptyIcon: {
-    fontSize: "60px",
-    marginBottom: "15px",
-  },
-
-  emptyTitle: {
-    margin: "0 0 10px",
-    color: "#1f2937",
-  },
-
-  emptyText: {
-    color: "#6b7280",
-    margin: "0 0 22px",
-  },
-
-  primaryButton: {
-    padding: "12px 22px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#1f7a3f",
-    color: "#ffffff",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-
-  orderCount: {
-    marginBottom: "18px",
-    color: "#555",
-    fontSize: "15px",
-  },
-
-  ordersList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-
-  orderCard: {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "16px",
-    padding: "25px",
-    boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)",
-  },
-
-  orderHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "20px",
-    paddingBottom: "18px",
-    borderBottom: "1px solid #eeeeee",
-  },
-
-  orderHeaderLeft: {
-    minWidth: 0,
-  },
-
-  smallLabel: {
-    margin: 0,
-    color: "#6b7280",
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "1px",
-  },
-
-  orderId: {
-    margin: "6px 0 0",
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "#374151",
-    wordBreak: "break-all",
-  },
-
-  orderDateBox: {
-    textAlign: "right",
-    flexShrink: 0,
-  },
-
-  orderDate: {
-    margin: "6px 0 0",
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#374151",
-  },
-
-  statusBanner: {
-    marginTop: "18px",
-    padding: "16px",
-    borderRadius: "10px",
-  },
-
-  statusBannerTitle: {
-    display: "block",
-    fontSize: "16px",
-  },
-
-  statusBannerText: {
-    margin: "5px 0 0",
-    fontSize: "13px",
-    lineHeight: "1.5",
-  },
-
-  infoGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(3, minmax(0, 1fr))",
-    gap: "14px",
-    marginTop: "18px",
-  },
-
-  infoBox: {
-    background: "#f8faf8",
-    border: "1px solid #e5e7eb",
-    borderRadius: "10px",
-    padding: "15px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-
-  label: {
-    display: "block",
-    color: "#6b7280",
-    fontSize: "12px",
-    marginBottom: "5px",
-  },
-
-  totalAmount: {
-    fontSize: "20px",
-    color: "#166534",
-  },
-
-  badge: {
-    display: "inline-block",
-    width: "fit-content",
-    padding: "6px 11px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    fontWeight: "700",
-  },
-
-  progressSection: {
-    marginTop: "22px",
-    padding: "20px",
-    background: "#fafafa",
-    borderRadius: "12px",
-    border: "1px solid #eeeeee",
-  },
-
-  progressTitle: {
-    margin: "0 0 18px",
-    fontSize: "17px",
-    color: "#1f2937",
-  },
-
-  progressSteps: {
-    display: "flex",
-    alignItems: "center",
-    width: "100%",
-    overflowX: "auto",
-  },
-
-  progressStep: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    minWidth: "85px",
-    textAlign: "center",
-  },
-
-  stepCircle: {
-    width: "34px",
-    height: "34px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "13px",
-    fontWeight: "700",
-    flexShrink: 0,
-  },
-
-  stepActive: {
-    background: "#166534",
-    color: "#ffffff",
-  },
-
-  stepCompleted: {
-    background: "#166534",
-    color: "#ffffff",
-  },
-
-  stepInactive: {
-    background: "#e5e7eb",
-    color: "#6b7280",
-  },
-
-  stepText: {
-    marginTop: "8px",
-    fontSize: "11px",
-    fontWeight: "600",
-    color: "#4b5563",
-  },
-
-  progressLine: {
-    height: "2px",
-    background: "#d1d5db",
-    flex: 1,
-    minWidth: "25px",
-    margin: "0 5px 25px",
-  },
-
-  deliveryConfirmCard: {
-    marginTop: "20px",
-    padding: "20px",
-    borderRadius: "12px",
-    background: "#fffbeb",
-    border: "1px solid #fde68a",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "20px",
-    flexWrap: "wrap",
-  },
-
-  deliveryTitle: {
-    margin: 0,
-    color: "#92400e",
-    fontSize: "18px",
-  },
-
-  deliveryText: {
-    margin: "6px 0 0",
-    color: "#78350f",
-    fontSize: "13px",
-    lineHeight: "1.5",
-    maxWidth: "600px",
-  },
-
-  confirmButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "9px",
-    background: "#166534",
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: "14px",
-    whiteSpace: "nowrap",
-  },
-
-  deliveredCard: {
-    marginTop: "20px",
-    padding: "16px",
-    borderRadius: "10px",
-    background: "#ecfdf5",
-    border: "1px solid #bbf7d0",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-
-  deliveredIcon: {
-    width: "32px",
-    height: "32px",
-    borderRadius: "50%",
-    background: "#047857",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "700",
-  },
-
-  deliveredTitle: {
-    display: "block",
-    color: "#047857",
-    fontSize: "15px",
-  },
-
-  deliveredText: {
-    margin: "4px 0 0",
-    color: "#065f46",
-    fontSize: "13px",
-  },
-
-  deliveryBox: {
-    marginTop: "20px",
-    padding: "16px",
-    background: "#f8f8f8",
-    borderRadius: "10px",
-  },
-
-  addressText: {
-    margin: "8px 0 0",
-    color: "#555",
-    lineHeight: "1.5",
-  },
-
-  locationText: {
-    margin: "5px 0 0",
-    color: "#6b7280",
-    fontSize: "13px",
-  },
-
-  customerDetails: {
-    marginTop: "16px",
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(2, minmax(0, 1fr))",
-    gap: "15px",
-    color: "#374151",
-  },
-
-  footer: {
-    marginTop: "20px",
-    paddingTop: "18px",
-    borderTop: "1px solid #eeeeee",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "15px",
-    flexWrap: "wrap",
-  },
-
-  footerLabel: {
-    display: "block",
-    color: "#6b7280",
-    fontSize: "11px",
-    marginBottom: "5px",
-  },
-
-  viewButton: {
-    padding: "10px 17px",
-    border: "1px solid #1f7a3f",
-    borderRadius: "8px",
-    background: "#ffffff",
-    color: "#1f7a3f",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-
-    reviewSection: {
-    marginTop: "20px",
-    padding: "20px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "12px",
-  },
-
-  reviewSectionTitle: {
-    margin: 0,
-    color: "#1f2937",
-    fontSize: "18px",
-  },
-
-  reviewSectionText: {
-    margin: "6px 0 18px",
-    color: "#6b7280",
-    fontSize: "13px",
-    lineHeight: "1.5",
-  },
-
-  reviewItems: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-
-  reviewItem: {
-    padding: "16px",
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: "10px",
-  },
-
-  reviewItemInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    marginBottom: "8px",
-  },
-
-  reviewProductName: {
-    color: "#1f2937",
-    fontSize: "15px",
-  },
-
-  reviewProductMeta: {
-    color: "#6b7280",
-    fontSize: "12px",
-  },
-
-  starRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "3px",
-  },
-
-  starButton: {
-    border: "none",
-    background: "transparent",
-    padding: "2px",
-    fontSize: "32px",
-    lineHeight: 1,
-    cursor: "pointer",
-  },
-
-  reviewForm: {
-    marginTop: "12px",
-  },
-
-  reviewTextarea: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "9px",
-    background: "#ffffff",
-    color: "#1f2937",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    resize: "vertical",
-    outline: "none",
-    fontFamily:
-      "Arial, Helvetica, sans-serif",
-  },
-
-  reviewFormBottom: {
-    marginTop: "8px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "10px",
-  },
-
-  reviewCharacterCount: {
-    color: "#9ca3af",
-    fontSize: "11px",
-  },
-
-  submitReviewButton: {
-    border: "none",
-    borderRadius: "8px",
-    background: "#166534",
-    color: "#ffffff",
-    padding: "10px 16px",
-    fontSize: "13px",
-    fontWeight: "700",
-  },
-
-  reviewSubmitted: {
-    marginTop: "8px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    background: "#ecfdf5",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
-    fontSize: "13px",
-  },
-};

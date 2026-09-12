@@ -1354,17 +1354,18 @@ async function rejectReview(review) {
   // =====================================================
 
   function goToOrders() {
-    const section =
-      document.getElementById(
-        'all-orders-section'
-      )
-
-    if (section) {
-      section.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      })
-    }
+    setActiveSection('orders');
+    
+    // Allow React to render the orders section before scrolling
+    setTimeout(() => {
+      const section = document.getElementById('all-orders-section');
+      if (section) {
+        section.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
   }
 
   // =====================================================
@@ -1454,7 +1455,7 @@ async function rejectReview(review) {
 
   if (loading) {
     return (
-      <div style={styles.center}>
+      <div className="min-h-[100vh] flex flex-col items-center justify-center gap-[20px] p-[20px] text-center sm:max-w-full">
         Loading Admin Dashboard...
       </div>
     )
@@ -1476,7 +1477,7 @@ async function rejectReview(review) {
         : 'Go to Customer Dashboard'
 
     return (
-      <div style={styles.center}>
+      <div className="min-h-[100vh] flex flex-col items-center justify-center gap-[20px] p-[20px] text-center sm:max-w-full">
         <h2>
           🚫 You don't have access to the Admin Panel.
         </h2>
@@ -1491,7 +1492,7 @@ async function rejectReview(review) {
               dashboardPath
             )
           }
-          style={styles.backButton}
+          className="py-[10px] px-[18px] border-none bg-[#1f7a3f] text-[#fff] rounded-[8px] cursor-pointer sm:max-w-full"
         >
           {dashboardText}
         </button>
@@ -1505,7 +1506,7 @@ async function rejectReview(review) {
 
   if (message && !user) {
     return (
-      <div style={styles.center}>
+      <div className="min-h-[100vh] flex flex-col items-center justify-center gap-[20px] p-[20px] text-center sm:max-w-full">
         <h2>{message}</h2>
 
         <button
@@ -1638,310 +1639,151 @@ async function rejectReview(review) {
     ).length
 
   return (
-    <main style={styles.page}>
-
-      {/* =================================================
-          NAVBAR
-      ================================================= */}
-
-      <nav style={styles.navbar}>
-
-        <div>
-          <h2 style={styles.logo}>
-            Uzhavar Market
-          </h2>
-
-          <p style={styles.adminText}>
-            Admin Dashboard
-          </p>
+    <main className="min-h-screen bg-[#f7f8f5] font-sans pb-10">
+      {/* NAVBAR */}
+      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center flex-wrap gap-4">
+        <div className="text-xl sm:text-2xl font-bold text-green-800">
+          🌾 Uzhavar Market Admin
         </div>
-
-        <div style={styles.navActions}>
-
+        <div className="flex gap-2 sm:gap-4 flex-wrap">
           <button
-            onClick={() =>
-              router.push('/')
-            }
-            style={
-              styles.navButton
-            }
+            onClick={() => router.push('/')}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base cursor-pointer"
           >
             Home
           </button>
-
           <button
-            onClick={() =>
-              router.push(
-                '/admin/products'
-              )
-            }
-            style={
-              styles.manageProductsNavButton
-            }
+            onClick={() => router.push('/admin/products')}
+            className="px-4 py-2 border-none rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors text-sm sm:text-base cursor-pointer flex items-center gap-2"
           >
             📦 Manage Products
           </button>
-
           <button
-            onClick={
-              handleLogout
-            }
-            style={
-              styles.logoutButton
-            }
+            onClick={handleLogout}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base cursor-pointer"
           >
             Logout
           </button>
-
         </div>
       </nav>
 
-      <section style={styles.container}>
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <div style={styles.header}>
-
-          <h1 style={styles.title}>
-            Admin Dashboard
-          </h1>
-
-          <p style={styles.subtitle}>
-            Welcome,{' '}
-            {profile?.full_name ||
-              'Admin'}
-          </p>
-
-        </div>
-
-        {/* =================================================
-            GLOBAL MESSAGE
-        ================================================= */}
-
+      <section className="w-[95%] sm:w-[90%] max-w-[1200px] mx-auto pt-6 sm:pt-10">
+        
+        {/* GLOBAL MESSAGE */}
         {message && (
-          <div
-            style={
-              styles.messageBox
-            }
-          >
+          <div className="bg-green-100 text-green-800 p-4 rounded-xl mb-6 font-medium text-sm sm:text-base border border-green-200">
             {message}
           </div>
         )}
 
-        {/* =================================================
-            STATS
-        ================================================= */}
-
-        <div style={styles.statsGrid}>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Total Commission Earned
-            </p>
-
-            <h2 style={styles.statNumber}>
-              ₹
-              {totalCommissionEarned.toFixed(
-                2
-              )}
-            </h2>
-
-            <p
-              style={
-                styles.greenSmallText
-              }
-            >
-              From paid orders
-            </p>
-          </div>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Farmer Settlement
-            </p>
-
-            <h2 style={styles.statNumber}>
-              ₹
-              {totalFarmerSettlement.toFixed(
-                2
-              )}
-            </h2>
-
-            <p
-              style={
-                styles.graySmallText
-              }
-            >
-              Farmer amount from paid orders
-            </p>
-          </div>
-
-          <button
-            onClick={
-              goToOrders
-            }
-            style={{
-              ...styles.statCard,
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <p style={styles.statLabel}>
-              Total Orders
-            </p>
-
-            <h2 style={styles.statNumber}>
-              {orders.length}
-            </h2>
-
-            <p style={styles.statClickText}>
-              Click to view orders →
-            </p>
-          </button>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Pending Orders
-            </p>
-
-            <h2 style={styles.statNumber}>
-              {pendingOrders}
-            </h2>
-          </div>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Confirmed
-            </p>
-
-            <h2 style={styles.statNumber}>
-              {confirmedOrders}
-            </h2>
-          </div>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Shipped
-            </p>
-
-            <h2 style={styles.statNumber}>
-              {shippedOrders}
-            </h2>
-          </div>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Delivered
-            </p>
-
-            <h2 style={styles.statNumber}>
-              {deliveredOrders}
-            </h2>
-          </div>
-
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>
-              Payment Pending
-            </p>
-
-            <h2 style={styles.statNumber}>
-              {pendingPayments}
-            </h2>
-          </div>
-
+        {/* WELCOME */}
+        <div className="bg-green-800 text-white p-6 sm:p-9 rounded-2xl mb-6 shadow-sm">
+          <p className="text-xs sm:text-[13px] font-bold tracking-wider mb-2.5 opacity-90">
+            ADMIN DASHBOARD
+          </p>
+          <h1 className="text-2xl sm:text-3xl m-0 mb-2.5 font-bold">
+            Welcome, {profile?.full_name || 'Admin'}! 👨‍💼
+          </h1>
+          <p className="m-0 opacity-90 text-sm sm:text-base">
+            Manage the marketplace, products, orders, and farmer settlements from here.
+          </p>
         </div>
 
         {activeSection === 'dashboard' && (
-  <section style={styles.adminMenuSection}>
+          <>
+            {/* QUICK ACTIONS */}
+            <h2 className="mt-8 mb-5 text-xl sm:text-2xl text-gray-800 font-bold">
+              Quick Actions
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 mb-8">
+              <button
+                onClick={() => setActiveSection('products')}
+                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+              >
+                <span className="text-3xl mb-1">📦</span>
+                <strong className="text-base sm:text-lg text-gray-800">All Products</strong>
+                <span className="text-xs sm:text-sm text-gray-500">Review and approve products</span>
+              </button>
 
-    <div style={styles.adminMenuGrid}>
+              <button
+                onClick={() => setActiveSection('orders')}
+                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+              >
+                <span className="text-3xl mb-1">🛒</span>
+                <strong className="text-base sm:text-lg text-gray-800">All Orders</strong>
+                <span className="text-xs sm:text-sm text-gray-500">Manage customer orders</span>
+              </button>
 
-      <button
-        type="button"
-        onClick={() =>
-          setActiveSection('products')
-        }
-        style={styles.adminMenuCard}
-      >
-        <div style={styles.adminMenuIcon}>
-          📦
-        </div>
+              <button
+                onClick={() => setActiveSection('reviews')}
+                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+              >
+                <span className="text-3xl mb-1">⭐</span>
+                <strong className="text-base sm:text-lg text-gray-800">Customer Reviews</strong>
+                <span className="text-xs sm:text-sm text-gray-500">Approve customer reviews</span>
+              </button>
+            </div>
 
-        <div>
-          <h3 style={styles.adminMenuTitle}>
-            All Products
-          </h3>
+            {/* MAIN STATS */}
+            <h2 className="mt-8 mb-5 text-xl sm:text-2xl text-gray-800 font-bold">
+              Marketplace Overview
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">💰</div>
+                <h3 className="text-2xl m-0 mb-1 text-green-800 font-bold">₹{totalCommissionEarned.toFixed(2)}</h3>
+                <p className="m-0 text-gray-500 text-sm">Commission Earned</p>
+              </div>
 
-          <p style={styles.adminMenuText}>
-            View and manage farmer products
-          </p>
-        </div>
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">🌾</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">₹{totalFarmerSettlement.toFixed(2)}</h3>
+                <p className="m-0 text-gray-500 text-sm">Farmer Settlement (Paid)</p>
+              </div>
 
-        <span style={styles.adminMenuArrow}>
-          →
-        </span>
-      </button>
+              <div 
+                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setActiveSection('orders')}
+              >
+                <div className="text-3xl mb-3">📦</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{orders.length}</h3>
+                <p className="m-0 text-green-700 text-sm font-semibold">Total Orders →</p>
+              </div>
 
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">⏳</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{pendingOrders}</h3>
+                <p className="m-0 text-gray-500 text-sm">Pending Orders</p>
+              </div>
 
-      <button
-        type="button"
-        onClick={() =>
-          setActiveSection('orders')
-        }
-        style={styles.adminMenuCard}
-      >
-        <div style={styles.adminMenuIcon}>
-          🛒
-        </div>
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">✅</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{confirmedOrders}</h3>
+                <p className="m-0 text-gray-500 text-sm">Confirmed</p>
+              </div>
 
-        <div>
-          <h3 style={styles.adminMenuTitle}>
-            All Orders
-          </h3>
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">🚚</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{shippedOrders}</h3>
+                <p className="m-0 text-gray-500 text-sm">Shipped</p>
+              </div>
 
-          <p style={styles.adminMenuText}>
-            Manage customer orders and payments
-          </p>
-        </div>
-
-        <span style={styles.adminMenuArrow}>
-          →
-        </span>
-      </button>
-
-
-      <button
-        type="button"
-        onClick={() =>
-          setActiveSection('reviews')
-        }
-        style={styles.adminMenuCard}
-      >
-        <div style={styles.adminMenuIcon}>
-          ⭐
-        </div>
-
-        <div>
-          <h3 style={styles.adminMenuTitle}>
-            Customer Reviews
-          </h3>
-
-          <p style={styles.adminMenuText}>
-            Approve and manage customer reviews
-          </p>
-        </div>
-
-        <span style={styles.adminMenuArrow}>
-          →
-        </span>
-      </button>
-
-    </div>
-
-  </section>
-)}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">🏡</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{deliveredOrders}</h3>
+                <p className="m-0 text-gray-500 text-sm">Delivered</p>
+              </div>
+              
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="text-3xl mb-3">💳</div>
+                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{pendingPayments}</h3>
+                <p className="m-0 text-gray-500 text-sm">Payment Pending</p>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* =================================================
             PRODUCTS
@@ -1954,7 +1796,7 @@ async function rejectReview(review) {
     }
   >
 
-          <div style={styles.sectionHeader}>
+          <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
 
             <div>
               <button
@@ -1962,7 +1804,7 @@ async function rejectReview(review) {
   onClick={() =>
     setActiveSection('dashboard')
   }
-  style={styles.backToAdminButton}
+  className="py-[9px] px-[14px] rounded-[8px] border-[1px #d1d5db] bg-[#ffffff] cursor-pointer font-semibold sm:max-w-full"
 >
   ← Dashboard
 </button>
@@ -2021,7 +1863,7 @@ async function rejectReview(review) {
           )}
 
           {products.length === 0 ? (
-            <div style={styles.empty}>
+            <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
               <h3>
                 No products found
               </h3>
@@ -2245,17 +2087,8 @@ async function rejectReview(review) {
                         >
 
                           <span
-                            style={{
-                              ...styles.approvalBadge,
-
-                              ...(product.approval_status ===
-                              'active'
-                                ? styles.approved
-                                : product.approval_status ===
-                                  'rejected'
-                                ? styles.rejected
-                                : styles.pending),
-                            }}
+                            className={`py-[5px] px-[9px] rounded-[20px] text-[12px] font-semibold ${product.approval_status ===
+                              'active' ? 'bg-[#d4edda] text-[#155724]' : ''} max-w-full box-border`}
                           >
                             {
                               product.approval_status ||
@@ -2433,24 +2266,24 @@ async function rejectReview(review) {
 
 {activeSection === 'reviews' && (
   <section
-    style={styles.reviewsSection}
+    className="bg-[#fff] p-[25px] rounded-[12px] mb-[40px] sm:max-w-full"
   >
 
-  <div style={styles.sectionHeader}>
+  <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
 
     <div>
-      <h2 style={styles.sectionTitle}>
+      <h2 className="m-[0] sm:max-w-full">
         ⭐ Customer Reviews
       </h2>
 
-      <p style={styles.sectionSubtitle}>
+      <p className="mt-[6px] mx-[0] mb-[0] text-[#777] text-[13px] sm:max-w-full">
         Approve or reject customer reviews.
       </p>
     </div>
 
     <button
       onClick={loadReviews}
-      style={styles.refreshButton}
+      className="py-[9px] px-[16px] border-none bg-[#1f7a3f] text-[#fff] rounded-[7px] cursor-pointer sm:max-w-full"
     >
       ↻ Refresh
     </button>
@@ -2458,23 +2291,18 @@ async function rejectReview(review) {
   </div>
 
   {reviewMessage && (
-    <div style={styles.reviewMessage}>
+    <div className="p-[12px] mb-[18px] bg-[#f0f7f2] text-[#1f7a3f] rounded-[8px] text-[14px] sm:max-w-full">
       {reviewMessage}
     </div>
   )}
 
-  <div style={styles.reviewFilters}>
+  <div className="flex gap-[8px] flex-wrap mb-[20px] sm:max-w-full">
 
     <button
       onClick={() =>
         setReviewFilter('pending')
       }
-      style={{
-        ...styles.reviewFilterButton,
-        ...(reviewFilter === 'pending'
-          ? styles.reviewFilterActive
-          : {}),
-      }}
+      className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors ${reviewFilter === 'pending' ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} max-w-full box-border`}
     >
       Pending (
       {
@@ -2491,12 +2319,7 @@ async function rejectReview(review) {
       onClick={() =>
         setReviewFilter('approved')
       }
-      style={{
-        ...styles.reviewFilterButton,
-        ...(reviewFilter === 'approved'
-          ? styles.reviewFilterActive
-          : {}),
-      }}
+      className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors ${reviewFilter === 'approved' ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} max-w-full box-border`}
     >
       Approved (
       {
@@ -2513,12 +2336,7 @@ async function rejectReview(review) {
       onClick={() =>
         setReviewFilter('rejected')
       }
-      style={{
-        ...styles.reviewFilterButton,
-        ...(reviewFilter === 'rejected'
-          ? styles.reviewFilterActive
-          : {}),
-      }}
+      className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors ${reviewFilter === 'rejected' ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} max-w-full box-border`}
     >
       Rejected (
       {
@@ -2535,12 +2353,7 @@ async function rejectReview(review) {
       onClick={() =>
         setReviewFilter('all')
       }
-      style={{
-        ...styles.reviewFilterButton,
-        ...(reviewFilter === 'all'
-          ? styles.reviewFilterActive
-          : {}),
-      }}
+      className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors ${reviewFilter === 'all' ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} max-w-full box-border`}
     >
       All ({reviews.length})
     </button>
@@ -2554,7 +2367,7 @@ async function rejectReview(review) {
         reviewFilter
   ).length === 0 ? (
 
-    <div style={styles.empty}>
+    <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
       <h3>
         No {reviewFilter === 'all'
           ? ''
@@ -2568,7 +2381,7 @@ async function rejectReview(review) {
 
   ) : (
 
-    <div style={styles.reviewsList}>
+    <div className="flex flex-col gap-[14px] sm:max-w-full">
 
       {reviews
         .filter(
@@ -2581,14 +2394,14 @@ async function rejectReview(review) {
 
           <div
             key={review.id}
-            style={styles.reviewCard}
+            className="border-[1px #e5e7eb] rounded-[10px] p-[18px] bg-[#fafcfa] sm:max-w-full"
           >
 
-            <div style={styles.reviewTop}>
+            <div className="flex justify-between items-flex-start gap-[15px] flex-wrap sm:max-w-full">
 
               <div>
 
-                <h3 style={styles.reviewProductTitle}>
+                <h3 className="m-[0] text-[17px] sm:max-w-full">
                   {review.review_type ===
                   'website'
                     ? '🌐 Website Review'
@@ -2598,7 +2411,7 @@ async function rejectReview(review) {
                       }`}
                 </h3>
 
-                <p style={styles.reviewCustomer}>
+                <p className="mt-[6px] mx-[0] mb-[0] text-[#666] text-[13px] sm:max-w-full">
                   👤{' '}
                   {review.profiles?.full_name ||
                     'Customer'}
@@ -2607,23 +2420,15 @@ async function rejectReview(review) {
               </div>
 
               <span
-                style={{
-                  ...styles.reviewStatusBadge,
-                  ...(review.approval_status ===
-                  'approved'
-                    ? styles.reviewApproved
-                    : review.approval_status ===
-                      'rejected'
-                    ? styles.reviewRejected
-                    : styles.reviewPending),
-                }}
+                className={`py-[5px] px-[9px] rounded-[20px] text-[11px] font-semibold capitalize ${review.approval_status ===
+                  'approved' ? 'bg-[#d4edda] text-[#155724]' : ''} max-w-full box-border`}
               >
                 {review.approval_status}
               </span>
 
             </div>
 
-            <div style={styles.reviewStars}>
+            <div className="mt-[12px] text-[21px] tracking-[2px] text-[#f59e0b] sm:max-w-full">
               {'★'.repeat(
                 Number(review.rating || 0)
               )}
@@ -2634,12 +2439,12 @@ async function rejectReview(review) {
             </div>
 
             {review.review_text && (
-              <p style={styles.reviewText}>
+              <p className="mt-[12px] mx-[0] mb-[8px] text-[#374151] leading-[1.6] text-[14px] sm:max-w-full">
                 "{review.review_text}"
               </p>
             )}
 
-            <p style={styles.reviewDate}>
+            <p className="m-[0] text-[#888] text-[11px] sm:max-w-full">
               {new Date(
                 review.created_at
               ).toLocaleString()}
@@ -2648,13 +2453,13 @@ async function rejectReview(review) {
                        {review.approval_status ===
               'pending' && (
 
-              <div style={styles.reviewActions}>
+              <div className="grid [gridTemplateColumns:1fr_1fr] gap-[8px] mt-[15px] sm:max-w-full">
 
                 <button
                   onClick={() =>
                     approveReview(review)
                   }
-                  style={styles.reviewApproveButton}
+                  className="p-[10px] border-none bg-[#1f7a3f] text-[#fff] rounded-[7px] cursor-pointer font-semibold sm:max-w-full"
                 >
                   ✓ Approve
                 </button>
@@ -2663,7 +2468,7 @@ async function rejectReview(review) {
                   onClick={() =>
                     rejectReview(review)
                   }
-                  style={styles.reviewRejectButton}
+                  className="p-[10px] border-none bg-[#d9534f] text-[#fff] rounded-[7px] cursor-pointer font-semibold sm:max-w-full"
                 >
                   ✕ Reject
                 </button>
@@ -2694,7 +2499,7 @@ async function rejectReview(review) {
     }
   >
 
-          <div style={styles.sectionHeader}>
+          <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
 
             <div>
               <button
@@ -2702,7 +2507,7 @@ async function rejectReview(review) {
   onClick={() =>
     setActiveSection('dashboard')
   }
-  style={styles.backToAdminButton}
+  className="py-[9px] px-[14px] rounded-[8px] border-[1px #d1d5db] bg-[#ffffff] cursor-pointer font-semibold sm:max-w-full"
 >
   ← Dashboard
 </button>
@@ -2777,7 +2582,7 @@ async function rejectReview(review) {
           </div>
 
           {orders.length === 0 ? (
-            <div style={styles.empty}>
+            <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
 
               <h3>
                 No orders yet
@@ -2790,7 +2595,7 @@ async function rejectReview(review) {
             </div>
           ) : filteredOrders.length === 0 ? (
 
-            <div style={styles.empty}>
+            <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
 
               <h3>
                 No matching orders
@@ -2874,12 +2679,7 @@ async function rejectReview(review) {
                         >
 
                           <span
-                            style={{
-                              ...styles.badge,
-                              ...getOrderStatusStyle(
-                                order.order_status
-                              ),
-                            }}
+                            className="py-[6px] px-[10px] rounded-[20px] text-[12px] font-semibold max-w-full box-border"
                           >
                             {
                               order.order_status
@@ -2887,12 +2687,7 @@ async function rejectReview(review) {
                           </span>
 
                           <span
-                            style={{
-                              ...styles.badge,
-                              ...getPaymentStatusStyle(
-                                order.payment_status
-                              ),
-                            }}
+                            className="py-[6px] px-[10px] rounded-[20px] text-[12px] font-semibold max-w-full box-border"
                           >
                             Payment:{' '}
                             {
@@ -3326,13 +3121,7 @@ async function rejectReview(review) {
                                         </span>
 
                                         <span
-                                          style={{
-                                            ...styles.settlementBadge,
-
-                                            ...(isPaid
-                                              ? styles.settlementPaid
-                                              : styles.settlementPending),
-                                          }}
+                                          className={`py-[4px] px-[8px] rounded-[20px] text-[11px] font-semibold ${isPaid ? 'bg-[#d4edda] text-[#155724]' : 'bg-[#fff3cd] text-[#856404]'} max-w-full box-border`}
                                         >
                                           {isPaid
                                             ? 'Paid'

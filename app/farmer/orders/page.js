@@ -13,16 +13,11 @@ export default function FarmerOrders() {
   const [message, setMessage] = useState('')
   const [filter, setFilter] = useState('all')
 
-  // SEARCH
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     loadOrders()
   }, [])
-
-  // ==================================================
-  // LOAD ORDERS
-  // ==================================================
 
   async function loadOrders() {
     setLoading(true)
@@ -39,14 +34,7 @@ export default function FarmerOrders() {
         return
       }
 
-      // ------------------------------------------------
-      // CHECK FARMER PROFILE
-      // ------------------------------------------------
-
-      const {
-        data: profile,
-        error: profileError,
-      } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
@@ -54,7 +42,6 @@ export default function FarmerOrders() {
 
       if (profileError || !profile) {
         console.error('PROFILE ERROR:', profileError)
-
         setMessage('Farmer profile not found.')
         setLoading(false)
         return
@@ -66,14 +53,7 @@ export default function FarmerOrders() {
         return
       }
 
-      // ------------------------------------------------
-      // GET FARMER ORDER ITEMS
-      // ------------------------------------------------
-
-      const {
-        data: orderItems,
-        error: itemsError,
-      } = await supabase
+      const { data: orderItems, error: itemsError } = await supabase
         .from('order_items')
         .select(`
           id,
@@ -92,16 +72,10 @@ export default function FarmerOrders() {
           created_at
         `)
         .eq('farmer_id', user.id)
-        .order('created_at', {
-          ascending: false,
-        })
+        .order('created_at', { ascending: false })
 
       if (itemsError) {
-        console.error(
-          'ORDER ITEMS ERROR:',
-          JSON.stringify(itemsError, null, 2)
-        )
-
+        console.error('ORDER ITEMS ERROR:', itemsError)
         setMessage('Unable to load your orders.')
         setLoading(false)
         return
@@ -113,20 +87,9 @@ export default function FarmerOrders() {
         return
       }
 
-      // ------------------------------------------------
-      // GET ORDER DETAILS
-      // ------------------------------------------------
+      const orderIds = [...new Set(orderItems.map((item) => item.order_id))]
 
-      const orderIds = [
-        ...new Set(
-          orderItems.map((item) => item.order_id)
-        ),
-      ]
-
-      const {
-        data: orderDetails,
-        error: ordersError,
-      } = await supabase
+      const { data: orderDetails, error: ordersError } = await supabase
         .from('orders')
         .select(`
           id,
@@ -142,68 +105,35 @@ export default function FarmerOrders() {
         .in('id', orderIds)
 
       if (ordersError) {
-        console.error(
-          'ORDERS ERROR:',
-          JSON.stringify(ordersError, null, 2)
-        )
-
+        console.error('ORDERS ERROR:', ordersError)
         setMessage('Unable to load order details.')
         setLoading(false)
         return
       }
 
-      // ------------------------------------------------
-      // COMBINE ORDER + ORDER ITEM
-      // ------------------------------------------------
-
       const combinedOrders = orderItems.map((item) => {
-        const order = orderDetails?.find(
-          (order) => order.id === item.order_id
-        )
+        const order = orderDetails?.find((order) => order.id === item.order_id)
+        const itemTotal = Number(item.item_total || 0)
+        const farmerPrice = Number(item.farmer_price || 0)
+        const quantity = Number(item.quantity || 0)
 
-        const itemTotal = Number(
-          item.item_total || 0
-        )
+        const calculatedFarmerAmount = farmerPrice * quantity
 
-        const farmerPrice = Number(
-          item.farmer_price || 0
-        )
-
-        const quantity = Number(
-          item.quantity || 0
-        )
-
-        // Farmer amount =
-        // farmer price per unit × quantity
-        const calculatedFarmerAmount =
-          farmerPrice * quantity
-
-        // Commission is stored PER UNIT
         const commissionPerUnit = Number(
           item.commission_amount ??
-            (
-              quantity > 0
-                ? (itemTotal - calculatedFarmerAmount) /
-                  quantity
-                : 0
-            )
+            (quantity > 0 ? (itemTotal - calculatedFarmerAmount) / quantity : 0)
         )
 
-        // Total commission =
-        // commission per unit × quantity
-        const calculatedCommission =
-          commissionPerUnit * quantity
+        const calculatedCommission = commissionPerUnit * quantity
 
         const settlementAmount =
-          item.settlement_amount !== null &&
-          item.settlement_amount !== undefined
+          item.settlement_amount !== null && item.settlement_amount !== undefined
             ? Number(item.settlement_amount)
             : calculatedFarmerAmount
 
         return {
           ...item,
           order,
-
           calculatedFarmerAmount,
           calculatedCommission,
           calculatedSettlement: settlementAmount,
@@ -212,45 +142,18 @@ export default function FarmerOrders() {
 
       setOrders(combinedOrders)
     } catch (error) {
-      console.error(
-        'FARMER ORDERS ERROR:',
-        JSON.stringify(error, null, 2)
-      )
-
+      console.error('FARMER ORDERS ERROR:', error)
       setMessage('Something went wrong.')
     } finally {
       setLoading(false)
     }
   }
 
-  // ==================================================
-  // FARMER ORDER STATUS UPDATE
-  // ==================================================
-  //
-  // IMPORTANT:
-  // Farmer can ONLY:
-  //
-  // confirmed → shipped
-  //
-  // Farmer CANNOT:
-  //
-  // pending → confirmed
-  // shipped → delivered
-  //
-  // ==================================================
-
-  async function updateOrderStatus(
-    orderId,
-    newStatus
-  ) {
+  async function updateOrderStatus(orderId, newStatus) {
     setUpdating(orderId)
     setMessage('')
 
     try {
-      // ------------------------------------------------
-      // GET CURRENT USER
-      // ------------------------------------------------
-
       const {
         data: { user },
         error: userError,
@@ -261,136 +164,62 @@ export default function FarmerOrders() {
         return
       }
 
-      // ------------------------------------------------
-      // FIND CURRENT ORDER
-      // ------------------------------------------------
-
-      const currentItem = orders.find(
-        (item) =>
-          item.order?.id === orderId
-      )
+      const currentItem = orders.find((item) => item.order?.id === orderId)
 
       if (!currentItem?.order) {
         setMessage('Order not found.')
         return
       }
 
-      const currentStatus = String(
-        currentItem.order.order_status || ''
-      )
-        .trim()
-        .toLowerCase()
+      const currentStatus = String(currentItem.order.order_status || '').trim().toLowerCase()
 
-      // ------------------------------------------------
-      // ONLY CONFIRMED → SHIPPED
-      // ------------------------------------------------
-
-      if (
-        currentStatus !== 'confirmed' ||
-        newStatus !== 'shipped'
-      ) {
-        setMessage(
-          'You can ship an order only after admin confirms it.'
-        )
+      if (currentStatus !== 'confirmed' || newStatus !== 'shipped') {
+        setMessage('You can ship an order only after admin confirms it.')
         return
       }
 
-      // ------------------------------------------------
-      // UPDATE ORDER
-      // ------------------------------------------------
-
-      const {
-        data: updatedOrder,
-        error,
-      } = await supabase
+      const { data: updatedOrder, error } = await supabase
         .from('orders')
-        .update({
-          order_status: 'shipped',
-        })
+        .update({ order_status: 'shipped' })
         .eq('id', orderId)
         .eq('order_status', 'confirmed')
         .select('id, order_status')
         .single()
 
       if (error) {
-        console.error(
-          'SHIP ORDER ERROR:',
-          JSON.stringify(error, null, 2)
-        )
-
-        setMessage(
-          error.message ||
-            'Unable to mark order as shipped.'
-        )
-
+        console.error('SHIP ORDER ERROR:', error)
+        setMessage(error.message || 'Unable to mark order as shipped.')
         return
       }
 
       if (!updatedOrder) {
-        setMessage(
-          'Order could not be updated. It may already have changed.'
-        )
-
+        setMessage('Order could not be updated. It may already have changed.')
         return
       }
 
-      // ------------------------------------------------
-      // UPDATE LOCAL UI
-      // ------------------------------------------------
-
       setOrders((currentOrders) =>
         currentOrders.map((item) => {
-          if (
-            item.order &&
-            item.order.id === orderId
-          ) {
+          if (item.order && item.order.id === orderId) {
             return {
               ...item,
-
-              order: {
-                ...item.order,
-
-                order_status: 'shipped',
-              },
+              order: { ...item.order, order_status: 'shipped' },
             }
           }
-
           return item
         })
       )
 
-      setMessage(
-        'Order marked as shipped successfully.'
-      )
+      setMessage('Order marked as shipped successfully.')
     } catch (error) {
-      console.error(
-        'SHIP ORDER ERROR:',
-        JSON.stringify(error, null, 2)
-      )
-
+      console.error('SHIP ORDER ERROR:', error)
       setMessage('Something went wrong.')
     } finally {
       setUpdating(null)
     }
   }
 
-  // ==================================================
-  // NEXT ACTION
-  // ==================================================
-
   function getNextAction(status) {
-    const currentStatus = String(
-      status || ''
-    )
-      .trim()
-      .toLowerCase()
-
-    // ------------------------------------------------
-    // PENDING
-    // ------------------------------------------------
-    // Admin must verify payment and confirm order.
-    // Farmer cannot confirm.
-    // ------------------------------------------------
+    const currentStatus = String(status || '').trim().toLowerCase()
 
     if (currentStatus === 'pending') {
       return {
@@ -400,12 +229,6 @@ export default function FarmerOrders() {
       }
     }
 
-    // ------------------------------------------------
-    // CONFIRMED
-    // ------------------------------------------------
-    // Farmer can ship.
-    // ------------------------------------------------
-
     if (currentStatus === 'confirmed') {
       return {
         text: '🚚 Ship Order',
@@ -414,13 +237,6 @@ export default function FarmerOrders() {
       }
     }
 
-    // ------------------------------------------------
-    // SHIPPED
-    // ------------------------------------------------
-    // Customer must confirm delivery.
-    // Farmer cannot mark delivered.
-    // ------------------------------------------------
-
     if (currentStatus === 'shipped') {
       return {
         text: '⏳ Waiting for Customer Delivery Confirmation',
@@ -428,13 +244,6 @@ export default function FarmerOrders() {
         disabled: true,
       }
     }
-
-    // ------------------------------------------------
-    // DELIVERED
-    // ------------------------------------------------
-    // Customer already confirmed delivery.
-    // Admin can pay farmer.
-    // ------------------------------------------------
 
     if (currentStatus === 'delivered') {
       return {
@@ -447,113 +256,57 @@ export default function FarmerOrders() {
     return null
   }
 
-  // ==================================================
-  // FILTER + SEARCH
-  // ==================================================
-
   const filteredOrders = useMemo(() => {
     let result = orders
 
-    // ------------------------------------------------
-    // STATUS FILTER
-    // ------------------------------------------------
-
     if (filter === 'pending') {
       result = result.filter(
-        (item) =>
-          String(
-            item.order?.order_status || ''
-          ).toLowerCase() === 'pending'
+        (item) => String(item.order?.order_status || '').toLowerCase() === 'pending'
       )
     }
-
     if (filter === 'confirmed') {
       result = result.filter(
-        (item) =>
-          String(
-            item.order?.order_status || ''
-          ).toLowerCase() === 'confirmed'
+        (item) => String(item.order?.order_status || '').toLowerCase() === 'confirmed'
       )
     }
-
     if (filter === 'shipped') {
       result = result.filter(
-        (item) =>
-          String(
-            item.order?.order_status || ''
-          ).toLowerCase() === 'shipped'
+        (item) => String(item.order?.order_status || '').toLowerCase() === 'shipped'
       )
     }
-
     if (filter === 'delivered') {
       result = result.filter(
-        (item) =>
-          String(
-            item.order?.order_status || ''
-          ).toLowerCase() === 'delivered'
+        (item) => String(item.order?.order_status || '').toLowerCase() === 'delivered'
       )
     }
-
     if (filter === 'paid') {
       result = result.filter(
-        (item) =>
-          String(
-            item.settlement_status || ''
-          ).toLowerCase() === 'paid'
+        (item) => String(item.settlement_status || '').toLowerCase() === 'paid'
       )
     }
-
     if (filter === 'settlement_pending') {
       result = result.filter(
-        (item) =>
-          String(
-            item.settlement_status || ''
-          ).toLowerCase() !== 'paid'
+        (item) => String(item.settlement_status || '').toLowerCase() !== 'paid'
       )
     }
 
-    // ------------------------------------------------
-    // CUSTOMER SEARCH
-    // ------------------------------------------------
-
-    const search = searchTerm
-      .trim()
-      .toLowerCase()
-
+    const search = searchTerm.trim().toLowerCase()
     if (search) {
       result = result.filter((item) => {
-        const customerName = String(
-          item.order?.customer_name || ''
-        ).toLowerCase()
-
-        const customerPhone = String(
-          item.order?.customer_phone || ''
-        ).toLowerCase()
-
-        return (
-          customerName.includes(search) ||
-          customerPhone.includes(search)
-        )
+        const customerName = String(item.order?.customer_name || '').toLowerCase()
+        const customerPhone = String(item.order?.customer_phone || '').toLowerCase()
+        return customerName.includes(search) || customerPhone.includes(search)
       })
     }
 
     return result
-  }, [
-    orders,
-    filter,
-    searchTerm,
-  ])
-
-  // ==================================================
-  // SUMMARY CALCULATIONS
-  // ==================================================
+  }, [orders, filter, searchTerm])
 
   const summary = useMemo(() => {
     let sales = 0
     let commission = 0
     let earned = 0
     let pendingSettlement = 0
-
     let deliveredCount = 0
     let paidSettlementCount = 0
     let pendingSettlementCount = 0
@@ -561,33 +314,18 @@ export default function FarmerOrders() {
     const deliveredOrderIds = new Set()
 
     orders.forEach((item) => {
-      const itemTotal = Number(
-        item.item_total || 0
-      )
-
-      const calculatedCommission = Number(
-        item.calculatedCommission || 0
-      )
-
-      const settlementAmount = Number(
-        item.calculatedSettlement || 0
-      )
+      const itemTotal = Number(item.item_total || 0)
+      const calculatedCommission = Number(item.calculatedCommission || 0)
+      const settlementAmount = Number(item.calculatedSettlement || 0)
 
       sales += itemTotal
       commission += calculatedCommission
 
-      const status = String(
-        item.order?.order_status || ''
-      ).toLowerCase()
-
-      const settlementStatus = String(
-        item.settlement_status || ''
-      ).toLowerCase()
+      const status = String(item.order?.order_status || '').toLowerCase()
+      const settlementStatus = String(item.settlement_status || '').toLowerCase()
 
       if (status === 'delivered') {
-        deliveredOrderIds.add(
-          item.order_id
-        )
+        deliveredOrderIds.add(item.order_id)
       }
 
       if (settlementStatus === 'paid') {
@@ -599,8 +337,7 @@ export default function FarmerOrders() {
       }
     })
 
-    deliveredCount =
-      deliveredOrderIds.size
+    deliveredCount = deliveredOrderIds.size
 
     return {
       sales,
@@ -613,1752 +350,347 @@ export default function FarmerOrders() {
     }
   }, [orders])
 
-  // ==================================================
-  // STATUS STYLE
-  // ==================================================
-
   function getStatusStyle(status) {
-    const currentStatus = String(
-      status || ''
-    ).toLowerCase()
+    const currentStatus = String(status || '').toLowerCase()
 
-    if (currentStatus === 'pending') {
-      return {
-        background: '#fff7ed',
-        color: '#c2410c',
-      }
-    }
+    if (currentStatus === 'pending') return 'bg-orange-50 text-orange-700'
+    if (currentStatus === 'confirmed') return 'bg-blue-50 text-blue-700'
+    if (currentStatus === 'shipped') return 'bg-purple-50 text-purple-700'
+    if (currentStatus === 'delivered') return 'bg-emerald-50 text-emerald-700'
+    if (currentStatus === 'cancelled') return 'bg-red-50 text-red-700'
 
-    if (currentStatus === 'confirmed') {
-      return {
-        background: '#eff6ff',
-        color: '#1d4ed8',
-      }
-    }
-
-    if (currentStatus === 'shipped') {
-      return {
-        background: '#f5f3ff',
-        color: '#6d28d9',
-      }
-    }
-
-    if (currentStatus === 'delivered') {
-      return {
-        background: '#ecfdf5',
-        color: '#047857',
-      }
-    }
-
-    if (currentStatus === 'cancelled') {
-      return {
-        background: '#fef2f2',
-        color: '#b91c1c',
-      }
-    }
-
-    return {
-      background: '#f3f4f6',
-      color: '#374151',
-    }
+    return 'bg-gray-100 text-gray-700'
   }
-
-  // ==================================================
-  // SETTLEMENT STYLE
-  // ==================================================
 
   function getSettlementStyle(status) {
-    if (
-      String(status || '')
-        .toLowerCase() === 'paid'
-    ) {
-      return {
-        background: '#ecfdf5',
-        color: '#047857',
-      }
+    if (String(status || '').toLowerCase() === 'paid') {
+      return 'bg-emerald-50 text-emerald-700'
     }
-
-    return {
-      background: '#fff7ed',
-      color: '#c2410c',
-    }
+    return 'bg-orange-50 text-orange-700'
   }
-
-  // ==================================================
-  // LOADING
-  // ==================================================
 
   if (loading) {
     return (
-      <main style={styles.loadingPage}>
-        <div style={styles.loadingCard}>
-
-          <div style={styles.loadingIcon}>
-            🌾
-          </div>
-
-          <p style={styles.loadingText}>
-            Loading your orders...
-          </p>
-
+      <main className="min-h-screen flex justify-center items-center bg-[#f5f7f5] font-sans">
+        <div className="bg-white p-10 rounded-2xl text-center shadow-md">
+          <div className="text-[45px] mb-[15px]">🌾</div>
+          <p className="m-0 text-gray-600 text-base">Loading your orders...</p>
         </div>
       </main>
     )
   }
 
-  // ==================================================
-  // PAGE
-  // ==================================================
-
   return (
-    <main style={styles.page}>
-      <div style={styles.container}>
-
-        {/* BACK */}
-
+    <main className="min-h-screen bg-[#f5f7f5] p-5 sm:p-10 font-sans">
+      <div className="max-w-[1150px] mx-auto">
         <button
-          onClick={() =>
-            router.push('/farmer')
-          }
-          style={styles.backButton}
+          onClick={() => router.push('/farmer')}
+          className="px-4 py-2 border-none bg-white text-gray-700 rounded-lg cursor-pointer font-bold mb-[25px] shadow-sm hover:shadow-md transition-shadow text-sm sm:text-base"
         >
           ← Back to Dashboard
         </button>
 
-        {/* HEADER */}
-
-        <div style={styles.header}>
-
+        <div className="bg-green-800 text-white p-[25px] sm:p-[35px] rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-[20px] shadow-md flex-wrap">
           <div>
-            <p style={styles.smallTitle}>
-              FARMER PANEL
-            </p>
-
-            <h1 style={styles.title}>
-              My Orders
-            </h1>
-
-            <p style={styles.subtitle}>
-              Manage your customer orders and
-              track your earnings.
+            <p className="m-0 mb-2 font-bold text-xs tracking-wider opacity-85">FARMER PANEL</p>
+            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] font-bold">My Orders</h1>
+            <p className="m-0 opacity-90 text-sm sm:text-base">
+              Manage your customer orders and track your earnings.
             </p>
           </div>
-
           <button
             onClick={loadOrders}
-            style={styles.refreshButton}
+            className="px-[20px] py-[12px] border-none bg-white text-green-800 rounded-lg font-bold cursor-pointer hover:bg-gray-50 transition-colors shadow-sm w-full sm:w-auto"
           >
             ↻ Refresh
           </button>
-
         </div>
-
-        {/* MESSAGE */}
 
         {message && (
           <div
-            style={
-              message.includes(
-                'successfully'
-              )
-                ? styles.success
-                : styles.error
-            }
+            className={`mt-[25px] p-[15px] rounded-lg text-center font-bold text-sm sm:text-base ${
+              message.includes('successfully')
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                : 'bg-red-50 text-red-800 border border-red-200'
+            }`}
           >
             {message}
           </div>
         )}
 
-        {/* SUMMARY CARDS */}
-
-        <div style={styles.summaryGrid}>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-[20px] mt-[25px]">
+          <div className="bg-white border border-gray-200 rounded-2xl p-[20px] flex items-center gap-[15px] shadow-sm">
+            <div className="w-[50px] h-[50px] rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-[22px] flex-shrink-0">
               🛒
             </div>
-
             <div>
-              <p style={styles.summaryLabel}>
-                Total Sales
-              </p>
-
-              <h2 style={styles.summaryNumber}>
-                ₹{summary.sales.toFixed(2)}
-              </h2>
+              <p className="m-0 mb-[5px] text-xs text-gray-500 font-bold uppercase tracking-wider">Total Sales</p>
+              <h2 className="m-0 text-xl font-bold text-gray-800">₹{summary.sales.toFixed(2)}</h2>
             </div>
           </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+          <div className="bg-white border border-gray-200 rounded-2xl p-[20px] flex items-center gap-[15px] shadow-sm">
+            <div className="w-[50px] h-[50px] rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-[22px] flex-shrink-0">
               🌾
             </div>
-
             <div>
-              <p style={styles.summaryLabel}>
-                Farmer Earnings
-              </p>
-
-              <h2 style={styles.summaryNumber}>
-                ₹{summary.earned.toFixed(2)}
-              </h2>
+              <p className="m-0 mb-[5px] text-xs text-gray-500 font-bold uppercase tracking-wider">Farmer Earnings</p>
+              <h2 className="m-0 text-xl font-bold text-gray-800">₹{summary.earned.toFixed(2)}</h2>
             </div>
           </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
+          <div className="bg-white border border-gray-200 rounded-2xl p-[20px] flex items-center gap-[15px] shadow-sm">
+            <div className="w-[50px] h-[50px] rounded-full bg-purple-50 text-purple-700 flex items-center justify-center text-[22px] flex-shrink-0">
+              💼
+            </div>
+            <div>
+              <p className="m-0 mb-[5px] text-xs text-gray-500 font-bold uppercase tracking-wider">Total Commission</p>
+              <h2 className="m-0 text-xl font-bold text-gray-800">₹{summary.commission.toFixed(2)}</h2>
+            </div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-[20px] flex items-center gap-[15px] shadow-sm">
+            <div className="w-[50px] h-[50px] rounded-full bg-orange-50 text-orange-700 flex items-center justify-center text-[22px] flex-shrink-0">
               ⏳
             </div>
-
             <div>
-              <p style={styles.summaryLabel}>
-                Pending Settlement
-              </p>
-
-              <h2 style={styles.summaryNumber}>
-                ₹
-                {summary.pendingSettlement.toFixed(
-                  2
-                )}
-              </h2>
+              <p className="m-0 mb-[5px] text-xs text-gray-500 font-bold uppercase tracking-wider">Pending Settlement</p>
+              <h2 className="m-0 text-xl font-bold text-gray-800">₹{summary.pendingSettlement.toFixed(2)}</h2>
             </div>
           </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryIcon}>
-              📦
-            </div>
-
-            <div>
-              <p style={styles.summaryLabel}>
-                Delivered Orders
-              </p>
-
-              <h2 style={styles.summaryNumber}>
-                {summary.deliveredCount}
-              </h2>
-            </div>
-          </div>
-
         </div>
 
-        {/* EARNINGS OVERVIEW */}
-
         {orders.length > 0 && (
-          <section
-            style={styles.earningsSection}
-          >
-
-            <div
-              style={styles.sectionHeader}
-            >
-              <div>
-
-                <h2
-                  style={styles.sectionTitle}
-                >
-                  Earnings Overview
-                </h2>
-
-                <p
-                  style={styles.sectionSubtitle}
-                >
-                  Track your farmer amount and
-                  platform commission.
-                </p>
-
+          <section className="bg-white border border-gray-200 rounded-2xl p-[20px] sm:p-[25px] mt-[25px] shadow-sm">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-[20px] mb-6">
+              <h2 className="m-0 text-xl sm:text-[22px] text-gray-800 font-bold">Search Orders</h2>
+              <div className="w-full lg:flex-1 lg:max-w-[400px] flex items-center border border-gray-300 rounded-lg px-[15px] bg-gray-50 transition-colors focus-within:bg-white focus-within:border-green-600 focus-within:ring-1 focus-within:ring-green-600">
+                <span className="text-[18px] text-gray-400">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by customer name or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border-none bg-transparent py-[12px] px-[10px] text-[15px] outline-none"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="border-none bg-transparent text-gray-400 cursor-pointer font-bold px-[5px] hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
-
-            <div style={styles.earningsGrid}>
-
-              <div style={styles.earningBox}>
-                <span
-                  style={styles.earningLabel}
-                >
-                  Farmer Sales
-                </span>
-
-                <strong
-                  style={styles.earningValue}
-                >
-                  ₹{summary.sales.toFixed(2)}
-                </strong>
-              </div>
-
-              <div style={styles.earningBox}>
-                <span
-                  style={styles.earningLabel}
-                >
-                  Platform Commission
-                </span>
-
-                <strong
-                  style={styles.commissionValue}
-                >
-                  ₹
-                  {summary.commission.toFixed(
-                    2
-                  )}
-                </strong>
-              </div>
-
-              <div style={styles.earningBox}>
-                <span
-                  style={styles.earningLabel}
-                >
-                  Settlements Paid
-                </span>
-
-                <strong
-                  style={styles.paidValue}
-                >
-                  {summary.paidSettlementCount}
-                </strong>
-              </div>
-
-              <div style={styles.earningBox}>
-                <span
-                  style={styles.earningLabel}
-                >
-                  Settlements Pending
-                </span>
-
-                <strong
-                  style={styles.pendingValue}
-                >
-                  {summary.pendingSettlementCount}
-                </strong>
-              </div>
-
-            </div>
-
-          </section>
-        )}
-
-        {/* SEARCH */}
-
-        {orders.length > 0 && (
-          <section
-            style={styles.searchSection}
-          >
-
-            <div
-              style={styles.searchHeader}
-            >
-              <div>
-
-                <h2
-                  style={styles.sectionTitle}
-                >
-                  🔍 Find Customer Order
-                </h2>
-
-                <p
-                  style={styles.sectionSubtitle}
-                >
-                  Search using customer name or
-                  mobile number.
-                </p>
-
-              </div>
-            </div>
-
-            <div
-              style={styles.searchWrapper}
-            >
-
-              <span
-                style={styles.searchIcon}
-              >
-                🔍
-              </span>
-
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) =>
-                  setSearchTerm(
-                    e.target.value
-                  )
-                }
-                placeholder="Search customer name or mobile number..."
-                style={styles.searchInput}
-              />
-
-              {searchTerm && (
-                <button
-                  onClick={() =>
-                    setSearchTerm('')
-                  }
-                  style={
-                    styles.clearSearchButton
-                  }
-                >
-                  ✕
-                </button>
-              )}
-
-            </div>
-
             {searchTerm.trim() && (
-              <p
-                style={styles.searchResultText}
-              >
-                {filteredOrders.length}{' '}
-                {filteredOrders.length === 1
-                  ? 'order'
-                  : 'orders'}{' '}
-                found
+              <p className="m-0 mt-3 sm:mt-0 text-sm text-gray-600">
+                {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'} found
               </p>
             )}
-
           </section>
         )}
-
-        {/* FILTERS */}
 
         {orders.length > 0 && (
-          <section
-            style={styles.filterSection}
-          >
+          <section className="bg-white border border-gray-200 rounded-2xl p-[20px] sm:p-[25px] mt-[25px] shadow-sm">
+            <h2 className="m-0 mb-4 sm:mb-5 text-xl sm:text-[22px] text-gray-800 font-bold">Order Filters</h2>
+            <div className="flex flex-wrap gap-[10px]">
+              {['all', 'pending', 'confirmed', 'shipped', 'delivered', 'paid', 'settlement_pending'].map(
+                (filterName) => {
+                  let label = filterName === 'settlement_pending' ? 'Settlement Pending' : filterName.charAt(0).toUpperCase() + filterName.slice(1)
+                  if (filterName === 'all') label = `All (${orders.length})`
+                  if (filterName === 'paid') label = 'Settlement Paid'
 
-            <h2 style={styles.sectionTitle}>
-              Order Filters
-            </h2>
-
-            <div style={styles.filterGrid}>
-
-              <button
-                onClick={() =>
-                  setFilter('all')
-                }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter === 'all'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                All ({orders.length})
-              </button>
-
-              <button
-                onClick={() =>
-                  setFilter('pending')
-                }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter === 'pending'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                Pending
-              </button>
-
-              <button
-                onClick={() =>
-                  setFilter('confirmed')
-                }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter === 'confirmed'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                Confirmed
-              </button>
-
-              <button
-                onClick={() =>
-                  setFilter('shipped')
-                }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter === 'shipped'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                Shipped
-              </button>
-
-              <button
-                onClick={() =>
-                  setFilter('delivered')
-                }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter === 'delivered'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                Delivered
-              </button>
-
-              <button
-                onClick={() =>
-                  setFilter('paid')
-                }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter === 'paid'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                Settlement Paid
-              </button>
-
-              <button
-                onClick={() =>
-                  setFilter(
-                    'settlement_pending'
+                  return (
+                    <button
+                      key={filterName}
+                      onClick={() => setFilter(filterName)}
+                      className={`px-[16px] py-[10px] rounded-full border cursor-pointer font-bold text-sm transition-colors ${
+                        filter === filterName
+                          ? 'bg-gray-800 text-white border-gray-800'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
                   )
                 }
-                style={{
-                  ...styles.filterButton,
-                  ...(filter ===
-                  'settlement_pending'
-                    ? styles.activeFilter
-                    : {}),
-                }}
-              >
-                Settlement Pending
-              </button>
-
+              )}
             </div>
-
           </section>
         )}
 
-        {/* NO ORDERS */}
+        {!message && orders.length === 0 && (
+          <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-[40px] sm:p-[60px_20px] mt-[30px] text-center shadow-sm">
+            <div className="text-[50px] mb-[15px]">📦</div>
+            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">No Orders Yet</h2>
+            <p className="m-0 text-gray-500 text-[15px]">
+              Orders for your products will appear here when customers place them.
+            </p>
+          </div>
+        )}
 
-        {!message &&
-          orders.length === 0 && (
-            <div
-              style={styles.emptyCard}
-            >
-
-              <div style={styles.emptyIcon}>
-                📦
-              </div>
-
-              <h2
-                style={styles.emptyTitle}
+        {orders.length > 0 && filteredOrders.length === 0 && (
+          <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-[40px] sm:p-[60px_20px] mt-[30px] text-center shadow-sm">
+            <div className="text-[50px] mb-[15px]">🔍</div>
+            <h3 className="m-0 mb-2.5 text-xl sm:text-[22px] text-gray-800 font-bold">No matching orders</h3>
+            <p className="m-0 mb-4 sm:mb-5 text-gray-500 text-[15px]">
+              {searchTerm.trim()
+                ? 'No customer found with that name or mobile number.'
+                : 'There are no orders in this filter.'}
+            </p>
+            {searchTerm.trim() && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-[20px] py-[10px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-bold hover:bg-gray-50"
               >
-                No Orders Yet
-              </h2>
-
-              <p style={styles.emptyText}>
-                Orders for your products will
-                appear here when customers place
-                them.
-              </p>
-
-            </div>
-          )}
-
-        {/* SEARCH / FILTER EMPTY */}
-
-        {orders.length > 0 &&
-          filteredOrders.length === 0 && (
-            <div
-              style={
-                styles.emptyFilterCard
-              }
-            >
-
-              <div
-                style={
-                  styles.emptyFilterIcon
-                }
-              >
-                🔍
-              </div>
-
-              <h3>
-                No matching orders
-              </h3>
-
-              <p>
-                {searchTerm.trim()
-                  ? 'No customer found with that name or mobile number.'
-                  : 'There are no orders in this filter.'}
-              </p>
-
-              {searchTerm.trim() && (
-                <button
-                  onClick={() =>
-                    setSearchTerm('')
-                  }
-                  style={
-                    styles.clearSearchLargeButton
-                  }
-                >
-                  Clear Search
-                </button>
-              )}
-
-            </div>
-          )}
-
-        {/* ORDERS */}
+                Clear Search
+              </button>
+            )}
+          </div>
+        )}
 
         {filteredOrders.length > 0 && (
-          <div style={styles.ordersList}>
-
+          <div className="flex flex-col gap-[25px] mt-[30px]">
             {filteredOrders.map((item) => {
               const order = item.order
-
-              if (!order) {
-                return null
-              }
-
-              const nextAction =
-                getNextAction(
-                  order.order_status
-                )
-
-              const orderStatus =
-                String(
-                  order.order_status || ''
-                ).toLowerCase()
-
-              const settlementStatus =
-                String(
-                  item.settlement_status ||
-                    'pending'
-                ).toLowerCase()
+              if (!order) return null
+              const nextAction = getNextAction(order.order_status)
+              const orderStatus = String(order.order_status || '').toLowerCase()
+              const settlementStatus = String(item.settlement_status || 'pending').toLowerCase()
 
               return (
-                <div
-                  key={item.id}
-                  style={styles.orderCard}
-                >
-
-                  {/* ORDER HEADER */}
-
-                  <div
-                    style={styles.orderHeader}
-                  >
-
+                <div key={item.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="bg-gray-50 p-[20px] sm:p-[20px_25px] border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-[15px]">
                     <div>
-
-                      <p
-                        style={styles.orderLabel}
-                      >
-                        PRODUCT ORDER
-                      </p>
-
-                      <h2
-                        style={
-                          styles.productName
-                        }
-                      >
-                        {item.product_name}
-                      </h2>
-
-                      <p
-                        style={styles.orderId}
-                      >
-                        Order ID: {item.order_id}
-                      </p>
-
+                      <p className="m-0 mb-1 text-[11px] font-bold tracking-wider text-gray-500">PRODUCT ORDER</p>
+                      <h2 className="m-0 mb-1 text-lg sm:text-[20px] text-gray-800 font-bold">{item.product_name}</h2>
+                      <p className="m-0 text-sm text-gray-500 font-bold">Order ID: {item.order_id}</p>
                     </div>
-
-                    <div
-                      style={{
-                        ...styles.statusBadge,
-                        ...getStatusStyle(
-                          order.order_status
-                        ),
-                      }}
-                    >
-                      {order.order_status ||
-                        'Unknown'}
+                    <div className={`px-[12px] py-[6px] rounded-full text-xs font-bold uppercase tracking-wider border border-current ${getStatusStyle(order.order_status)}`}>
+                      {order.order_status || 'Unknown'}
                     </div>
-
                   </div>
 
-                  {/* PRODUCT DETAILS */}
-
-                  <div
-                    style={
-                      styles.productDetails
-                    }
-                  >
-
-                    <div
-                      style={styles.detailBox}
-                    >
-                      <span
-                        style={
-                          styles.detailLabel
-                        }
-                      >
-                        Customer Price
-                      </span>
-
-                      <strong
-                        style={
-                          styles.detailValue
-                        }
-                      >
-                        ₹
-                        {Number(
-                          item.price || 0
-                        ).toFixed(2)}
-                        {' / '}
-                        {item.unit}
-                      </strong>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 border-b border-gray-200 bg-white">
+                    <div className="p-[15px] sm:p-[20px]">
+                      <span className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-1">Customer Price</span>
+                      <strong className="text-[17px] text-gray-800 font-bold">₹{Number(item.price || 0).toFixed(2)} / {item.unit}</strong>
                     </div>
-
-                    <div
-                      style={styles.detailBox}
-                    >
-                      <span
-                        style={
-                          styles.detailLabel
-                        }
-                      >
-                        Quantity
-                      </span>
-
-                      <strong
-                        style={
-                          styles.detailValue
-                        }
-                      >
-                        {item.quantity}{' '}
-                        {item.unit}
-                      </strong>
+                    <div className="p-[15px] sm:p-[20px]">
+                      <span className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-1">Quantity</span>
+                      <strong className="text-[17px] text-gray-800 font-bold">{item.quantity} {item.unit}</strong>
                     </div>
-
-                    <div
-                      style={styles.detailBox}
-                    >
-                      <span
-                        style={
-                          styles.detailLabel
-                        }
-                      >
-                        Customer Total
-                      </span>
-
-                      <strong
-                        style={
-                          styles.detailValue
-                        }
-                      >
-                        ₹
-                        {Number(
-                          item.item_total || 0
-                        ).toFixed(2)}
-                      </strong>
+                    <div className="p-[15px] sm:p-[20px]">
+                      <span className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-1">Customer Total</span>
+                      <strong className="text-[17px] text-gray-800 font-bold">₹{Number(item.item_total || 0).toFixed(2)}</strong>
                     </div>
-
                   </div>
 
-                  {/* FARMER EARNINGS */}
-
-                  <div
-                    style={
-                      styles.earningsCard
-                    }
-                  >
-
-                    <div
-                      style={
-                        styles.earningsCardHeader
-                      }
-                    >
-
+                  <div className="m-[15px] sm:m-[25px] border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="bg-[#fafafa] p-[15px] sm:p-[20px] border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-[15px]">
                       <div>
-
-                        <h3
-                          style={
-                            styles.earningsTitle
-                          }
-                        >
-                          🌾 Farmer Earnings
-                        </h3>
-
-                        <p
-                          style={
-                            styles.earningsHint
-                          }
-                        >
-                          Your amount after platform
-                          commission.
-                        </p>
-
+                        <h3 className="m-0 mb-1 text-lg sm:text-[18px] text-gray-800 font-bold">🌾 Farmer Earnings</h3>
+                        <p className="m-0 text-[13px] text-gray-500 font-medium">Your amount after platform commission.</p>
                       </div>
-
-                      <div
-                        style={{
-                          ...styles.settlementBadge,
-                          ...getSettlementStyle(
-                            settlementStatus
-                          ),
-                        }}
-                      >
-                        {settlementStatus ===
-                        'paid'
-                          ? '✓ Settlement Paid'
-                          : '⏳ Settlement Pending'}
+                      <div className={`px-[12px] py-[6px] rounded-full text-[11px] font-bold uppercase tracking-wider ${getSettlementStyle(settlementStatus)}`}>
+                        {settlementStatus === 'paid' ? '✓ Settlement Paid' : '⏳ Settlement Pending'}
                       </div>
-
                     </div>
-
-                    <div
-                      style={styles.moneyGrid}
-                    >
-
+                    <div className="p-[15px] sm:p-[20px] bg-white grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <span
-                          style={
-                            styles.moneyLabel
-                          }
-                        >
-                          Farmer Price
-                        </span>
-
-                        <strong
-                          style={
-                            styles.moneyValue
-                          }
-                        >
-                          ₹
-                          {Number(
-                            item.farmer_price ||
-                              0
-                          ).toFixed(2)}
-                          {' / '}
-                          {item.unit}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Farmer Price</span>
+                        <strong className="text-[15px] text-gray-800">₹{Number(item.farmer_price || 0).toFixed(2)} / {item.unit}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={
-                            styles.moneyLabel
-                          }
-                        >
-                          Farmer Amount
-                        </span>
-
-                        <strong
-                          style={
-                            styles.moneyValue
-                          }
-                        >
-                          ₹
-                          {item.calculatedFarmerAmount.toFixed(
-                            2
-                          )}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Farmer Amount</span>
+                        <strong className="text-[15px] text-gray-800">₹{item.calculatedFarmerAmount.toFixed(2)}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={
-                            styles.moneyLabel
-                          }
-                        >
-                          Platform Commission
-                        </span>
-
-                        <strong
-                          style={
-                            styles.commissionMoney
-                          }
-                        >
-                          ₹
-                          {item.calculatedCommission.toFixed(
-                            2
-                          )}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Platform Commission</span>
+                        <strong className="text-[15px] text-red-600">₹{item.calculatedCommission.toFixed(2)}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={
-                            styles.moneyLabel
-                          }
-                        >
-                          Settlement Amount
-                        </span>
-
-                        <strong
-                          style={
-                            styles.settlementMoney
-                          }
-                        >
-                          ₹
-                          {item.calculatedSettlement.toFixed(
-                            2
-                          )}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Settlement Amount</span>
+                        <strong className="text-[15px] sm:text-[17px] text-green-700 font-bold">₹{item.calculatedSettlement.toFixed(2)}</strong>
                       </div>
-
                     </div>
-
-                    {settlementStatus ===
-                      'paid' &&
-                      item.settlement_paid_at && (
-                        <div
-                          style={
-                            styles.paidDate
-                          }
-                        >
-                          Paid on:{' '}
-                          {new Date(
-                            item.settlement_paid_at
-                          ).toLocaleString()}
-                        </div>
-                      )}
-
+                    {settlementStatus === 'paid' && item.settlement_paid_at && (
+                      <div className="bg-emerald-50 px-[20px] py-[10px] text-xs font-bold text-emerald-800 border-t border-emerald-100">
+                        Paid on: {new Date(item.settlement_paid_at).toLocaleString()}
+                      </div>
+                    )}
                   </div>
 
-                  {/* CUSTOMER DETAILS */}
-
-                  <div
-                    style={
-                      styles.customerSection
-                    }
-                  >
-
-                    <h3
-                      style={
-                        styles.customerHeading
-                      }
-                    >
-                      Customer Details
-                    </h3>
-
-                    <div
-                      style={
-                        styles.customerGrid
-                      }
-                    >
-
+                  <div className="px-[15px] sm:px-[25px] pb-[25px] border-b border-gray-200">
+                    <h3 className="m-0 mb-4 text-base text-gray-800 font-bold">Customer Details</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px] sm:gap-[20px] mb-4">
                       <div>
-                        <span
-                          style={
-                            styles.detailLabel
-                          }
-                        >
-                          Name
-                        </span>
-
-                        <strong>
-                          {order.customer_name ||
-                            '-'}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Name</span>
+                        <strong className="text-[14px] text-gray-800 font-medium">{order.customer_name || '-'}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={
-                            styles.detailLabel
-                          }
-                        >
-                          Phone
-                        </span>
-
-                        <strong>
-                          {order.customer_phone ||
-                            '-'}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Phone</span>
+                        <strong className="text-[14px] text-gray-800 font-medium">{order.customer_phone || '-'}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={
-                            styles.detailLabel
-                          }
-                        >
-                          District
-                        </span>
-
-                        <strong>
-                          {order.district || '-'}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">District</span>
+                        <strong className="text-[14px] text-gray-800 font-medium">{order.district || '-'}</strong>
                       </div>
-
                       <div>
-                        <span
-                          style={
-                            styles.detailLabel
-                          }
-                        >
-                          Village / Town
-                        </span>
-
-                        <strong>
-                          {order.village || '-'}
-                        </strong>
+                        <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Village / Town</span>
+                        <strong className="text-[14px] text-gray-800 font-medium">{order.village || '-'}</strong>
                       </div>
-
                     </div>
-
-                    <div
-                      style={styles.addressBox}
-                    >
-                      <span
-                        style={
-                          styles.detailLabel
-                        }
-                      >
-                        Delivery Address
-                      </span>
-
-                      <strong>
-                        {order.delivery_address ||
-                          '-'}
-                      </strong>
+                    <div className="bg-gray-50 p-[15px] rounded-lg">
+                      <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Delivery Address</span>
+                      <strong className="text-[14px] text-gray-800 font-medium">{order.delivery_address || '-'}</strong>
                     </div>
-
                   </div>
 
-                  {/* ORDER ACTION */}
-
-                  <div
-                    style={
-                      styles.actionSection
-                    }
-                  >
-
+                  <div className="p-[15px] sm:p-[20px_25px] bg-[#fafcf9] border-b border-gray-200 flex justify-end">
                     {nextAction ? (
                       <button
                         onClick={() => {
-                          if (
-                            !nextAction.disabled
-                          ) {
-                            updateOrderStatus(
-                              order.id,
-                              nextAction.nextStatus
-                            )
+                          if (!nextAction.disabled) {
+                            updateOrderStatus(order.id, nextAction.nextStatus)
                           }
                         }}
-                        disabled={
-                          nextAction.disabled ||
-                          updating === order.id
-                        }
-                        style={{
-                          ...styles.actionButton,
-
-                          opacity:
-                            nextAction.disabled ||
-                            updating === order.id
-                              ? 0.6
-                              : 1,
-
-                          cursor:
-                            nextAction.disabled ||
-                            updating === order.id
-                              ? 'not-allowed'
-                              : 'pointer',
-
-                          background:
-                            nextAction.disabled
-                              ? '#9ca3af'
-                              : '#2e7d32',
-                        }}
+                        disabled={nextAction.disabled || updating === order.id}
+                        className={`w-full sm:w-auto px-[20px] sm:px-[24px] py-[12px] sm:py-[14px] border-none rounded-lg text-white font-bold cursor-pointer text-sm sm:text-base ${
+                          nextAction.disabled || updating === order.id
+                            ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                            : 'bg-green-700 hover:bg-green-800'
+                        }`}
                       >
-                        {updating === order.id
-                          ? 'Updating...'
-                          : nextAction.text}
+                        {updating === order.id ? 'Updating...' : nextAction.text}
                       </button>
-                    ) : orderStatus ===
-                      'delivered' ? (
-                      <div
-                        style={
-                          styles.completed
-                        }
-                      >
-                        ✓ Delivery Confirmed by
-                        Customer
+                    ) : orderStatus === 'delivered' ? (
+                      <div className="bg-emerald-50 text-emerald-800 px-[16px] py-[12px] rounded-lg font-bold w-full text-center sm:w-auto border border-emerald-200">
+                        ✓ Delivery Confirmed by Customer
                       </div>
                     ) : (
-                      <div
-                        style={styles.noAction}
-                      >
+                      <div className="bg-gray-100 text-gray-500 px-[16px] py-[12px] rounded-lg font-bold w-full text-center sm:w-auto">
                         No action available
                       </div>
                     )}
-
                   </div>
 
-                  {/* FOOTER */}
-
-                  <div
-                    style={styles.footer}
-                  >
-
-                    <div>
-                      <span
-                        style={
-                          styles.detailLabel
-                        }
-                      >
-                        Payment Status
-                      </span>
-
-                      <strong
-                        style={{
-                          textTransform:
-                            'capitalize',
-                        }}
-                      >
-                        {order.payment_status ||
-                          '-'}
+                  <div className="p-[15px] sm:p-[20px_25px] bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Payment Status</span>
+                      <strong className="text-[13px] text-gray-800 font-bold capitalize">{order.payment_status || '-'}</strong>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Order Date</span>
+                      <strong className="text-[13px] text-gray-800 font-bold">
+                        {order.created_at ? new Date(order.created_at).toLocaleString() : '-'}
                       </strong>
                     </div>
-
-                    <div>
-                      <span
-                        style={
-                          styles.detailLabel
-                        }
-                      >
-                        Order Date
-                      </span>
-
-                      <strong>
-                        {order.created_at
-                          ? new Date(
-                              order.created_at
-                            ).toLocaleString()
-                          : '-'}
-                      </strong>
-                    </div>
-
                   </div>
-
                 </div>
               )
             })}
-
           </div>
         )}
-
       </div>
     </main>
   )
-}
-
-// ==================================================
-// STYLES
-// ==================================================
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f5f7f5',
-    padding: '40px 20px',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: '#f5f7f5',
-    fontFamily: 'Arial, sans-serif',
-  },
-
-  loadingCard: {
-    background: '#ffffff',
-    padding: '40px',
-    borderRadius: '16px',
-    textAlign: 'center',
-    boxShadow:
-      '0 2px 12px rgba(0,0,0,0.08)',
-  },
-
-  loadingIcon: {
-    fontSize: '45px',
-    marginBottom: '15px',
-  },
-
-  loadingText: {
-    margin: 0,
-    color: '#555',
-    fontSize: '16px',
-  },
-
-  container: {
-    maxWidth: '1150px',
-    margin: '0 auto',
-  },
-
-  backButton: {
-    border: 'none',
-    background: 'transparent',
-    fontSize: '16px',
-    cursor: 'pointer',
-    marginBottom: '20px',
-    color: '#166534',
-    fontWeight: '600',
-  },
-
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '20px',
-    marginBottom: '30px',
-  },
-
-  smallTitle: {
-    margin: '0 0 6px',
-    fontSize: '12px',
-    fontWeight: '700',
-    letterSpacing: '1.5px',
-    color: '#2e7d32',
-  },
-
-  title: {
-    fontSize: '36px',
-    margin: '0 0 8px',
-    color: '#1f2937',
-  },
-
-  subtitle: {
-    margin: 0,
-    color: '#666',
-    fontSize: '15px',
-  },
-
-  refreshButton: {
-    padding: '11px 18px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#2e7d32',
-    color: '#fff',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  },
-
-  error: {
-    background: '#fef2f2',
-    border: '1px solid #fecaca',
-    padding: '16px',
-    borderRadius: '10px',
-    color: '#b91c1c',
-    marginBottom: '25px',
-  },
-
-  success: {
-    background: '#ecfdf5',
-    border: '1px solid #bbf7d0',
-    padding: '16px',
-    borderRadius: '10px',
-    color: '#047857',
-    marginBottom: '25px',
-  },
-
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(4, minmax(0, 1fr))',
-    gap: '18px',
-    marginBottom: '30px',
-  },
-
-  summaryCard: {
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '14px',
-    padding: '22px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-    boxShadow:
-      '0 2px 8px rgba(0,0,0,0.04)',
-  },
-
-  summaryIcon: {
-    fontSize: '30px',
-  },
-
-  summaryLabel: {
-    margin: '0 0 6px',
-    color: '#6b7280',
-    fontSize: '13px',
-  },
-
-  summaryNumber: {
-    margin: 0,
-    fontSize: '22px',
-    color: '#1f2937',
-  },
-
-  earningsSection: {
-    background: '#ffffff',
-    borderRadius: '16px',
-    padding: '25px',
-    marginBottom: '30px',
-    border: '1px solid #e5e7eb',
-  },
-
-  sectionHeader: {
-    marginBottom: '20px',
-  },
-
-  sectionTitle: {
-    margin: 0,
-    fontSize: '22px',
-    color: '#1f2937',
-  },
-
-  sectionSubtitle: {
-    margin: '7px 0 0',
-    color: '#6b7280',
-    fontSize: '14px',
-  },
-
-  earningsGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(4, minmax(0, 1fr))',
-    gap: '15px',
-  },
-
-  earningBox: {
-    background: '#f8faf8',
-    border: '1px solid #e5e7eb',
-    borderRadius: '12px',
-    padding: '18px',
-  },
-
-  earningLabel: {
-    display: 'block',
-    color: '#6b7280',
-    fontSize: '13px',
-    marginBottom: '8px',
-  },
-
-  earningValue: {
-    fontSize: '21px',
-    color: '#166534',
-  },
-
-  commissionValue: {
-    fontSize: '21px',
-    color: '#b45309',
-  },
-
-  paidValue: {
-    fontSize: '21px',
-    color: '#047857',
-  },
-
-  pendingValue: {
-    fontSize: '21px',
-    color: '#c2410c',
-  },
-
-  // ------------------------------------------------
-  // SEARCH
-  // ------------------------------------------------
-
-  searchSection: {
-    background: '#ffffff',
-    borderRadius: '16px',
-    padding: '25px',
-    marginBottom: '25px',
-    border: '1px solid #e5e7eb',
-  },
-
-  searchHeader: {
-    marginBottom: '18px',
-  },
-
-  searchWrapper: {
-    position: 'relative',
-    width: '100%',
-  },
-
-  searchIcon: {
-    position: 'absolute',
-    left: '15px',
-    top: '50%',
-    transform:
-      'translateY(-50%)',
-    fontSize: '18px',
-    pointerEvents: 'none',
-  },
-
-  searchInput: {
-    width: '100%',
-    boxSizing: 'border-box',
-    padding:
-      '14px 48px 14px 45px',
-    border: '1px solid #d1d5db',
-    borderRadius: '10px',
-    fontSize: '15px',
-    outline: 'none',
-    color: '#1f2937',
-    background: '#ffffff',
-  },
-
-  clearSearchButton: {
-    position: 'absolute',
-    right: '12px',
-    top: '50%',
-    transform:
-      'translateY(-50%)',
-    width: '28px',
-    height: '28px',
-    borderRadius: '50%',
-    border: 'none',
-    background: '#f3f4f6',
-    color: '#6b7280',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-  },
-
-  searchResultText: {
-    margin: '12px 0 0',
-    fontSize: '13px',
-    color: '#166534',
-    fontWeight: '600',
-  },
-
-  clearSearchLargeButton: {
-    marginTop: '15px',
-    padding: '10px 18px',
-    border: 'none',
-    borderRadius: '8px',
-    background: '#166534',
-    color: '#ffffff',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-
-  // ------------------------------------------------
-  // FILTER
-  // ------------------------------------------------
-
-  filterSection: {
-    marginBottom: '25px',
-  },
-
-  filterGrid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '10px',
-    marginTop: '15px',
-  },
-
-  filterButton: {
-    padding: '9px 14px',
-    borderRadius: '20px',
-    border: '1px solid #d1d5db',
-    background: '#ffffff',
-    color: '#374151',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-
-  activeFilter: {
-    background: '#166534',
-    color: '#ffffff',
-    border: '1px solid #166534',
-  },
-
-  // ------------------------------------------------
-  // EMPTY
-  // ------------------------------------------------
-
-  emptyCard: {
-    background: '#ffffff',
-    padding: '65px 20px',
-    borderRadius: '16px',
-    textAlign: 'center',
-    boxShadow:
-      '0 2px 10px rgba(0,0,0,0.08)',
-  },
-
-  emptyIcon: {
-    fontSize: '55px',
-    marginBottom: '15px',
-  },
-
-  emptyTitle: {
-    margin: '0 0 10px',
-    color: '#1f2937',
-  },
-
-  emptyText: {
-    margin: 0,
-    color: '#6b7280',
-  },
-
-  emptyFilterCard: {
-    background: '#ffffff',
-    padding: '40px',
-    borderRadius: '14px',
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-
-  emptyFilterIcon: {
-    fontSize: '35px',
-    marginBottom: '10px',
-  },
-
-  // ------------------------------------------------
-  // ORDERS
-  // ------------------------------------------------
-
-  ordersList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-
-  orderCard: {
-    background: '#ffffff',
-    padding: '25px',
-    borderRadius: '16px',
-    boxShadow:
-      '0 2px 10px rgba(0,0,0,0.07)',
-    border: '1px solid #e5e7eb',
-  },
-
-  orderHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '20px',
-    paddingBottom: '20px',
-    borderBottom:
-      '1px solid #eee',
-  },
-
-  orderLabel: {
-    margin: '0 0 5px',
-    fontSize: '11px',
-    fontWeight: '700',
-    letterSpacing: '1px',
-    color: '#6b7280',
-  },
-
-  productName: {
-    margin: '0 0 7px',
-    fontSize: '22px',
-    color: '#1f2937',
-  },
-
-  orderId: {
-    margin: 0,
-    color: '#777',
-    fontSize: '12px',
-    wordBreak: 'break-all',
-  },
-
-  statusBadge: {
-    flexShrink: 0,
-    padding: '8px 13px',
-    borderRadius: '20px',
-    fontWeight: '700',
-    fontSize: '13px',
-    textTransform: 'capitalize',
-  },
-
-  productDetails: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(3, minmax(0, 1fr))',
-    gap: '15px',
-    padding: '20px 0',
-  },
-
-  detailBox: {
-    background: '#fafafa',
-    padding: '15px',
-    borderRadius: '10px',
-  },
-
-  detailLabel: {
-    display: 'block',
-    color: '#777',
-    fontSize: '12px',
-    marginBottom: '6px',
-  },
-
-  detailValue: {
-    color: '#1f2937',
-    fontSize: '16px',
-  },
-
-  // ------------------------------------------------
-  // EARNINGS
-  // ------------------------------------------------
-
-  earningsCard: {
-    background: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    borderRadius: '13px',
-    padding: '20px',
-    marginTop: '5px',
-  },
-
-  earningsCardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '15px',
-    marginBottom: '20px',
-  },
-
-  earningsTitle: {
-    margin: 0,
-    fontSize: '18px',
-    color: '#166534',
-  },
-
-  earningsHint: {
-    margin: '5px 0 0',
-    fontSize: '12px',
-    color: '#6b7280',
-  },
-
-  settlementBadge: {
-    padding: '7px 11px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-    whiteSpace: 'nowrap',
-  },
-
-  moneyGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(4, minmax(0, 1fr))',
-    gap: '15px',
-  },
-
-  moneyLabel: {
-    display: 'block',
-    fontSize: '12px',
-    color: '#6b7280',
-    marginBottom: '6px',
-  },
-
-  moneyValue: {
-    fontSize: '17px',
-    color: '#166534',
-  },
-
-  commissionMoney: {
-    fontSize: '17px',
-    color: '#b45309',
-  },
-
-  settlementMoney: {
-    fontSize: '18px',
-    color: '#047857',
-  },
-
-  paidDate: {
-    marginTop: '15px',
-    paddingTop: '12px',
-    borderTop:
-      '1px solid #bbf7d0',
-    fontSize: '12px',
-    color: '#047857',
-  },
-
-  // ------------------------------------------------
-  // CUSTOMER
-  // ------------------------------------------------
-
-  customerSection: {
-    borderTop: '1px solid #eee',
-    paddingTop: '20px',
-    marginTop: '20px',
-  },
-
-  customerHeading: {
-    margin: '0 0 15px',
-    fontSize: '17px',
-    color: '#1f2937',
-  },
-
-  customerGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(4, minmax(0, 1fr))',
-    gap: '15px',
-  },
-
-  addressBox: {
-    marginTop: '15px',
-    padding: '13px',
-    background: '#f9fafb',
-    borderRadius: '8px',
-  },
-
-  // ------------------------------------------------
-  // ACTION
-  // ------------------------------------------------
-
-  actionSection: {
-    borderTop: '1px solid #eee',
-    paddingTop: '20px',
-    marginTop: '20px',
-  },
-
-  actionButton: {
-    width: '100%',
-    padding: '13px',
-    border: 'none',
-    borderRadius: '9px',
-    background: '#2e7d32',
-    color: '#fff',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  },
-
-  completed: {
-    padding: '13px',
-    textAlign: 'center',
-    borderRadius: '9px',
-    background: '#e8f5e9',
-    color: '#2e7d32',
-    fontWeight: 'bold',
-  },
-
-  noAction: {
-    padding: '13px',
-    textAlign: 'center',
-    borderRadius: '9px',
-    background: '#f3f4f6',
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-
-  // ------------------------------------------------
-  // FOOTER
-  // ------------------------------------------------
-
-  footer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '20px',
-    borderTop: '1px solid #eee',
-    paddingTop: '20px',
-    marginTop: '20px',
-  },
 }
