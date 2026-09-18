@@ -105,7 +105,14 @@ export default function Home() {
       // Products
       const { data: productData, error: productError } = await supabase
         .from("products")
-        .select("*")
+        .select(`
+          *,
+          profiles (
+            full_name,
+            farm_name,
+            district
+          )
+        `)
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
@@ -448,9 +455,22 @@ export default function Home() {
                 <div className="p-3 sm:p-5 flex-1 flex flex-col">
                   <p className="text-[10px] sm:text-xs uppercase text-green-700 font-semibold mb-1">Farm Product</p>
                   <h3 className="text-sm sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
-                  <p className="hidden sm:block text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-4">
+                  <p className="hidden sm:block text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-2">
                     {product.description}
                   </p>
+
+                  <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
+                    <div>
+                      <strong className="text-gray-700">Farmer:</strong>{" "}
+                      {product.profiles?.farm_name || product.profiles?.full_name || "Local Farmer"}
+                    </div>
+                    {product.profiles?.district && (
+                      <div>
+                        <strong className="text-gray-700">District:</strong>{" "}
+                        {product.profiles.district}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mt-auto">
                     <div className="flex items-end gap-1 mb-1 sm:mb-2">

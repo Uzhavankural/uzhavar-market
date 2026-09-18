@@ -45,6 +45,11 @@ export default function FarmerDashboard() {
           return
         }
 
+        if (!data.address || !data.village || !data.district || !data.pincode) {
+          router.replace('/farmer/profile')
+          return
+        }
+
         setProfile(data)
 
         const { count: productsCount, error: productError } = await supabase

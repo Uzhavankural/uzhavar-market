@@ -28,7 +28,9 @@ export default function CustomerProductDetailsPage() {
         *,
         profiles (
           full_name,
-          farm_name
+          farm_name,
+          district,
+          village
         ),
         categories (
           name
@@ -207,10 +209,13 @@ export default function CustomerProductDetailsPage() {
   const customerPrice = getCustomerPrice();
   const stock = Number(product.stock_quantity || 0);
   const totalPrice = customerPrice * quantity;
-  const farmerName =
+  const baseFarmerName =
     product.profiles?.farm_name ||
     product.profiles?.full_name ||
     "Local Farmer";
+  
+  const place = product.profiles?.district;
+  const farmerNameWithPlace = place ? `${baseFarmerName} - ${place}` : baseFarmerName;
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 sm:p-8">
@@ -257,8 +262,17 @@ export default function CustomerProductDetailsPage() {
             </p>
 
             <div className="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-100">
-              <div className="text-sm text-gray-500 mb-1">👨‍🌾 Farmer</div>
-              <div className="font-semibold text-gray-900">{farmerName}</div>
+              <h2 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">👨‍🌾 Farmer Details</h2>
+              <div className="space-y-2 text-sm">
+                <p>
+                  <strong className="text-gray-900">Farmer:</strong> {baseFarmerName}
+                </p>
+                {place && (
+                  <p>
+                    <strong className="text-gray-900">District:</strong> {place}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex items-baseline gap-2 mb-1">

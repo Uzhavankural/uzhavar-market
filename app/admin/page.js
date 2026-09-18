@@ -15,6 +15,8 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState([])
   const [activeSection, setActiveSection] = useState('dashboard')
   const [reviews, setReviews] = useState([])
+  const [farmers, setFarmers] = useState([])
+  const [farmerSearch, setFarmerSearch] = useState('')
   const [reviewMessage, setReviewMessage] = useState('')
   const [reviewFilter, setReviewFilter] = useState('pending')
 
@@ -87,12 +89,25 @@ export default function AdminDashboard() {
     setProfile(profileData)
 
     await Promise.all([
-  loadOrders(),
-  loadProducts(),
-  loadReviews(),
-])
+      loadOrders(),
+      loadProducts(),
+      loadReviews(),
+      loadFarmers(),
+    ])
 
     setLoading(false)
+  }
+
+  async function loadFarmers() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'farmer')
+      .order('created_at', { ascending: false })
+
+    if (!error) {
+      setFarmers(data || [])
+    }
   }
 
   // =====================================================
@@ -1571,6 +1586,24 @@ async function rejectReview(review) {
         })
 
   // =====================================================
+  // FARMER SEARCH
+  // =====================================================
+
+  const normalizedFarmerSearch = farmerSearch.trim().toLowerCase()
+
+  const filteredFarmers =
+    normalizedFarmerSearch === ''
+      ? farmers
+      : farmers.filter((farmer) => {
+          const farmerName = String(farmer.full_name || '').toLowerCase()
+          const farmerPhone = String(farmer.phone || '').toLowerCase()
+          return (
+            farmerName.includes(normalizedFarmerSearch) ||
+            farmerPhone.includes(normalizedFarmerSearch)
+          )
+        })
+
+  // =====================================================
   // ADMIN EARNINGS
   //
   // Commission counted only from PAID orders.
@@ -1722,6 +1755,15 @@ async function rejectReview(review) {
                 <span className="text-3xl mb-1">⭐</span>
                 <strong className="text-base sm:text-lg text-gray-800">Customer Reviews</strong>
                 <span className="text-xs sm:text-sm text-gray-500">Approve customer reviews</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSection('farmers')}
+                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+              >
+                <span className="text-3xl mb-1">👨‍🌾</span>
+                <strong className="text-base sm:text-lg text-gray-800">Farmers List</strong>
+                <span className="text-xs sm:text-sm text-gray-500">View farmer details</span>
               </button>
             </div>
 
@@ -2259,6 +2301,98 @@ async function rejectReview(review) {
 
           </section>
         )}
+
+{/* =================================================
+    FARMERS
+================================================= */}
+
+{activeSection === 'farmers' && (
+  <section className="bg-[#fff] p-[25px] rounded-[12px] mb-[40px] sm:max-w-full">
+    <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
+      <div>
+        <button
+          type="button"
+          onClick={() => setActiveSection('dashboard')}
+          className="py-[9px] px-[14px] rounded-[8px] border-[1px solid #d1d5db] bg-[#ffffff] cursor-pointer font-semibold sm:max-w-full"
+        >
+          ← Dashboard
+        </button>
+        <h2 className="m-[0] mt-4 sm:max-w-full">
+          👨‍🌾 Farmers
+        </h2>
+        <p className="mt-[6px] mx-[0] mb-[0] text-[#777] text-[13px] sm:max-w-full">
+          View registered farmers and their details.
+        </p>
+      </div>
+      
+      <div className="ml-auto flex items-center gap-3 w-full sm:w-auto">
+        <input
+          type="text"
+          placeholder="Search by name or phone..."
+          value={farmerSearch}
+          onChange={(e) => setFarmerSearch(e.target.value)}
+          className="py-[8px] px-[12px] rounded-[8px] border border-gray-300 w-full sm:w-[250px] outline-none focus:border-green-600"
+        />
+        <button
+          onClick={loadFarmers}
+          className="py-[9px] px-[14px] rounded-[8px] border-[1px solid #d1d5db] bg-[#ffffff] cursor-pointer font-semibold"
+        >
+          ↻
+        </button>
+      </div>
+    </div>
+
+    {filteredFarmers.length === 0 ? (
+      <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
+        <h3>No farmers found</h3>
+        {farmerSearch && <p>No results matching "{farmerSearch}"</p>}
+      </div>
+    ) : (
+      <div className="overflow-x-auto sm:max-w-full border border-gray-200 rounded-lg">
+        <table className="w-full min-w-[800px] border-collapse text-left">
+          <thead>
+            <tr>
+              <th className="p-4 border-b border-gray-200 bg-gray-50 text-gray-800 font-semibold text-sm">Farmer Name</th>
+              <th className="p-4 border-b border-gray-200 bg-gray-50 text-gray-800 font-semibold text-sm">Contact</th>
+              <th className="p-4 border-b border-gray-200 bg-gray-50 text-gray-800 font-semibold text-sm">Farm Location</th>
+              <th className="p-4 border-b border-gray-200 bg-gray-50 text-gray-800 font-semibold text-sm">Joined At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredFarmers.map((farmer) => (
+              <tr key={farmer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="p-4 align-top">
+                  <div className="font-semibold text-gray-900">{farmer.full_name}</div>
+                  <div className="text-sm text-gray-500">{farmer.farm_name || 'No Farm Name'}</div>
+                </td>
+                <td className="p-4 align-top text-sm">
+                  <div>📞 {farmer.phone || 'N/A'}</div>
+                  {farmer.email && <div>✉️ {farmer.email}</div>}
+                </td>
+                <td className="p-4 align-top text-sm">
+                  {farmer.village || farmer.district ? (
+                    <div>
+                      {farmer.address && <div className="text-gray-700">{farmer.address}</div>}
+                      <div className="font-medium text-gray-900 mt-1">
+                        {farmer.village ? `${farmer.village}, ` : ''}{farmer.district || ''}
+                      </div>
+                      {farmer.pincode && <div className="text-gray-500">PIN: {farmer.pincode}</div>}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic">Profile Incomplete</span>
+                  )}
+                </td>
+                <td className="p-4 align-top text-sm text-gray-600">
+                  {new Date(farmer.created_at).toLocaleDateString('en-IN')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+)}
 
 {/* =================================================
     REVIEWS

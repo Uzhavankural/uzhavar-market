@@ -9,6 +9,10 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('customer')
+  const [address, setAddress] = useState('')
+  const [village, setVillage] = useState('')
+  const [district, setDistrict] = useState('')
+  const [pincode, setPincode] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -26,6 +30,10 @@ export default function Register() {
       full_name: fullName,
       phone: phone,
       role: role,
+      address: role === 'farmer' ? address : null,
+      village: role === 'farmer' ? village : null,
+      district: role === 'farmer' ? district : null,
+      pincode: role === 'farmer' ? pincode : null,
     },
   },
 })
@@ -44,6 +52,10 @@ export default function Register() {
     setPhone('')
     setEmail('')
     setPassword('')
+    setAddress('')
+    setVillage('')
+    setDistrict('')
+    setPincode('')
     setLoading(false)
   }
 
@@ -148,6 +160,63 @@ export default function Register() {
               Farmer
             </option>
           </select>
+
+          {role === 'farmer' && (
+            <>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
+                Address
+              </label>
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, House No, Landmark"
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
+              />
+
+              <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
+                Village / Town
+              </label>
+              <input
+                type="text"
+                value={village}
+                onChange={(e) => setVillage(e.target.value)}
+                placeholder="E.g., Perundurai"
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
+                    District
+                  </label>
+                  <input
+                    type="text"
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    placeholder="E.g., Erode"
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
+                    Pincode
+                  </label>
+                  <input
+                    type="text"
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    placeholder="6-digit pincode"
+                    required
+                    pattern="[0-9]{6}"
+                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
 
           <button

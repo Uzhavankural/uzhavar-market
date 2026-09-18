@@ -28,7 +28,9 @@ export default function CustomerProductsPage() {
         *,
         profiles (
           full_name,
-          farm_name
+          farm_name,
+          district,
+          village
         ),
         categories (
           name
@@ -170,10 +172,13 @@ export default function CustomerProductsPage() {
             {filteredProducts.map((product) => {
               const customerPrice = getCustomerPrice(product);
               const stock = Number(product.stock_quantity || 0);
-              const farmerName =
+              let baseFarmerName =
                 product.profiles?.farm_name ||
                 product.profiles?.full_name ||
                 "Local Farmer";
+              
+              const place = product.profiles?.district;
+              const farmerNameWithPlace = place ? `${baseFarmerName} - ${place}` : baseFarmerName;
 
               return (
                 <div
@@ -208,8 +213,9 @@ export default function CustomerProductsPage() {
                       {product.description || "Fresh farm product"}
                     </p>
 
-                    <div className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
-                      👨‍🌾 {farmerName}
+                    <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
+                      <div><strong className="text-gray-700">Farmer:</strong> {baseFarmerName}</div>
+                      {place && <div><strong className="text-gray-700">District:</strong> {place}</div>}
                     </div>
 
                     <div className="mt-auto">

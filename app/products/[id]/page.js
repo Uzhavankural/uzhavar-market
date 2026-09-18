@@ -257,37 +257,24 @@ export default function ProductDetails() {
             </div>
 
             <div className="mt-10 p-5 sm:p-6 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 leading-relaxed">
-              <h2 className="text-xl font-bold text-green-800 mb-4 flex items-center gap-2">👨‍🌾 Farmer Details</h2>
-
-              <div className="space-y-3">
+            <div className="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-100">
+              <h2 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">👨‍🌾 Farmer Details</h2>
+              <div className="space-y-2 text-sm">
                 <p>
-                  <strong className="text-gray-900">Farmer:</strong> {farmer?.full_name || 'Farmer'}
+                  <strong className="text-gray-900">Farmer:</strong> {farmer?.farm_name || farmer?.full_name || 'Local Farmer'}
                 </p>
-
-                {farmer?.farm_name && (
-                  <p>
-                    <strong className="text-gray-900">Farm:</strong> {farmer.farm_name}
-                  </p>
-                )}
-
                 {farmer?.district && (
                   <p>
                     <strong className="text-gray-900">District:</strong> {farmer.district}
                   </p>
                 )}
-
-                {farmer?.village && (
-                  <p>
-                    <strong className="text-gray-900">Village:</strong> {farmer.village}
-                  </p>
-                )}
-
                 {farmer?.bio && (
                   <p className="mt-2 pt-3 border-t border-gray-200">
                     <strong className="text-gray-900 block mb-1">About:</strong> {farmer.bio}
                   </p>
                 )}
               </div>
+            </div>
             </div>
           </div>
         </div>
