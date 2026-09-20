@@ -15,7 +15,7 @@ export default function AddProduct() {
   const [categoryId, setCategoryId] = useState('')
   const [stock, setStock] = useState('')
   const [variants, setVariants] = useState([{ price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
-  const [image, setImage] = useState(null)
+  const [images, setImages] = useState([])
 
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -104,27 +104,29 @@ export default function AddProduct() {
       return
     }
 
-    let imageUrl = null
+    let imageUrls = []
 
-    if (image) {
-      const fileExtension = image.name.split('.').pop()
-      const fileName = `${user.id}-${Date.now()}.${fileExtension}`
+    if (images.length > 0) {
+      for (const img of images) {
+        const fileExtension = img.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExtension}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, image)
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, img)
 
-      if (uploadError) {
-        setMessage(`Image upload failed: ${uploadError.message}`)
-        setSaving(false)
-        return
+        if (uploadError) {
+          setMessage(`Image upload failed: ${uploadError.message}`)
+          setSaving(false)
+          return
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName)
+
+        imageUrls.push(publicUrlData.publicUrl)
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName)
-
-      imageUrl = publicUrlData.publicUrl
     }
 
     const rowsToInsert = variants.map((v) => ({
@@ -137,7 +139,8 @@ export default function AddProduct() {
       unit_count: Number(v.unitCount),
       delivery_price: Number(v.deliveryPrice || 0),
       stock_quantity: Number(stock),
-      image_url: imageUrl,
+      image_url: imageUrls.length > 0 ? imageUrls[0] : null,
+      images: imageUrls,
       status: 'active',
       approval_status: 'pending',
       commission_amount: 0,
@@ -160,7 +163,7 @@ export default function AddProduct() {
     setCategoryId('')
     setStock('')
     setVariants([{ price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
-    setImage(null)
+    setImages([])
 
     const fileInput = document.getElementById('product-image')
 
@@ -357,15 +360,27 @@ export default function AddProduct() {
             </div>
 
             <label className="block mt-4 mb-2 text-sm font-semibold text-gray-700">
-              Product Image
+              Product Images (Max 4)
             </label>
             <input
               id="product-image"
               type="file"
               accept="image/*"
-              onChange={(e) => setImage(e.target.files[0])}
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files)
+                if (files.length > 4) {
+                  alert("You can only upload up to 4 images.")
+                  setImages(files.slice(0, 4))
+                } else {
+                  setImages(files)
+                }
+              }}
               className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100 transition-all cursor-pointer"
             />
+            {images.length > 0 && (
+              <p className="mt-2 text-sm text-gray-500">{images.length} image(s) selected.</p>
+            )}
 
             <button
               type="submit"

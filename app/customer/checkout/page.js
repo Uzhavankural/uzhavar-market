@@ -10,9 +10,16 @@ export default function CheckoutPage() {
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
+  const [isManualAddress, setIsManualAddress] = useState(false);
+
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [village, setVillage] = useState("");
+  const [district, setDistrict] = useState("");
+  const [pincode, setPincode] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
@@ -57,22 +64,75 @@ export default function CheckoutPage() {
 
       setCart(parsedCart);
 
-      // Load customer profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .maybeSingle();
+        .single();
 
-      if (profile) {
-        setCustomerName(profile.full_name || "");
-        setPhone(profile.phone || profile.mobile || "");
-        setAddress(profile.address || "");
+      let addresses = [];
+
+      if (profile && profile.address) {
+        addresses.push({
+          name: profile.full_name || "",
+          phone: profile.phone || profile.mobile || "",
+          address: profile.address || "",
+          village: profile.village || "",
+          district: profile.district || "",
+          pincode: profile.pincode || ""
+        });
+      }
+
+      const localAddresses = localStorage.getItem(`uzhavar_customer_addresses_${user.id}`);
+      if (localAddresses) {
+        try {
+          const parsed = JSON.parse(localAddresses);
+          if (Array.isArray(parsed)) {
+            addresses = [...addresses, ...parsed];
+          }
+        } catch(e) {}
+      }
+
+      setSavedAddresses(addresses);
+
+      if (addresses.length > 0) {
+        setSelectedAddressIndex(0);
+        setIsManualAddress(false);
+        applyAddress(addresses[0]);
+      } else {
+        setSelectedAddressIndex(-1);
+        setIsManualAddress(true);
       }
     } catch (error) {
       console.error("Checkout loading error:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function applyAddress(addr) {
+    setCustomerName(addr.name || "");
+    setPhone(addr.phone || "");
+    setAddress(addr.address || "");
+    setVillage(addr.village || "");
+    setDistrict(addr.district || "");
+    setPincode(addr.pincode || "");
+  }
+
+  function handleSelectAddress(index) {
+    if (index === -1) {
+      setSelectedAddressIndex(-1);
+      setIsManualAddress(true);
+      setCustomerName("");
+      setPhone("");
+      setAddress("");
+      setVillage("");
+      setDistrict("");
+      setPincode("");
+    } else {
+      setSelectedAddressIndex(index);
+      setIsManualAddress(false);
+      applyAddress(savedAddresses[index]);
     }
   }
 
@@ -111,7 +171,22 @@ export default function CheckoutPage() {
     }
 
     if (!address.trim()) {
-      alert("Please enter your delivery address.");
+      alert("Please enter your house/street address.");
+      return;
+    }
+
+    if (!village.trim()) {
+      alert("Please enter your village/town.");
+      return;
+    }
+
+    if (!district.trim()) {
+      alert("Please enter your district.");
+      return;
+    }
+
+    if (!pincode.trim()) {
+      alert("Please enter your pincode.");
       return;
     }
 
@@ -127,6 +202,40 @@ export default function CheckoutPage() {
         alert("Authentication error.");
         setPlacingOrder(false);
         return;
+      }
+
+      if (isManualAddress) {
+        if (savedAddresses.length === 0) {
+          try {
+            const { error: profileUpdateError } = await supabase.from("profiles").update({
+              full_name: customerName,
+              phone: phone,
+              address: address,
+              village: village,
+              district: district,
+              pincode: pincode
+            }).eq("id", user.id);
+            if (profileUpdateError) throw profileUpdateError;
+          } catch(e) {
+            console.error("Failed to update profile silently:", e);
+          }
+        } else if (savedAddresses.length < 3) {
+          const newLocalAddr = {
+            name: customerName,
+            phone: phone,
+            address: address,
+            village: village,
+            district: district,
+            pincode: pincode
+          };
+          const existingLocal = localStorage.getItem(`uzhavar_customer_addresses_${user.id}`);
+          let parsedLocal = [];
+          if (existingLocal) {
+            try { parsedLocal = JSON.parse(existingLocal); } catch(e){}
+          }
+          parsedLocal.push(newLocalAddr);
+          localStorage.setItem(`uzhavar_customer_addresses_${user.id}`, JSON.stringify(parsedLocal));
+        }
       }
 
       // Group items by farmer_id
@@ -157,13 +266,13 @@ export default function CheckoutPage() {
           .from("orders")
           .insert({
             customer_id: user.id,
-            farmer_id: farmerId,
             total_amount: orderTotalAmount,
-            status: "pending",
+            order_status: "pending",
             delivery_address: address,
+            district: district,
+            village: village,
             customer_phone: phone,
             customer_name: customerName,
-            commission_earned: orderTotalCommission,
           })
           .select()
           .single();
@@ -171,18 +280,22 @@ export default function CheckoutPage() {
         if (orderError) throw orderError;
 
         const orderItemsData = farmerItems.map((item) => {
+          const itemPrice = Number(item.price || 0);
+          const itemComm = Number(item.commission_amount || 0);
+          const itemQty = Number(item.quantity || 1);
+          
           return {
             order_id: newOrder.id,
+            farmer_id: farmerId,
             product_id: item.id,
-            quantity: item.quantity,
-            price_at_time: Number(item.price || 0),
-            commission_at_time: Number(item.commission_amount || 0),
-            unit: item.unit || "unit",
-            unit_count: Number(item.unit_count || 1),
-            delivery_price: Number(item.delivery_price || 0),
             product_name: item.name,
-            farm_name: item.farm_name,
-            image_url: item.image_url,
+            price: itemPrice,
+            quantity: itemQty,
+            unit: item.unit || "unit",
+            item_total: itemPrice * itemQty,
+            commission_amount: itemComm,
+            farmer_price: itemPrice - itemComm,
+            settlement_status: "pending",
           };
         });
 
@@ -197,7 +310,7 @@ export default function CheckoutPage() {
       router.push("/customer/orders");
     } catch (error) {
       console.error("Checkout Error:", error);
-      alert("Failed to place order.");
+      alert(`Failed to place order: ${error.message || JSON.stringify(error)}`);
     } finally {
       setPlacingOrder(false);
     }
@@ -246,9 +359,58 @@ export default function CheckoutPage() {
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <section className="flex-1 w-full bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-6 border-b pb-2">
+            <h2 className="text-xl font-bold mb-6 border-b pb-2 flex justify-between items-center">
               Delivery Details
+              <button 
+                onClick={() => router.push("/customer/profile")}
+                className="text-sm text-green-700 hover:underline font-medium"
+              >
+                Manage Addresses
+              </button>
             </h2>
+
+            {savedAddresses.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Select Delivery Address
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {savedAddresses.map((addr, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => handleSelectAddress(idx)}
+                      className={`p-4 border rounded-xl cursor-pointer transition-colors ${
+                        selectedAddressIndex === idx
+                          ? "border-green-600 bg-green-50 ring-1 ring-green-600"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <strong className="text-gray-900">{addr.name}</strong>
+                        {idx === 0 && (
+                          <span className="text-[10px] uppercase font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded">Primary</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 line-clamp-2 mb-1">{addr.address}</div>
+                      <div className="text-sm text-gray-600">{addr.village}, {addr.district} - {addr.pincode}</div>
+                    </div>
+                  ))}
+                  
+                  {savedAddresses.length > 0 && (
+                    <div
+                      onClick={() => handleSelectAddress(-1)}
+                      className={`p-4 border rounded-xl cursor-pointer transition-colors flex items-center justify-center font-semibold ${
+                        selectedAddressIndex === -1
+                          ? "border-green-600 bg-green-50 ring-1 ring-green-600 text-green-800"
+                          : "border-gray-200 hover:border-gray-300 text-gray-600"
+                      }`}
+                    >
+                      + Deliver to another location
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -278,13 +440,53 @@ export default function CheckoutPage() {
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Delivery Address *
+                House / Street Address *
               </label>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg min-h-[100px] outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                placeholder="Enter your full address"
+                className="w-full p-3 border border-gray-300 rounded-lg min-h-[80px] outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                placeholder="Enter your house no, street name"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Village / Town *
+                </label>
+                <input
+                  type="text"
+                  value={village}
+                  onChange={(e) => setVillage(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                  placeholder="e.g. Omalur"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  District *
+                </label>
+                <input
+                  type="text"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                  placeholder="e.g. Salem"
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Pincode *
+              </label>
+              <input
+                type="text"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+                placeholder="e.g. 636001"
               />
             </div>
           </section>

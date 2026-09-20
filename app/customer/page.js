@@ -64,6 +64,18 @@ export default function CustomerPage() {
               Track your orders and delivery
             </span>
           </button>
+
+          {/* My Profile */}
+          <button
+            onClick={() => router.push("/customer/profile")}
+            className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col items-start gap-2 cursor-pointer text-left text-base shadow-sm hover:shadow-md transition-shadow"
+          >
+            <span className="text-4xl">👤</span>
+            <strong className="text-lg text-gray-900">My Profile</strong>
+            <span className="text-gray-600 text-sm">
+              Manage your delivery addresses
+            </span>
+          </button>
         </div>
       </div>
     </main>

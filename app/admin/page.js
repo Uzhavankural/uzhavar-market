@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   const [productMessage, setProductMessage] = useState('')
 
   const [orderSearch, setOrderSearch] = useState('')
+  const [paidSettlementSearch, setPaidSettlementSearch] = useState('')
   const [commissionValues, setCommissionValues] = useState({})
 
   useEffect(() => {
@@ -1765,6 +1766,15 @@ async function rejectReview(review) {
                 <strong className="text-base sm:text-lg text-gray-800">Farmers List</strong>
                 <span className="text-xs sm:text-sm text-gray-500">View farmer details</span>
               </button>
+
+              <button
+                onClick={() => setActiveSection('settlements')}
+                className="bg-white border border-green-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+              >
+                <span className="text-3xl mb-1">💸</span>
+                <strong className="text-base sm:text-lg text-green-800">Pending Settlements</strong>
+                <span className="text-xs sm:text-sm text-gray-500">Pay farmers for delivered orders</span>
+              </button>
             </div>
 
             {/* MAIN STATS */}
@@ -1779,10 +1789,13 @@ async function rejectReview(review) {
                 <p className="m-0 text-gray-500 text-sm">Commission Earned</p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div 
+                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setActiveSection('paid-settlements')}
+              >
                 <div className="text-3xl mb-3">🌾</div>
                 <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">₹{totalFarmerSettlement.toFixed(2)}</h3>
-                <p className="m-0 text-gray-500 text-sm">Farmer Settlement (Paid)</p>
+                <p className="m-0 text-gray-500 text-sm">Farmer Settlement (Paid) →</p>
               </div>
 
               <div 
@@ -1825,6 +1838,166 @@ async function rejectReview(review) {
               </div>
             </div>
           </>
+        )}
+
+        {/* =================================================
+            PENDING SETTLEMENTS
+        ================================================= */}
+
+        {activeSection === 'settlements' && (
+          <section className="bg-[#fff] p-[25px] rounded-[12px] mb-[40px] sm:max-w-full">
+            <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
+              <button
+                type="button"
+                onClick={() => setActiveSection('dashboard')}
+                className="py-[9px] px-[14px] rounded-[8px] border-[1px solid #d1d5db] bg-[#ffffff] cursor-pointer font-semibold sm:max-w-full"
+              >
+                ← Back to Dashboard
+              </button>
+              <h2 className="m-0 text-[22px] font-bold text-[#1f2937]">Pending Settlements</h2>
+            </div>
+            
+            {orders.filter(order => {
+              const items = orderItems[order.id] || [];
+              return items.some(item => order.order_status === 'delivered' && order.payment_status === 'paid' && item.settlement_status !== 'paid');
+            }).length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center text-gray-500 font-medium">
+                No pending settlements at the moment! All farmers are paid up.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {orders.filter(order => {
+                  const items = orderItems[order.id] || [];
+                  return items.some(item => order.order_status === 'delivered' && order.payment_status === 'paid' && item.settlement_status !== 'paid');
+                }).map(order => {
+                  const items = orderItems[order.id] || [];
+                  const pendingItems = items.filter(item => item.settlement_status !== 'paid');
+                  
+                  return (
+                    <div key={order.id} className="border border-gray-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
+                        <div>
+                          <strong className="block text-gray-900 text-lg">Order #{order.id.slice(0, 8)}</strong>
+                          <span className="text-sm text-gray-500">Customer: {order.customer_name}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-3">
+                        {pendingItems.map(item => {
+                          const customerPrice = Number(item.price || 0);
+                          const itemComm = Number(item.commission_amount || 0);
+                          const farmerPrice = customerPrice - itemComm;
+                          const qty = Number(item.quantity || 1);
+                          const settlementAmount = item.settlement_amount !== null && item.settlement_amount !== undefined ? Number(item.settlement_amount) : (farmerPrice * qty);
+                          
+                          return (
+                            <div key={item.id} className="flex flex-col sm:flex-row justify-between sm:items-center bg-gray-50 p-4 rounded-lg border border-gray-100 gap-4">
+                              <div>
+                                <strong className="block text-gray-900">{item.product_name}</strong>
+                                <span className="text-sm text-gray-500">Farmer: {item.farmer_name} | Qty: {qty} {item.unit}</span>
+                              </div>
+                              <div className="flex items-center gap-6">
+                                <div className="text-right">
+                                  <span className="block text-xs text-gray-500">Payable Amount</span>
+                                  <strong className="text-lg text-green-700 font-bold">₹{settlementAmount.toFixed(2)}</strong>
+                                </div>
+                                <button
+                                  onClick={() => settleFarmerItem(order.id, item)}
+                                  className="bg-green-700 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-800 transition-colors border-none cursor-pointer"
+                                >
+                                  Pay Farmer
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* =================================================
+            PAID SETTLEMENTS
+        ================================================= */}
+
+        {activeSection === 'paid-settlements' && (
+          <section className="bg-[#fff] p-[25px] rounded-[12px] mb-[40px] sm:max-w-full">
+            <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
+              <button
+                type="button"
+                onClick={() => setActiveSection('dashboard')}
+                className="py-[9px] px-[14px] rounded-[8px] border-[1px solid #d1d5db] bg-[#ffffff] cursor-pointer font-semibold sm:max-w-full"
+              >
+                ← Back to Dashboard
+              </button>
+              <h2 className="m-0 text-[22px] font-bold text-[#1f2937]">Paid Settlements</h2>
+            </div>
+            
+            <div className="mb-5">
+              <input
+                type="text"
+                placeholder="Search by farmer name or product..."
+                value={paidSettlementSearch}
+                onChange={(e) => setPaidSettlementSearch(e.target.value)}
+                className="w-full sm:w-[300px] p-[10px] border-[1px] border-[#d1d5db] rounded-[8px] outline-none focus:border-[#1f7a3f]"
+              />
+            </div>
+            
+            {(() => {
+              const paidItems = [];
+              orders.forEach(order => {
+                const items = orderItems[order.id] || [];
+                items.forEach(item => {
+                  if (item.settlement_status === 'paid') {
+                    paidItems.push({
+                      order,
+                      item
+                    });
+                  }
+                });
+              });
+              
+              const filteredPaidItems = paidItems.filter(({ item }) => {
+                const searchTerm = paidSettlementSearch.toLowerCase();
+                return (
+                  (item.farmer_name || '').toLowerCase().includes(searchTerm) ||
+                  (item.product_name || '').toLowerCase().includes(searchTerm)
+                );
+              });
+              
+              if (filteredPaidItems.length === 0) {
+                return (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center text-gray-500 font-medium">
+                    {paidSettlementSearch ? "No matching paid settlements found." : "No paid settlements yet."}
+                  </div>
+                );
+              }
+              
+              return (
+                <div className="flex flex-col gap-4">
+                  {filteredPaidItems.sort((a, b) => new Date(b.item.settlement_paid_at) - new Date(a.item.settlement_paid_at)).map(({ order, item }) => (
+                    <div key={`${order.id}-${item.id}`} className="flex flex-col sm:flex-row justify-between sm:items-center bg-white p-5 rounded-xl border border-gray-200 shadow-sm gap-4">
+                      <div>
+                        <strong className="block text-gray-900 text-lg mb-1">{item.farmer_name}</strong>
+                        <span className="block text-sm text-gray-700">Product: {item.product_name} (Qty: {item.quantity} {item.unit})</span>
+                        <span className="block text-xs text-gray-500 mt-2">
+                          Order #{order.id.slice(0, 8)} • Paid on: {item.settlement_paid_at ? new Date(item.settlement_paid_at).toLocaleString() : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="text-right bg-green-50 px-4 py-3 rounded-lg border border-green-100">
+                        <span className="block text-xs text-green-800 mb-1">Settled Amount</span>
+                        <strong className="text-xl text-green-700 font-bold">₹{Number(item.settlement_amount || 0).toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </section>
         )}
 
         {/* =================================================

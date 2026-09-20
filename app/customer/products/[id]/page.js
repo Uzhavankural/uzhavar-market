@@ -3,15 +3,21 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import ProductView from "@/app/components/ProductView";
 
 export default function CustomerProductDetailsPage() {
   const params = useParams();
   const router = useRouter();
 
   const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
+  }, []);
 
   useEffect(() => {
     if (params?.id) {
@@ -46,6 +52,13 @@ export default function CustomerProductDetailsPage() {
       setProduct(null);
     } else {
       setProduct(data);
+      const { data: reviewsData } = await supabase
+        .from("reviews")
+        .select("*, profiles(full_name)")
+        .eq("product_id", params.id)
+        .eq("approval_status", "approved")
+        .order("created_at", { ascending: false });
+      setReviews(reviewsData || []);
     }
 
     setLoading(false);
@@ -58,21 +71,7 @@ export default function CustomerProductDetailsPage() {
     return farmerPrice + commission;
   }
 
-  function increaseQuantity() {
-    if (!product) return;
-    const stock = Number(product.stock_quantity || 0);
-    if (quantity < stock) {
-      setQuantity((previous) => previous + 1);
-    }
-  }
-
-  function decreaseQuantity() {
-    if (quantity > 1) {
-      setQuantity((previous) => previous - 1);
-    }
-  }
-
-  async function handleAddToCart() {
+  async function handleAddToCart(quantityToAdd) {
     if (!product || addingToCart) return;
 
     const stock = Number(product.stock_quantity || 0);
@@ -82,7 +81,7 @@ export default function CustomerProductDetailsPage() {
       return;
     }
 
-    if (quantity > stock) {
+    if (quantityToAdd > stock) {
       alert("Selected quantity is not available.");
       return;
     }
@@ -90,12 +89,7 @@ export default function CustomerProductDetailsPage() {
     setAddingToCart(true);
 
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
+      if (!user) {
         alert("Please login to add products to cart.");
         router.push("/login");
         return;
@@ -119,7 +113,7 @@ export default function CustomerProductDetailsPage() {
 
       if (existingIndex !== -1) {
         const existingQuantity = Number(cart[existingIndex].quantity || 0);
-        const newQuantity = existingQuantity + quantity;
+        const newQuantity = existingQuantity + quantityToAdd;
 
         if (newQuantity > stock) {
           alert(`Only ${stock} ${product.unit || "unit"} available in stock.`);
@@ -161,13 +155,12 @@ export default function CustomerProductDetailsPage() {
             product.profiles?.full_name ||
             "Local Farmer",
           category_name: product.categories?.name || "General",
-          quantity: quantity,
+          quantity: quantityToAdd,
         });
       }
 
       localStorage.setItem(cartKey, JSON.stringify(cart));
       alert(`${product.name} added to cart successfully!`);
-      router.push("/customer/cart");
     } catch (error) {
       console.error("Add to cart error:", error);
       alert("Something went wrong while adding the product to cart.");
@@ -207,146 +200,23 @@ export default function CustomerProductDetailsPage() {
   }
 
   const customerPrice = getCustomerPrice();
-  const stock = Number(product.stock_quantity || 0);
-  const totalPrice = customerPrice * quantity;
   const baseFarmerName =
     product.profiles?.farm_name ||
     product.profiles?.full_name ||
     "Local Farmer";
-  
   const place = product.profiles?.district;
   const farmerNameWithPlace = place ? `${baseFarmerName} - ${place}` : baseFarmerName;
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center gap-4 mb-6">
-          <button
-            className="bg-white px-4 py-2 rounded-lg font-medium shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50"
-            onClick={() => router.push("/customer/products")}
-          >
-            ← Back to Products
-          </button>
-          <button
-            className="bg-green-50 text-green-700 px-4 py-2 rounded-lg font-medium cursor-pointer hover:bg-green-100"
-            onClick={() => router.push("/customer")}
-          >
-            Dashboard
-          </button>
-        </div>
-
-        <section className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-          <div className="w-full">
-            <div className="w-full aspect-square bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
-              {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-7xl">🌾</div>
-              )}
-            </div>
-          </div>
-
-          <div className="py-2">
-            <div className="inline-block bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium mb-3">
-              {product.categories?.name || "General"}
-            </div>
-            
-            <h1 className="text-3xl font-bold mb-4 text-gray-900">{product.name}</h1>
-            
-            <p className="text-gray-600 leading-relaxed mb-6">
-              {product.description || "Fresh farm product"}
-            </p>
-
-            <div className="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-100">
-              <h2 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">👨‍🌾 Farmer Details</h2>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <strong className="text-gray-900">Farmer:</strong> {baseFarmerName}
-                </p>
-                {place && (
-                  <p>
-                    <strong className="text-gray-900">District:</strong> {place}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-3xl font-bold text-gray-900">₹{customerPrice.toFixed(2)}</span>
-              <span className="text-gray-500">/ {product.unit_count || 1} {product.unit || "unit"}</span>
-            </div>
-
-            {Number(product.delivery_price) > 0 ? (
-              <div className="text-sm text-gray-600 mb-6">
-                + ₹{Number(product.delivery_price).toFixed(2)} delivery
-              </div>
-            ) : (
-              <div className="text-sm text-green-600 font-medium mb-6">
-                Free delivery
-              </div>
-            )}
-
-            <div className={`text-sm font-medium mb-6 ${stock > 0 ? "text-green-700" : "text-red-600"}`}>
-              {stock > 0 ? `✓ ${stock} available` : "Out of Stock"}
-            </div>
-
-            {stock > 0 ? (
-              <>
-                <div className="mb-5">
-                  <div className="text-sm font-semibold text-gray-900 mb-2">Quantity</div>
-                  <div className="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                    <button
-                      className={`w-10 h-10 flex items-center justify-center bg-gray-50 text-xl hover:bg-gray-100 ${
-                        quantity <= 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                      }`}
-                      onClick={decreaseQuantity}
-                      disabled={quantity <= 1}
-                    >
-                      −
-                    </button>
-                    <span className="w-12 text-center font-semibold text-gray-900">{quantity}</span>
-                    <button
-                      className={`w-10 h-10 flex items-center justify-center bg-gray-50 text-xl hover:bg-gray-100 ${
-                        quantity >= stock ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                      }`}
-                      onClick={increaseQuantity}
-                      disabled={quantity >= stock}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl mb-4 border border-gray-100">
-                  <span className="font-medium text-gray-700">Total</span>
-                  <strong className="text-lg text-gray-900">₹{totalPrice.toFixed(2)}</strong>
-                </div>
-
-                <button
-                  className={`w-full py-3 px-4 rounded-xl font-bold text-white transition-colors ${
-                    addingToCart ? "bg-gray-700 cursor-not-allowed opacity-80" : "bg-gray-900 hover:bg-gray-800 cursor-pointer"
-                  }`}
-                  onClick={handleAddToCart}
-                  disabled={addingToCart}
-                >
-                  {addingToCart ? "Adding..." : "🛒 Add to Cart"}
-                </button>
-              </>
-            ) : (
-              <button
-                className="w-full py-3 px-4 rounded-xl font-bold text-white bg-gray-400 cursor-not-allowed"
-                disabled
-              >
-                Out of Stock
-              </button>
-            )}
-          </div>
-        </section>
-      </div>
-    </main>
+    <ProductView
+      product={product}
+      farmerName={farmerNameWithPlace}
+      categoryName={product.categories?.name || "Product"}
+      reviews={reviews}
+      price={customerPrice}
+      stock={Number(product.stock_quantity || 0)}
+      onAddToCart={handleAddToCart}
+      userId={user?.id}
+    />
   );
 }
