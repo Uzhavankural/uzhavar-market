@@ -54,7 +54,11 @@ export default function ProductView({
   userId
 }) {
   const router = useRouter();
-  const [quantity, setQuantity] = useState(1);
+  
+  const isOrganicComplex = product?.name?.toLowerCase().includes('organic complex');
+  const minQty = isOrganicComplex ? 50 : 1;
+  const [quantity, setQuantity] = useState(minQty);
+  
   const [cartCount, setCartCount] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
 
@@ -82,7 +86,7 @@ export default function ProductView({
     }
   }, [userId, product?.id]);
 
-  const decreaseQty = () => { if (quantity > 1) setQuantity(q => q - 1); };
+  const decreaseQty = () => { if (quantity > minQty) setQuantity(q => q - 1); };
   const increaseQty = () => { if (quantity < stock) setQuantity(q => q + 1); };
 
   const handleAdd = () => {
@@ -153,7 +157,7 @@ export default function ProductView({
 
   return (
     <div className="bg-gray-100 min-h-screen font-sans">
-      <div className="max-w-[480px] mx-auto bg-white min-h-screen sm:shadow-lg sm:border-x sm:border-gray-200 relative pb-24">
+      <div className="max-w-[480px] md:max-w-7xl mx-auto bg-white min-h-screen sm:shadow-lg sm:border-x sm:border-gray-200 relative pb-24 md:pb-12">
         
         {/* Header */}
         <header className="flex items-center justify-between p-3 bg-[#115e59] text-white sticky top-0 z-20">
@@ -191,9 +195,11 @@ export default function ProductView({
           </div>
         </header>
 
-        <div className="p-4">
-          {/* Image Carousel */}
-          <div className="relative rounded-xl overflow-hidden bg-[#f0fdf4] aspect-[4/3] mb-4 flex items-center justify-center group">
+        <div className="p-4 md:p-6 lg:p-8 md:flex md:gap-8 lg:gap-12 items-start">
+          {/* Left Column: Images */}
+          <div className="w-full md:w-[55%] lg:w-[60%]">
+            {/* MOBILE VIEW (Carousel) */}
+            <div className="md:hidden relative rounded-xl overflow-hidden bg-[#f0fdf4] aspect-[4/3] mb-6 flex items-center justify-center group shadow-sm border border-gray-100">
             {imagesList.length > 0 ? (
               <>
                 <img src={imagesList[currentImageIndex]} alt={product?.name} className="w-full h-full object-cover transition-all duration-300" />
@@ -240,9 +246,46 @@ export default function ProductView({
             </div>
           </div>
 
-          {/* Title & Info */}
-          <div className="mb-1 text-sm text-gray-500">{farmerName}</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">{product.name}</h1>
+            {/* DESKTOP VIEW (Grid) */}
+            <div className="hidden md:grid md:grid-cols-2 gap-4 mb-6">
+              {imagesList.length > 0 ? (
+                imagesList.map((img, idx) => (
+                  <div key={idx} className="relative rounded-xl overflow-hidden bg-[#f0fdf4] aspect-[3/4] flex items-center justify-center border border-gray-100">
+                    <img src={img} alt={`${product?.name} ${idx+1}`} className="w-full h-full object-cover" />
+                    {idx === 0 && (
+                      <>
+                        <span className="absolute top-3 left-3 bg-[#166534] text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-semibold">
+                          <Icons.Leaf className="w-3 h-3" /> Organic
+                        </span>
+                        <div className="absolute top-3 right-3 flex flex-col gap-2">
+                          <button onClick={toggleWishlist} className="bg-white p-2.5 rounded-full shadow-sm text-gray-700 hover:text-red-500 cursor-pointer transition-colors">
+                            <Icons.Heart filled={isLiked} className={isLiked ? "fill-red-500 text-red-500" : ""} />
+                          </button>
+                          <button onClick={handleShare} className="bg-white p-2.5 rounded-full shadow-sm text-gray-700 hover:text-blue-500 cursor-pointer transition-colors">
+                            <Icons.Share />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="relative rounded-xl overflow-hidden bg-[#f0fdf4] aspect-[3/4] flex items-center justify-center border border-gray-100 col-span-2">
+                  <span className="text-6xl">🌱</span>
+                  <span className="absolute top-3 left-3 bg-[#166534] text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-semibold">
+                    <Icons.Leaf className="w-3 h-3" /> Organic
+                  </span>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Right Column: Product Details */}
+          <div className="w-full md:w-[45%] lg:w-[40%] flex flex-col md:sticky md:top-24">
+            {/* Title & Info */}
+            <div className="mb-1 text-sm text-gray-500">{farmerName}</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">{product.name}</h1>
           
           <div className="inline-flex bg-green-50 text-green-800 text-xs px-2.5 py-1 rounded-full mb-3 font-medium items-center gap-1">
              <Icons.Leaf className="w-3 h-3"/> {categoryName || 'Product'}
@@ -401,6 +444,7 @@ export default function ProductView({
                 </>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>

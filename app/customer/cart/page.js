@@ -61,9 +61,10 @@ export default function CustomerCartPage() {
   // UPDATE QUANTITY
   // =========================
   const updateQuantity = (index, newQuantity) => {
-    if (newQuantity < 1) return;
-
     const item = cart[index];
+    const isOrganicComplex = item?.name?.toLowerCase().includes("organic complex");
+    const minQty = isOrganicComplex ? 50 : 1;
+    if (newQuantity < minQty) return;
 
     if (
       item.stock_quantity !== null &&
@@ -287,7 +288,7 @@ export default function CustomerCartPage() {
                         onClick={() =>
                           updateQuantity(index, Number(item.quantity || 1) - 1)
                         }
-                        disabled={Number(item.quantity || 1) <= 1}
+                        disabled={Number(item.quantity || 1) <= (item.name?.toLowerCase().includes("organic complex") ? 50 : 1)}
                         className="w-8 h-8 flex items-center justify-center rounded bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-200"
                       >
                         −

@@ -39,14 +39,16 @@ export default function Cart() {
 
   function decreaseQuantity(id) {
     const updatedCart = cart
-      .map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: item.quantity - 1,
-            }
-          : item
-      )
+      .map((item) => {
+        if (item.id === id) {
+          const minQty = item.name?.toLowerCase().includes("organic complex") ? 50 : 1;
+          return {
+            ...item,
+            quantity: item.quantity > minQty ? item.quantity - 1 : item.quantity,
+          };
+        }
+        return item;
+      })
       .filter((item) => item.quantity > 0)
 
     updateCart(updatedCart)
@@ -173,7 +175,8 @@ export default function Cart() {
                         onClick={() =>
                           decreaseQuantity(item.id)
                         }
-                        className="w-8 h-8 border border-gray-300 rounded-md bg-white font-semibold text-lg flex items-center justify-center hover:bg-gray-50"
+                        disabled={item.quantity <= (item.name?.toLowerCase().includes("organic complex") ? 50 : 1)}
+                        className="w-8 h-8 border border-gray-300 rounded-md bg-white font-semibold text-lg flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         −
                       </button>

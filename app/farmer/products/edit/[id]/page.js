@@ -169,7 +169,7 @@ export default function EditProduct() {
 
     if (updateError) {
       console.log('UPDATE ERROR:', updateError)
-      setError('Unable to update product. Please try again.')
+      setError(`Unable to update product: ${updateError.message || 'Unknown error'}`)
       setSaving(false)
       return
     }
@@ -198,7 +198,7 @@ export default function EditProduct() {
 
       if (insertError) {
         console.log('INSERT ERROR:', insertError)
-        setError('Main product updated, but failed to create new variants.')
+        setError(`Main product updated, but failed to create new variants: ${insertError.message || 'Unknown error'}`)
         setSaving(false)
         return
       }
