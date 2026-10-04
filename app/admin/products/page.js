@@ -429,9 +429,8 @@ export default function AdminProducts() {
       orderItems &&
       orderItems.length > 0
     ) {
-      setError(
-        'This product cannot be deleted because it has existing orders. You can make it inactive instead.'
-      )
+      alert('This product cannot be deleted because it has existing orders. You can make it inactive instead.');
+      setError('This product cannot be deleted because it has existing orders. You can make it inactive instead.')
 
       setDeletingId(null)
       return
@@ -449,9 +448,8 @@ export default function AdminProducts() {
         deleteError
       )
 
-      setError(
-        'Unable to delete product.'
-      )
+      alert('Unable to delete product: ' + deleteError.message);
+      setError('Unable to delete product.')
 
       setDeletingId(null)
       return

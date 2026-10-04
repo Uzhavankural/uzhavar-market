@@ -835,9 +835,8 @@ async function rejectReview(review) {
       orderItemsCheck &&
       orderItemsCheck.length > 0
     ) {
-      setProductMessage(
-        'This product cannot be deleted because it already has an order.'
-      )
+      alert('This product cannot be deleted because it already has an order.');
+      setProductMessage('This product cannot be deleted because it already has an order.')
 
       return
     }
