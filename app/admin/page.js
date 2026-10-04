@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [reviews, setReviews] = useState([])
   const [farmers, setFarmers] = useState([])
   const [farmerSearch, setFarmerSearch] = useState('')
+  const [farmerFilter, setFarmerFilter] = useState('active')
   const [selectedFarmer, setSelectedFarmer] = useState(null)
   const [warningText, setWarningText] = useState('')
   const [selectedFarmerStats, setSelectedFarmerStats] = useState({ earnings: 0, commission: 0 })
@@ -1647,17 +1648,22 @@ async function rejectReview(review) {
 
   const normalizedFarmerSearch = farmerSearch.trim().toLowerCase()
 
-  const filteredFarmers =
-    normalizedFarmerSearch === ''
-      ? farmers
-      : farmers.filter((farmer) => {
-          const farmerName = String(farmer.full_name || '').toLowerCase()
-          const farmerPhone = String(farmer.phone || '').toLowerCase()
-          return (
-            farmerName.includes(normalizedFarmerSearch) ||
-            farmerPhone.includes(normalizedFarmerSearch)
-          )
-        })
+  const filteredFarmers = farmers.filter(farmer => {
+    // Filter by ban status
+    if (farmerFilter === 'active' && farmer.is_banned) return false;
+    if (farmerFilter === 'banned' && !farmer.is_banned) return false;
+    
+    // Filter by search
+    if (normalizedFarmerSearch !== '') {
+      const farmerName = String(farmer.full_name || '').toLowerCase();
+      const farmerPhone = String(farmer.phone || '').toLowerCase();
+      if (!farmerName.includes(normalizedFarmerSearch) && !farmerPhone.includes(normalizedFarmerSearch)) {
+        return false;
+      }
+    }
+    
+    return true;
+  })
 
   // =====================================================
   // ADMIN EARNINGS
@@ -2570,7 +2576,23 @@ async function rejectReview(review) {
       </div>
     </div>
 
-    {filteredFarmers.length === 0 ? (
+    
+      <div className="flex gap-[8px] flex-wrap mb-[20px] sm:max-w-full">
+        <button
+          onClick={() => setFarmerFilter('active')}
+          className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors ${farmerFilter === 'active' ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} max-w-full box-border`}
+        >
+          Active Farmers ({farmers.filter(f => !f.is_banned).length})
+        </button>
+        <button
+          onClick={() => setFarmerFilter('banned')}
+          className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors ${farmerFilter === 'banned' ? 'bg-red-700 text-white border-red-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} max-w-full box-border`}
+        >
+          Banned Farmers ({farmers.filter(f => f.is_banned).length})
+        </button>
+      </div>
+
+      {filteredFarmers.length === 0 ? (
       <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
         <h3>No farmers found</h3>
         {farmerSearch && <p>No results matching "{farmerSearch}"</p>}
