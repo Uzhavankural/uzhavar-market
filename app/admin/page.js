@@ -17,6 +17,9 @@ export default function AdminDashboard() {
   const [reviews, setReviews] = useState([])
   const [farmers, setFarmers] = useState([])
   const [farmerSearch, setFarmerSearch] = useState('')
+  const [selectedFarmer, setSelectedFarmer] = useState(null)
+  const [warningText, setWarningText] = useState('')
+  const [selectedFarmerStats, setSelectedFarmerStats] = useState({ earnings: 0, commission: 0 })
   const [reviewMessage, setReviewMessage] = useState('')
   const [reviewFilter, setReviewFilter] = useState('pending')
 
@@ -108,6 +111,59 @@ export default function AdminDashboard() {
 
     if (!error) {
       setFarmers(data || [])
+    }
+  }
+
+  async function handleFarmerClick(farmer) {
+    setSelectedFarmer(farmer)
+    setWarningText('')
+    const { data } = await supabase
+      .from('order_items')
+      .select('settlement_amount, commission_amount, settlement_status')
+      .eq('farmer_id', farmer.id)
+    let earnings = 0;
+    let commission = 0;
+    if (data) {
+      data.forEach(item => {
+        earnings += Number(item.settlement_amount || 0);
+        commission += Number(item.commission_amount || 0);
+      })
+    }
+    setSelectedFarmerStats({ earnings, commission })
+  }
+
+  async function sendWarning() {
+    if (!selectedFarmer || !warningText.trim()) return;
+    const currentWarnings = selectedFarmer.warnings || [];
+    if (currentWarnings.length >= 2) {
+      alert('Max limit of 2 warnings reached.');
+      return;
+    }
+    const newWarnings = [...currentWarnings, warningText.trim()];
+    const { error } = await supabase.from('profiles').update({ warnings: newWarnings }).eq('id', selectedFarmer.id);
+    if (!error) {
+       setSelectedFarmer({ ...selectedFarmer, warnings: newWarnings });
+       setWarningText('');
+       setFarmers(farmers.map(f => f.id === selectedFarmer.id ? { ...f, warnings: newWarnings } : f));
+       alert('Warning sent.');
+    } else {
+       alert('Failed to send warning.');
+    }
+  }
+
+  async function removeFarmer() {
+    if (!selectedFarmer) return;
+    const conf = window.confirm(`Are you sure you want to remove ${selectedFarmer.full_name}? This will ban them and hide all their products.`);
+    if (!conf) return;
+    
+    const { error } = await supabase.from('profiles').update({ is_banned: true }).eq('id', selectedFarmer.id);
+    if (!error) {
+       await supabase.from('products').update({ approval_status: 'rejected' }).eq('farmer_id', selectedFarmer.id);
+       setSelectedFarmer(null);
+       loadFarmers();
+       alert('Farmer removed successfully.');
+    } else {
+       alert('Failed to remove farmer.');
     }
   }
 
@@ -2533,9 +2589,9 @@ async function rejectReview(review) {
           </thead>
           <tbody>
             {filteredFarmers.map((farmer) => (
-              <tr key={farmer.id} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr key={farmer.id} onClick={() => handleFarmerClick(farmer)} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
                 <td className="p-4 align-top">
-                  <div className="font-semibold text-gray-900">{farmer.full_name}</div>
+                  <div className="font-semibold text-gray-900">{farmer.full_name} {farmer.is_banned && <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded ml-2">Removed</span>}</div>
                   <div className="text-sm text-gray-500">{farmer.farm_name || 'No Farm Name'}</div>
                 </td>
                 <td className="p-4 align-top text-sm">

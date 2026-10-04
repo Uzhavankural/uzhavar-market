@@ -34,13 +34,20 @@ export default function Login() {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_banned')
       .eq('id', user.id)
       .single()
 
     if (profileError || !profile) {
       console.log('PROFILE ERROR:', profileError)
       setMessage('Profile not found.')
+      setLoading(false)
+      return
+    }
+
+    if (profile.is_banned) {
+      await supabase.auth.signOut()
+      setMessage('You are removed from the website by Admin')
       setLoading(false)
       return
     }

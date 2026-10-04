@@ -38,6 +38,12 @@ export default function FarmerDashboard() {
           return
         }
 
+        if (data.is_banned) {
+          await supabase.auth.signOut()
+          router.replace('/login?error=banned')
+          return
+        }
+
         if (data.role !== 'farmer') {
           setProfile(data)
           setAccessDenied(true)
@@ -172,6 +178,18 @@ export default function FarmerDashboard() {
             Manage your farm products, orders and earnings from here.
           </p>
         </div>
+
+        {profile.warnings && profile.warnings.length > 0 && (
+          <div className="mt-6 bg-red-50 border-l-4 border-red-600 p-4 rounded-r-lg shadow-sm">
+            <h3 className="text-red-800 font-bold mb-2 flex items-center gap-2">⚠️ Admin Warnings ({profile.warnings.length}/2)</h3>
+            <ul className="list-disc pl-5 text-red-700">
+              {profile.warnings.map((w, i) => <li key={i} className="mb-1">{w}</li>)}
+            </ul>
+            {profile.warnings.length >= 2 && (
+               <p className="mt-2 font-semibold text-red-800 text-sm">You have reached the maximum warning limit. Further violations may result in account suspension.</p>
+            )}
+          </div>
+        )}
 
         {/* MAIN STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-6 sm:mt-[25px]">
