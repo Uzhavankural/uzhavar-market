@@ -32,3 +32,35 @@ input, textarea, select {
   color: #171717 !important;
   background-color: #ffffff !important;
 }
+
+
+/* Global Touch Feedback for Mobile */
+button, 
+a, 
+div.cursor-pointer {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active, 
+a:active, 
+div.cursor-pointer:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+tr.cursor-pointer {
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+tr.cursor-pointer:active {
+  opacity: 0.7;
+  background-color: #f3f4f6 !important;
+}
+
+/* Form elements scaling */
+input[type="checkbox"]:active,
+input[type="radio"]:active {
+  transform: scale(0.9);
+}
