@@ -164,7 +164,7 @@ export default function AdminDashboard() {
        loadFarmers();
        alert('Farmer removed successfully.');
     } else {
-       alert('Failed to remove farmer.');
+       alert('Failed to remove farmer: ' + error.message);
     }
   }
 
