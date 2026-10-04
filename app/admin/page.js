@@ -159,7 +159,9 @@ export default function AdminDashboard() {
     
     const { error } = await supabase.from('profiles').update({ is_banned: true }).eq('id', selectedFarmer.id);
     if (!error) {
-       await supabase.from('products').update({ approval_status: 'rejected' }).eq('farmer_id', selectedFarmer.id);
+       await supabase.from('products').update({ approval_status: 'rejected', status: 'inactive' }).eq('farmer_id', selectedFarmer.id);
+       // Optimistic update
+       setFarmers(prev => prev.map(f => f.id === selectedFarmer.id ? { ...f, is_banned: true } : f));
        setSelectedFarmer(null);
        loadFarmers();
        alert('Farmer removed successfully.');
