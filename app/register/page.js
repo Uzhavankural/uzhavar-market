@@ -22,6 +22,14 @@ export default function Register() {
     setMessage('')
     setLoading(true)
 
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/
+    if (!passwordRegex.test(password)) {
+      setMessage('Password must contain at least one uppercase letter, one number, and one special character (e.g. Jeevan@28).')
+      setLoading(false)
+      return
+    }
+
+
    const { data, error } = await supabase.auth.signUp({
   email,
   password,
@@ -139,6 +147,11 @@ export default function Register() {
             minLength={6}
             className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
           />
+
+            <p className="text-xs text-gray-500 mt-1">
+              Password must contain at least one uppercase letter, one number, and one special character (e.g. Jeevan@28).
+            </p>
+
 
 
           <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
