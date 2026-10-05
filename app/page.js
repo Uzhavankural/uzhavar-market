@@ -295,7 +295,7 @@ export default function Home() {
           <a href="#categories" className="hover:text-green-700 transition-colors">Categories</a>
           <a href="#products" className="hover:text-green-700 transition-colors">Products</a>
 
-          {!authLoading && user && role === "customer" && (
+          {!authLoading && user && (role === "customer" || role === "farmer") && (
             <>
               <button
                 onClick={() => router.push("/customer/cart")}

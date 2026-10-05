@@ -401,6 +401,7 @@ export default function EditProduct() {
                 <option value="piece">piece</option>
                 <option value="packet">packet</option>
                 <option value="box">box</option>
+                          <option value="bag">bag</option>
                           <option value="5kg bag">5kg bag</option>
                           <option value="10kg bag">10kg bag</option>
                           <option value="25kg bag">25kg bag</option>
@@ -493,6 +494,7 @@ export default function EditProduct() {
                       <option value="piece">piece</option>
                       <option value="packet">packet</option>
                       <option value="box">box</option>
+                          <option value="bag">bag</option>
                       <option value="dozen">dozen</option>
                     </select>
                   </div>
@@ -518,7 +520,7 @@ export default function EditProduct() {
             <h3 className="m-0 mb-3 sm:mb-[15px] text-base font-bold text-gray-800">Main Variant Summary</h3>
             <div className="flex justify-between gap-4 text-gray-500 text-sm mb-2 sm:mb-[9px]">
               <span>Farmer Price</span>
-              <strong className="text-gray-800">₹{Number(price || 0).toLocaleString('en-IN')}{unit ? ` / ${unit}` : ''}</strong>
+              <strong className="text-gray-800">₹{Number(price || 0).toLocaleString('en-IN')}{unit ? ` / ${unitCount && unitCount != 1 ? unitCount + ' ' : ''}${unit}` : ''}</strong>
             </div>
             <div className="flex justify-between gap-4 text-gray-500 text-sm mb-2 sm:mb-[9px]">
               <span>Platform Commission</span>
@@ -527,7 +529,7 @@ export default function EditProduct() {
             <div className="border-t border-gray-200 my-3 sm:my-[12px]" />
             <div className="flex justify-between gap-4 text-green-800 text-base font-bold">
               <span>Customer Price</span>
-              <strong>₹{customerPrice.toLocaleString('en-IN')}{unit ? ` / ${unit}` : ''}</strong>
+              <strong>₹{customerPrice.toLocaleString('en-IN')}{unit ? ` / ${unitCount && unitCount != 1 ? unitCount + ' ' : ''}${unit}` : ''}</strong>
             </div>
           </div>
 

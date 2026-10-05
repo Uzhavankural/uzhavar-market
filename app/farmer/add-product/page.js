@@ -337,6 +337,7 @@ export default function AddProduct() {
                         <option value="piece">piece</option>
                         <option value="packet">packet</option>
                         <option value="box">box</option>
+                          <option value="bag">bag</option>
                           <option value="5kg bag">5kg bag</option>
                           <option value="10kg bag">10kg bag</option>
                           <option value="25kg bag">25kg bag</option>
