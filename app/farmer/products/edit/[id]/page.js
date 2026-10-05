@@ -127,14 +127,14 @@ export default function EditProduct() {
     const trimmedUnit = unit.trim()
     const trimmedDescription = description.trim()
 
-    if (!trimmedName || !categoryId || !price || !trimmedUnit || !unitCount || stock === '') {
+    if (!trimmedName || !categoryId || !price || !trimmedUnit || (!trimmedUnit.includes('bag') && !unitCount) || stock === '') {
       setError('Please fill all required fields for the main product.')
       return
     }
 
     for (let i = 0; i < newVariants.length; i++) {
       const v = newVariants[i]
-      if (!v.price || !v.unit || !v.unitCount) {
+      if (!v.price || !v.unit || (!v.unit.includes('bag') && !v.unitCount)) {
         setError(`Please fill all fields for New Variant ${i + 1}.`)
         return
       }
@@ -375,8 +375,8 @@ export default function EditProduct() {
                 />
               </div>
             </div>
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit Count *</label>
+            {!unit.includes('bag') && <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit Count *</label>
               <input
                 type="number"
                 value={unitCount}
@@ -385,10 +385,10 @@ export default function EditProduct() {
                 placeholder="1"
                 min="0"
                 step="0.01"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit *</label>
+                />
+              </div>}
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit *</label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
@@ -466,8 +466,8 @@ export default function EditProduct() {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Unit Count *</label>
+                  {!v.unit.includes('bag') && <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Unit Count *</label>
                     <input
                       type="number"
                       value={v.unitCount}
@@ -477,10 +477,10 @@ export default function EditProduct() {
                       step="0.01"
                       className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
                       required
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Unit *</label>
+                      />
+                    </div>}
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">Unit *</label>
                     <select
                       value={v.unit}
                       onChange={(e) => handleNewVariantChange(index, 'unit', e.target.value)}

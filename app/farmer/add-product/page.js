@@ -87,7 +87,7 @@ export default function AddProduct() {
 
     for (let i = 0; i < variants.length; i++) {
       const v = variants[i]
-      if (!v.price || !v.unit || !v.unitCount) {
+      if (!v.price || !v.unit || (!v.unit.includes('bag') && !v.unitCount)) {
         setMessage(`Please fill all fields for Variant ${i + 1}.`)
         return
       }
@@ -129,22 +129,27 @@ export default function AddProduct() {
       }
     }
 
-    const rowsToInsert = variants.map((v) => ({
-      farmer_id: user.id,
-      category_id: categoryId,
-      name: variants.length > 1 ? `${name} - ${v.unitCount} ${v.unit}` : name,
-      description: description,
-      price: Number(v.price),
-      unit: v.unit,
-      unit_count: Number(v.unitCount),
-      delivery_price: Number(v.deliveryPrice || 0),
-      stock_quantity: Number(stock),
-      image_url: imageUrls.length > 0 ? imageUrls[0] : null,
-      images: imageUrls,
-      status: 'active',
-      approval_status: 'pending',
-      commission_amount: 0,
-    }))
+    const rowsToInsert = variants.map((v) => {
+      const isBag = v.unit.includes('bag');
+      const finalUnitCount = isBag ? 1 : Number(v.unitCount);
+      const displayName = variants.length > 1 ? `${name} - ${isBag ? '' : finalUnitCount + ' '}${v.unit}` : name;
+      return {
+        farmer_id: user.id,
+        category_id: categoryId,
+        name: displayName,
+        description: description,
+        price: Number(v.price),
+        unit: v.unit,
+        unit_count: finalUnitCount,
+        delivery_price: Number(v.deliveryPrice || 0),
+        stock_quantity: Number(stock),
+        image_url: imageUrls.length > 0 ? imageUrls[0] : null,
+        images: imageUrls,
+        status: 'active',
+        approval_status: 'pending',
+        commission_amount: 0,
+      }
+    })
 
     const { error: productError } = await supabase
       .from('products')
@@ -308,7 +313,7 @@ export default function AddProduct() {
                       />
                     </div>
                     
-                    <div>
+                    {!v.unit.includes('bag') && <div>
                       <label className="block mb-2 text-sm font-semibold text-gray-700">Unit Count *</label>
                       <input
                         type="number"
@@ -320,7 +325,7 @@ export default function AddProduct() {
                         className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
                         required
                       />
-                    </div>
+                    </div>}
 
                     <div>
                       <label className="block mb-2 text-sm font-semibold text-gray-700">Unit *</label>
