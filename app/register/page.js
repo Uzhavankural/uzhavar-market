@@ -24,7 +24,7 @@ export default function Register() {
 
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/
     if (!passwordRegex.test(password)) {
-      setMessage('Password must contain at least one uppercase letter, one number, and one special character (e.g. Jeevan@28).')
+      setMessage('Password must contain at least one uppercase letter, one number, and one special character.')
       setLoading(false)
       return
     }
@@ -149,7 +149,7 @@ export default function Register() {
           />
 
             <p className="text-xs text-gray-500 mt-1">
-              Password must contain at least one uppercase letter, one number, and one special character (e.g. Jeevan@28).
+              Password must contain at least one uppercase letter, one number, and one special character.
             </p>
 
 
