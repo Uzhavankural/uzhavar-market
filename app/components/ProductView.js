@@ -65,6 +65,10 @@ export default function ProductView({
   const [isLiked, setIsLiked] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const imagesList = product?.images?.length > 0 ? product.images : (product?.image_url ? [product.image_url] : []);
+  const mediaList = [
+    ...imagesList.map(url => ({ type: 'image', url })),
+    ...(product?.video_url ? [{ type: 'video', url: product.video_url }] : [])
+  ];
 
   useEffect(() => {
     if (userId) {

@@ -333,6 +333,12 @@ export default function MyProducts() {
                   <div key={product.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
                     {product.image_url ? (
                       <div className="relative">
+
+                        {product.video_url && (
+                          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/75 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold flex items-center gap-1 shadow-md z-10">
+                            🎥 Video
+                          </div>
+                        )}
                         <img src={product.image_url} alt={product.name} className="w-full h-32 sm:h-[220px] object-cover block" />
                         <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white px-1.5 py-0.5 sm:px-2.5 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] font-bold shadow-md">
                           {getStatusLabel(product.status)}

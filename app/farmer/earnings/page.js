@@ -15,6 +15,7 @@ export default function FarmerEarningsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   useEffect(() => {
     checkFarmer()
@@ -377,26 +378,26 @@ export default function FarmerEarningsPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-[18px] mt-6 sm:mt-[22px]">
-          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
-            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">🛒</span>
-            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Completed Orders</p>
-            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">{completedOrderIds.size}</h2>
+        <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 mt-6 sm:mt-[22px]">
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
+            <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">🛒</span>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Completed Orders</p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">{completedOrderIds.size}</h2>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
-            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">💰</span>
-            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Farmer Earnings</p>
-            <h2 className="m-0 text-xl sm:text-[23px] text-green-800 font-bold">₹{formatMoney(totalFarmerEarnings)}</h2>
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
+            <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">💰</span>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Farmer Earnings</p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-green-800 font-bold truncate">₹{formatMoney(totalFarmerEarnings)}</h2>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
-            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">💼</span>
-            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Platform Commission</p>
-            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">₹{formatMoney(totalCommission)}</h2>
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
+            <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">💼</span>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Platform Commission</p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">₹{formatMoney(totalCommission)}</h2>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
-            <span className="text-2xl sm:text-[27px] block mb-2 sm:mb-0">🌾</span>
-            <p className="m-0 mt-2 mb-1 text-xs text-gray-500 font-medium">Customer Sales</p>
-            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">₹{formatMoney(totalSales)}</h2>
+          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
+            <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">🌾</span>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Customer Sales</p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">₹{formatMoney(totalSales)}</h2>
           </div>
         </div>
 
@@ -497,20 +498,21 @@ export default function FarmerEarningsPage() {
               const isPaid = item.settlement_status === 'paid'
 
               return (
-                <div key={item.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm">
-                  <div className="bg-[#fafcf9] border-b border-gray-200 p-4 sm:p-[15px_18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-[15px] flex-wrap">
+                <div key={item.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  {/* Top Bar: Order ID, Date, Status */}
+                  <div className="bg-[#fafcf9] border-b border-gray-200 p-3.5 sm:p-[15px_18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-[15px] flex-wrap">
                     <div>
                       <p className="m-0 text-sm font-bold text-gray-800">Order #{item.order_id.slice(0, 8)}</p>
-                      <p className="m-0 mt-1 text-[11px] text-gray-400 font-medium">
+                      <p className="m-0 mt-0.5 text-[11px] text-gray-400 font-medium">
                         {formatDate(item.order_created_at)}
                       </p>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="px-2.5 py-1.5 rounded-full text-[11px] font-bold bg-green-100 text-green-800">
+                    <div className="flex gap-1.5 flex-wrap">
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800">
                         ✓ Delivered
                       </span>
                       <span
-                        className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold ${
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                           isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
@@ -519,113 +521,173 @@ export default function FarmerEarningsPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 sm:p-[17px_18px] border-b border-gray-100 flex items-start sm:items-center gap-3">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">
-                      👤
+                  {/* Customer Info (Name and Phone) & View Details Action */}
+                  <div className="p-4 sm:p-[18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-full bg-green-50 text-green-800 border border-green-200 flex items-center justify-center text-lg flex-shrink-0">
+                        👤
+                      </div>
+                      <div>
+                        <h3 className="m-0 text-base font-bold text-gray-800">{item.customer_name}</h3>
+                        {item.customer_phone ? (
+                          <a
+                            href={`tel:${item.customer_phone}`}
+                            className="inline-flex items-center gap-1.5 m-0 mt-1 text-xs sm:text-sm text-green-800 font-semibold hover:underline"
+                          >
+                            <span>📱</span> {item.customer_phone}
+                          </a>
+                        ) : (
+                          <p className="m-0 mt-1 text-xs text-gray-400">No phone provided</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="m-0 text-sm sm:text-[15px] text-gray-800 font-bold">{item.customer_name}</h3>
-                      {item.customer_phone && (
-                        <p className="m-0 mt-1 text-xs sm:text-[13px] text-gray-500 font-medium">📱 {item.customer_phone}</p>
-                      )}
-                      {(item.village || item.district) && (
-                        <p className="m-0 mt-1 text-xs sm:text-[13px] text-gray-500 font-medium">
-                          📍 {[item.village, item.district].filter(Boolean).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="p-4 sm:p-[17px_18px] border-b border-gray-100 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                      <h3 className="m-0 text-sm sm:text-[15px] text-gray-800 font-bold">🌾 {item.product_name}</h3>
-                      <p className="m-0 mt-1 text-xs sm:text-[13px] text-gray-600 font-medium">
-                        Quantity: {item.quantity} {item.unit}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto mt-2 md:mt-0">
-                      <div className="bg-white p-2.5 rounded-lg border border-gray-200">
-                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Customer Price</span>
-                        <strong className="text-xs sm:text-[13px] text-gray-800 font-bold">
-                          ₹{formatMoney(item.price)} / {item.unit || 'unit'}
-                        </strong>
-                      </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-gray-200 border-l-4 border-l-green-600">
-                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Farmer Price</span>
-                        <strong className="text-xs sm:text-[13px] text-green-800 font-bold">
-                          ₹{formatMoney(item.farmer_price)} / {item.unit || 'unit'}
-                        </strong>
-                      </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-gray-200">
-                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Commission</span>
-                        <strong className="text-xs sm:text-[13px] text-gray-800 font-bold">
-                          ₹{formatMoney(item.commission_per_unit)} / {item.unit || 'unit'}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 sm:p-[18px] border-b border-gray-100 flex justify-end">
-                    <div className="flex gap-4 sm:gap-6 flex-wrap justify-end">
-                      <div className="text-right">
-                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Customer Total</span>
-                        <strong className="text-sm sm:text-[15px] text-gray-800 font-bold">
-                          ₹{formatMoney(item.calculated_customer_total)}
-                        </strong>
-                      </div>
-                      <div className="text-right">
-                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Total Commission</span>
-                        <strong className="text-sm sm:text-[15px] text-gray-800 font-bold">
-                          ₹{formatMoney(item.calculated_commission)}
-                        </strong>
-                      </div>
-                      <div className="text-right pl-4 sm:pl-6 border-l border-gray-200">
-                        <span className="block text-[11px] text-gray-500 mb-1 font-semibold uppercase tracking-wider">Farmer Earnings</span>
-                        <strong className="text-sm sm:text-[16px] text-green-800 font-bold">
-                          ₹{formatMoney(item.calculated_farmer_amount)}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`p-4 sm:p-[15px_18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isPaid ? 'bg-[#f0f7ef]' : 'bg-[#fffbeb]'}`}>
-                    <div>
-                      <p className={`m-0 text-[11px] font-bold uppercase tracking-wider mb-1 ${isPaid ? 'text-green-700' : 'text-yellow-700'}`}>
-                        Farmer Settlement Amount
-                      </p>
-                      <h2 className={`m-0 text-xl sm:text-[22px] font-bold ${isPaid ? 'text-green-800' : 'text-yellow-800'}`}>
-                        ₹{formatMoney(item.final_settlement_amount)}
-                      </h2>
-                    </div>
-                    <div className="text-left sm:text-right flex flex-col items-start sm:items-end gap-1">
-                      {isPaid ? (
-                        <>
-                          <span className="inline-block px-3 py-1.5 rounded-lg bg-green-200 text-green-800 text-[12px] font-bold">
-                            ✓ Settlement Completed
-                          </span>
-                          {item.settlement_paid_at && (
-                            <span className="text-[11px] text-green-700 font-medium">
-                              Paid on: {formatDateTime(item.settlement_paid_at)}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <span className="inline-block px-3 py-1.5 rounded-lg bg-yellow-200 text-yellow-800 text-[12px] font-bold">
-                            ⏳ Pending Settlement
-                          </span>
-                          <span className="text-[11px] text-yellow-700 font-medium">
-                            Waiting for admin settlement.
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => setSelectedItem(item)}
+                      className="w-full sm:w-auto px-4 py-2 bg-green-800 text-white rounded-lg text-xs sm:text-sm font-bold hover:bg-green-700 transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                    >
+                      <span>👁️</span> View Details
+                    </button>
                   </div>
                 </div>
               )
             })}
           </div>
         )}
+        {/* ORDER DETAILS MODAL */}
+        {selectedItem && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+              
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-5 flex justify-between items-center z-10">
+                <div>
+                  <h3 className="m-0 text-base sm:text-lg font-bold text-gray-800">Order Details</h3>
+                  <p className="m-0 text-xs text-gray-500 mt-0.5">
+                    Order #{selectedItem.order_id.slice(0, 8)} • {formatDate(selectedItem.order_created_at)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold cursor-pointer transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 sm:p-5 flex flex-col gap-4">
+                
+                {/* Customer Details Box */}
+                <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 text-green-800 flex items-center justify-center text-lg flex-shrink-0">
+                    👤
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Customer</span>
+                    <h4 className="m-0 text-base font-bold text-gray-800">{selectedItem.customer_name}</h4>
+                    {selectedItem.customer_phone && (
+                      <a href={`tel:${selectedItem.customer_phone}`} className="inline-flex items-center gap-1 text-xs text-green-800 font-semibold mt-1 hover:underline">
+                        📱 {selectedItem.customer_phone}
+                      </a>
+                    )}
+                    {(selectedItem.village || selectedItem.district) && (
+                      <p className="m-0 mt-1 text-xs text-gray-600 flex items-center gap-1">
+                        📍 {[selectedItem.village, selectedItem.district].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Product Box */}
+                <div className="p-3.5 border border-gray-200 rounded-xl bg-white shadow-xs">
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">Product Ordered</span>
+                  <h4 className="m-0 text-base font-bold text-gray-800 flex items-center gap-1.5">
+                    🌾 {selectedItem.product_name}
+                  </h4>
+                  <p className="m-0 mt-1 text-xs sm:text-sm font-semibold text-green-800">
+                    Quantity: {selectedItem.quantity} {selectedItem.unit || 'unit'}
+                  </p>
+                </div>
+
+                {/* Price Breakdown */}
+                <div>
+                  <span className="text-[11px] uppercase font-bold text-gray-500 tracking-wider block mb-2">Price Breakdown (Per Unit)</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-center">
+                      <span className="block text-[10px] text-gray-500 font-semibold uppercase">Customer</span>
+                      <strong className="text-xs text-gray-800 font-bold block mt-0.5">
+                        ₹{formatMoney(selectedItem.price)}
+                      </strong>
+                    </div>
+                    <div className="bg-green-50 p-2.5 rounded-lg border border-green-200 text-center">
+                      <span className="block text-[10px] text-green-700 font-semibold uppercase">Farmer</span>
+                      <strong className="text-xs text-green-800 font-bold block mt-0.5">
+                        ₹{formatMoney(selectedItem.farmer_price)}
+                      </strong>
+                    </div>
+                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-center">
+                      <span className="block text-[10px] text-gray-500 font-semibold uppercase">Commission</span>
+                      <strong className="text-xs text-gray-800 font-bold block mt-0.5">
+                        ₹{formatMoney(selectedItem.commission_per_unit)}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Totals Summary */}
+                <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">Customer Total:</span>
+                    <strong className="text-gray-800">₹{formatMoney(selectedItem.calculated_customer_total)}</strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">Platform Commission:</span>
+                    <strong className="text-gray-800">₹{formatMoney(selectedItem.calculated_commission)}</strong>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-800">Farmer Earnings:</span>
+                    <strong className="font-bold text-green-800 text-base">₹{formatMoney(selectedItem.calculated_farmer_amount)}</strong>
+                  </div>
+                </div>
+
+                {/* Settlement Info Card */}
+                <div className={`p-3.5 sm:p-4 rounded-xl border ${selectedItem.settlement_status === 'paid' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${selectedItem.settlement_status === 'paid' ? 'text-green-700' : 'text-yellow-700'}`}>
+                      Settlement Amount
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.settlement_status === 'paid' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                      {selectedItem.settlement_status === 'paid' ? '✓ Settlement Paid' : '⏳ Settlement Pending'}
+                    </span>
+                  </div>
+                  <h3 className={`m-0 text-xl font-bold ${selectedItem.settlement_status === 'paid' ? 'text-green-800' : 'text-yellow-800'}`}>
+                    ₹{formatMoney(selectedItem.final_settlement_amount)}
+                  </h3>
+                  {selectedItem.settlement_status === 'paid' && selectedItem.settlement_paid_at && (
+                    <p className="m-0 mt-1.5 text-xs text-green-700">
+                      Paid on: {formatDateTime(selectedItem.settlement_paid_at)}
+                    </p>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+
       </section>
     </main>
   )

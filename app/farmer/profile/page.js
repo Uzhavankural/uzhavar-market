@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { showToast } from '../../components/Toast'
 
 export default function FarmerProfile() {
   const router = useRouter()
@@ -103,12 +104,16 @@ export default function FarmerProfile() {
         throw new Error(error.message || JSON.stringify(error))
       }
 
-      setMessage('Profile updated successfully! ✅')
+      const successText = 'Your changes are saved! Profile updated successfully. ✅'
+      setMessage(successText)
       setMessageType('success')
+      showToast(successText, 'success', 4000)
     } catch (err) {
       console.error('PROFILE SAVE ERROR:', err)
-      setMessage(`Error: ${err.message}. Please check if address, village, district, pincode columns exist in profiles table.`)
+      const errText = `Error: ${err.message}`
+      setMessage(errText)
       setMessageType('error')
+      showToast(errText, 'error', 4000)
     }
     setSaving(false)
   }
@@ -150,12 +155,6 @@ export default function FarmerProfile() {
               <p className="text-gray-500 text-sm mt-1 mb-0">Update your personal and farm location information</p>
             </div>
           </div>
-
-          {message && (
-            <div className={`p-4 rounded-lg mb-6 text-sm font-medium ${messageType === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-              {message}
-            </div>
-          )}
 
           <form onSubmit={handleSaveProfile} className="space-y-6">
             

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import { showToast } from '../components/Toast'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -33,6 +34,24 @@ export default function AdminDashboard() {
   const [orderSearch, setOrderSearch] = useState('')
   const [paidSettlementSearch, setPaidSettlementSearch] = useState('')
   const [commissionValues, setCommissionValues] = useState({})
+
+  useEffect(() => {
+    if (message && !message.includes('Loading') && !message.includes('Confirming')) {
+      showToast(message, 'info', 4000)
+    }
+  }, [message])
+
+  useEffect(() => {
+    if (productMessage && !productMessage.includes('Loading') && !productMessage.includes('Approving')) {
+      showToast(productMessage, 'info', 4000)
+    }
+  }, [productMessage])
+
+  useEffect(() => {
+    if (reviewMessage) {
+      showToast(reviewMessage, 'info', 4000)
+    }
+  }, [reviewMessage])
 
   useEffect(() => {
     checkAdmin()
@@ -168,6 +187,73 @@ export default function AdminDashboard() {
     } else {
        alert('Failed to remove farmer: ' + error.message);
     }
+  }
+
+  async function acceptAppeal(farmer) {
+    if (!farmer) return;
+    const conf = window.confirm(`Are you sure you want to accept the appeal for ${farmer.full_name}? This will unban the farmer and reactivate all their products.`);
+    if (!conf) return;
+
+    const updatedAppeal = {
+      ...(farmer.appeal || {}),
+      status: 'accepted',
+      reviewed_at: new Date().toISOString(),
+    };
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        is_banned: false,
+        appeal: updatedAppeal,
+      })
+      .eq('id', farmer.id);
+
+    if (profileError) {
+      alert('Failed to accept appeal: ' + profileError.message);
+      return;
+    }
+
+    // Reactivate farmer's products
+    await supabase
+      .from('products')
+      .update({ approval_status: 'active', status: 'active' })
+      .eq('farmer_id', farmer.id);
+
+    // Update state
+    setFarmers(prev => prev.map(f => f.id === farmer.id ? { ...f, is_banned: false, appeal: updatedAppeal } : f));
+    if (selectedFarmer && selectedFarmer.id === farmer.id) {
+      setSelectedFarmer(prev => prev ? { ...prev, is_banned: false, appeal: updatedAppeal } : null);
+    }
+    await loadProducts();
+    alert(`Appeal accepted! ${farmer.full_name} is now unbanned and all products are active.`);
+  }
+
+  async function rejectAppeal(farmer) {
+    if (!farmer) return;
+    const conf = window.confirm(`Are you sure you want to reject the appeal for ${farmer.full_name}? The farmer will remain banned and their products will stay hidden.`);
+    if (!conf) return;
+
+    const updatedAppeal = {
+      ...(farmer.appeal || {}),
+      status: 'rejected',
+      reviewed_at: new Date().toISOString(),
+    };
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ appeal: updatedAppeal })
+      .eq('id', farmer.id);
+
+    if (profileError) {
+      alert('Failed to reject appeal: ' + profileError.message);
+      return;
+    }
+
+    setFarmers(prev => prev.map(f => f.id === farmer.id ? { ...f, appeal: updatedAppeal } : f));
+    if (selectedFarmer && selectedFarmer.id === farmer.id) {
+      setSelectedFarmer(prev => prev ? { ...prev, appeal: updatedAppeal } : null);
+    }
+    alert(`Appeal rejected. ${farmer.full_name} remains banned.`);
   }
 
   // =====================================================
@@ -1651,9 +1737,10 @@ async function rejectReview(review) {
   const normalizedFarmerSearch = farmerSearch.trim().toLowerCase()
 
   const filteredFarmers = farmers.filter(farmer => {
-    // Filter by ban status
+    // Filter by ban & appeal status
     if (farmerFilter === 'active' && farmer.is_banned) return false;
     if (farmerFilter === 'banned' && !farmer.is_banned) return false;
+    if (farmerFilter === 'appeals' && (!farmer.is_banned || !farmer.appeal || farmer.appeal.status !== 'pending')) return false;
     
     // Filter by search
     if (normalizedFarmerSearch !== '') {
@@ -1766,13 +1853,6 @@ async function rejectReview(review) {
 
       <section className="w-[95%] sm:w-[90%] max-w-[1200px] mx-auto pt-6 sm:pt-10">
         
-        {/* GLOBAL MESSAGE */}
-        {message && (
-          <div className="bg-green-100 text-green-800 p-4 rounded-xl mb-6 font-medium text-sm sm:text-base border border-green-200">
-            {message}
-          </div>
-        )}
-
         {/* WELCOME */}
         <div className="bg-green-800 text-white p-6 sm:p-9 rounded-2xl mb-6 shadow-sm">
           <p className="text-xs sm:text-[13px] font-bold tracking-wider mb-2.5 opacity-90">
@@ -1793,50 +1873,50 @@ async function rejectReview(review) {
               Quick Actions
             </h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 mb-8">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-5 mb-8">
               <button
                 onClick={() => setActiveSection('products')}
-                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 hover:shadow-md transition-shadow"
               >
-                <span className="text-3xl mb-1">📦</span>
-                <strong className="text-base sm:text-lg text-gray-800">All Products</strong>
-                <span className="text-xs sm:text-sm text-gray-500">Review and approve products</span>
+                <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">📦</span>
+                <strong className="text-xs sm:text-lg text-gray-800 leading-tight">All Products</strong>
+                <span className="text-[10px] sm:text-sm text-gray-500 leading-snug line-clamp-2">Review and approve products</span>
               </button>
 
               <button
                 onClick={() => setActiveSection('orders')}
-                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 hover:shadow-md transition-shadow"
               >
-                <span className="text-3xl mb-1">🛒</span>
-                <strong className="text-base sm:text-lg text-gray-800">All Orders</strong>
-                <span className="text-xs sm:text-sm text-gray-500">Manage customer orders</span>
+                <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">🛒</span>
+                <strong className="text-xs sm:text-lg text-gray-800 leading-tight">All Orders</strong>
+                <span className="text-[10px] sm:text-sm text-gray-500 leading-snug line-clamp-2">Manage customer orders</span>
               </button>
 
               <button
                 onClick={() => setActiveSection('reviews')}
-                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 hover:shadow-md transition-shadow"
               >
-                <span className="text-3xl mb-1">⭐</span>
-                <strong className="text-base sm:text-lg text-gray-800">Customer Reviews</strong>
-                <span className="text-xs sm:text-sm text-gray-500">Approve customer reviews</span>
+                <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">⭐</span>
+                <strong className="text-xs sm:text-lg text-gray-800 leading-tight">Customer Reviews</strong>
+                <span className="text-[10px] sm:text-sm text-gray-500 leading-snug line-clamp-2">Approve customer reviews</span>
               </button>
 
               <button
                 onClick={() => setActiveSection('farmers')}
-                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 hover:shadow-md transition-shadow"
               >
-                <span className="text-3xl mb-1">👨‍🌾</span>
-                <strong className="text-base sm:text-lg text-gray-800">Farmers List</strong>
-                <span className="text-xs sm:text-sm text-gray-500">View farmer details</span>
+                <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">👨‍🌾</span>
+                <strong className="text-xs sm:text-lg text-gray-800 leading-tight">Farmers List</strong>
+                <span className="text-[10px] sm:text-sm text-gray-500 leading-snug line-clamp-2">View farmer details</span>
               </button>
 
               <button
                 onClick={() => setActiveSection('settlements')}
-                className="bg-white border border-green-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+                className="bg-white border border-green-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 hover:shadow-md transition-shadow"
               >
-                <span className="text-3xl mb-1">💸</span>
-                <strong className="text-base sm:text-lg text-green-800">Pending Settlements</strong>
-                <span className="text-xs sm:text-sm text-gray-500">Pay farmers for delivered orders</span>
+                <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">💸</span>
+                <strong className="text-xs sm:text-lg text-green-800 leading-tight">Pending Settlements</strong>
+                <span className="text-[10px] sm:text-sm text-gray-500 leading-snug line-clamp-2">Pay farmers for delivered orders</span>
               </button>
             </div>
 
@@ -2592,12 +2672,94 @@ async function rejectReview(review) {
         >
           Banned Farmers ({farmers.filter(f => f.is_banned).length})
         </button>
+        <button
+          onClick={() => setFarmerFilter('appeals')}
+          className={`py-2 px-4 border rounded-lg cursor-pointer font-semibold text-sm transition-colors flex items-center gap-1.5 ${farmerFilter === 'appeals' ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-50'} max-w-full box-border`}
+        >
+          <span>⚖️ New Appeals</span>
+          {farmers.filter(f => f.is_banned && f.appeal && f.appeal.status === 'pending').length > 0 && (
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${farmerFilter === 'appeals' ? 'bg-white text-amber-700' : 'bg-amber-500 text-white'}`}>
+              {farmers.filter(f => f.is_banned && f.appeal && f.appeal.status === 'pending').length}
+            </span>
+          )}
+        </button>
       </div>
 
       {filteredFarmers.length === 0 ? (
       <div className="text-center py-[50px] px-[20px] text-[#777] sm:max-w-full">
-        <h3>No farmers found</h3>
+        <h3>No {farmerFilter === 'appeals' ? 'pending appeals' : 'farmers'} found</h3>
         {farmerSearch && <p>No results matching "{farmerSearch}"</p>}
+      </div>
+    ) : farmerFilter === 'appeals' ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredFarmers.map((farmer) => (
+          <div key={farmer.id} className="bg-white border-2 border-amber-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <h4 className="font-bold text-gray-900 text-base">{farmer.full_name}</h4>
+                <p className="text-xs text-gray-500">{farmer.farm_name || 'No Farm Name'} • 📞 {farmer.phone || 'N/A'}</p>
+                {(farmer.village || farmer.district) && (
+                  <p className="text-xs text-gray-600 mt-0.5">📍 {farmer.village ? `${farmer.village}, ` : ''}{farmer.district || ''}</p>
+                )}
+              </div>
+              <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-[11px] font-bold">
+                Pending Review
+              </span>
+            </div>
+
+            <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-xs mb-3">
+              <span className="block text-[10px] uppercase font-bold text-amber-900 mb-1">
+                Appeal Reason:
+              </span>
+              <p className="m-0 text-gray-800 text-sm italic">
+                "{farmer.appeal?.reason || 'No reason provided'}"
+              </p>
+              {farmer.appeal?.created_at && (
+                <span className="block text-[10px] text-gray-400 mt-1">
+                  Submitted: {new Date(farmer.appeal.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+
+            {farmer.appeal?.voice_url ? (
+              <div className="mb-4 bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                <span className="block text-[10px] uppercase font-bold text-gray-500 mb-1">
+                  🎙️ Voice Note:
+                </span>
+                <audio controls src={farmer.appeal.voice_url} className="w-full" />
+              </div>
+            ) : (
+              <div className="mb-4 text-xs text-gray-400 italic">
+                No voice note attached.
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => acceptAppeal(farmer)}
+                className="flex-1 py-2 px-3 bg-green-700 text-white rounded-lg text-xs font-bold hover:bg-green-800 transition-colors shadow-sm flex items-center justify-center gap-1.5"
+              >
+                <span>✓</span> Accept Appeal
+              </button>
+              <button
+                type="button"
+                onClick={() => rejectAppeal(farmer)}
+                className="flex-1 py-2 px-3 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shadow-sm flex items-center justify-center gap-1.5"
+              >
+                <span>✕</span> Reject Appeal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFarmerClick(farmer)}
+                className="py-2 px-3 border border-gray-300 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors"
+                title="View full farmer profile and history"
+              >
+                Details
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     ) : (
       <div className="overflow-x-auto sm:max-w-full border border-gray-200 rounded-lg">
@@ -2614,7 +2776,13 @@ async function rejectReview(review) {
             {filteredFarmers.map((farmer) => (
               <tr key={farmer.id} onClick={() => handleFarmerClick(farmer)} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
                 <td className="p-4 align-top">
-                  <div className="font-semibold text-gray-900">{farmer.full_name} {farmer.is_banned && <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded ml-2">Removed</span>}</div>
+                  <div className="font-semibold text-gray-900">
+                    {farmer.full_name} 
+                    {farmer.is_banned && <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded ml-2">Removed</span>}
+                    {farmer.is_banned && farmer.appeal?.status === 'pending' && (
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded ml-1.5 font-bold">⚖️ Appeal Pending</span>
+                    )}
+                  </div>
                   <div className="text-sm text-gray-500">{farmer.farm_name || 'No Farm Name'}</div>
                 </td>
                 <td className="p-4 align-top text-sm">
@@ -2706,8 +2874,76 @@ async function rejectReview(review) {
                 )}
               </div>
 
+              {/* Appeal Information */}
+              {selectedFarmer.appeal && (
+                <div className="mb-4 p-4 rounded-xl border bg-amber-50/70 border-amber-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold text-amber-900 flex items-center gap-1.5">
+                      <span>⚖️ Appeal Information</span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        selectedFarmer.appeal.status === 'pending'
+                          ? 'bg-amber-500 text-white'
+                          : selectedFarmer.appeal.status === 'accepted'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-red-600 text-white'
+                      }`}>
+                        {selectedFarmer.appeal.status}
+                      </span>
+                    </h4>
+                    {selectedFarmer.appeal.created_at && (
+                      <span className="text-[11px] text-gray-500">
+                        {new Date(selectedFarmer.appeal.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-gray-800 bg-white p-3 rounded-lg border border-amber-100 mb-2">
+                    <span className="block text-[10px] font-bold uppercase text-gray-400 mb-0.5">Reason:</span>
+                    <p className="m-0 italic">"{selectedFarmer.appeal.reason}"</p>
+                  </div>
+
+                  {selectedFarmer.appeal.voice_url && (
+                    <div className="mt-2 bg-white p-2.5 rounded-lg border border-amber-100">
+                      <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Voice Note:</span>
+                      <audio controls src={selectedFarmer.appeal.voice_url} className="w-full" />
+                    </div>
+                  )}
+
+                  {selectedFarmer.is_banned && selectedFarmer.appeal.status === 'pending' && (
+                    <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-amber-200">
+                      <button
+                        type="button"
+                        onClick={() => acceptAppeal(selectedFarmer)}
+                        className="py-2.5 px-3 bg-green-700 text-white rounded-lg text-xs font-bold hover:bg-green-800 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>✓</span> Accept Appeal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => rejectAppeal(selectedFarmer)}
+                        className="py-2.5 px-3 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>✕</span> Reject Appeal
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Unban Option if Farmer is Banned without Pending Appeal */}
+              {selectedFarmer.is_banned && (!selectedFarmer.appeal || selectedFarmer.appeal.status !== 'pending') && (
+                <button 
+                  type="button"
+                  onClick={() => acceptAppeal(selectedFarmer)}
+                  className="w-full bg-green-700 text-white py-3 rounded-lg font-bold hover:bg-green-800 transition-colors mt-2 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>✓</span> Unban Farmer & Reactivate Products
+                </button>
+              )}
+
               {!selectedFarmer.is_banned && (
                 <button 
+                  type="button"
                   onClick={removeFarmer}
                   className="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors mt-2 cursor-pointer"
                 >
@@ -2727,6 +2963,14 @@ async function rejectReview(review) {
   <div className="flex items-center mb-[20px] gap-[15px] flex-wrap sm:max-w-full">
 
     <div>
+      <button
+        type="button"
+        onClick={() => setActiveSection('dashboard')}
+        className="py-[9px] px-[14px] rounded-[8px] border border-gray-300 bg-white cursor-pointer font-semibold sm:max-w-full text-sm sm:text-base hover:bg-gray-50 transition-colors mb-3"
+      >
+        ← Dashboard
+      </button>
+
       <h2 className="m-[0] sm:max-w-full">
         ⭐ Customer Reviews
       </h2>

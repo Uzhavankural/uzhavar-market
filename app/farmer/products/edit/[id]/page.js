@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { showToast, setFlashToast } from '@/app/components/Toast'
 
 export default function EditProduct() {
   const router = useRouter()
@@ -22,6 +23,12 @@ export default function EditProduct() {
   const [unit, setUnit] = useState('')
   const [stock, setStock] = useState('')
   const [deliveryPrice, setDeliveryPrice] = useState('')
+  const [existingImages, setExistingImages] = useState([])
+  const [newImages, setNewImages] = useState([])
+  const [existingVideo, setExistingVideo] = useState(null)
+  const [newVideoFile, setNewVideoFile] = useState(null)
+  const [newVideoPreview, setNewVideoPreview] = useState(null)
+
   
   const [newVariants, setNewVariants] = useState([])
 
@@ -106,6 +113,16 @@ export default function EditProduct() {
     setStock(productData.stock_quantity ?? '')
     setDeliveryPrice(productData.delivery_price ?? '0')
 
+    const initialImages = Array.isArray(productData.images) && productData.images.length > 0
+      ? productData.images
+      : (productData.image_url ? [productData.image_url] : [])
+    setExistingImages(initialImages)
+    setExistingVideo(productData.video_url || null)
+    setNewImages([])
+    setNewVideoFile(null)
+    setNewVideoPreview(null)
+
+
     setLoading(false)
   }
 
@@ -116,6 +133,83 @@ export default function EditProduct() {
   const customerPrice = useMemo(() => {
     return Number(price || 0) + commission
   }, [price, commission])
+
+  
+  function handleNewImagesChange(e) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const totalCurrent = existingImages.length + newImages.length
+    const availableSlots = 4 - totalCurrent
+
+    if (availableSlots <= 0) {
+      alert('You can only have up to 4 images in total.')
+      e.target.value = ''
+      return
+    }
+
+    if (files.length > availableSlots) {
+      alert(`You can only add ${availableSlots} more image(s). Only the first ${availableSlots} were added.`)
+    }
+
+    const toAdd = files.slice(0, availableSlots)
+    setNewImages(prev => [...prev, ...toAdd])
+    e.target.value = ''
+  }
+
+  function handleRemoveExistingImage(index) {
+    setExistingImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function handleRemoveNewImage(index) {
+    setNewImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function handleNewVideoChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('video/')) {
+      alert('Please select a valid video file.')
+      e.target.value = ''
+      return
+    }
+
+    const tempUrl = URL.createObjectURL(file)
+    const videoElem = document.createElement('video')
+    videoElem.preload = 'metadata'
+    videoElem.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(videoElem.src)
+      const duration = videoElem.duration
+      if (duration > 60) {
+        alert(`Video duration is ${Math.round(duration)} seconds. Maximum allowed duration is 1 minute (60 seconds).`)
+        e.target.value = ''
+        setNewVideoFile(null)
+        setNewVideoPreview(null)
+      } else {
+        setNewVideoFile(file)
+        setNewVideoPreview(tempUrl)
+      }
+    }
+    videoElem.onerror = () => {
+      alert('Unable to load video metadata. Please select another video file.')
+      e.target.value = ''
+    }
+    videoElem.src = tempUrl
+  }
+
+  function handleRemoveExistingVideo() {
+    setExistingVideo(null)
+  }
+
+  function handleRemoveNewVideo() {
+    if (newVideoPreview) {
+      try { window.URL.revokeObjectURL(newVideoPreview) } catch (e) {}
+    }
+    setNewVideoFile(null)
+    setNewVideoPreview(null)
+    const input = document.getElementById('edit-product-video')
+    if (input) input.value = ''
+  }
 
   async function handleUpdate(e) {
     e.preventDefault()
@@ -151,21 +245,93 @@ export default function EditProduct() {
       return
     }
 
+    // Upload new images if any
+    let uploadedNewImages = []
+    if (newImages.length > 0) {
+      for (const img of newImages) {
+        const fileExtension = img.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExtension}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, img)
+
+        if (uploadError) {
+          setError(`Image upload failed: ${uploadError.message}`)
+          setSaving(false)
+          return
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName)
+
+        uploadedNewImages.push(publicUrlData.publicUrl)
+      }
+    }
+
+    const finalImages = [...existingImages, ...uploadedNewImages].slice(0, 4)
+
+    // Upload new video if any
+    let finalVideoUrl = existingVideo
+    if (newVideoFile) {
+      const fileExtension = newVideoFile.name.split('.').pop() || 'mp4'
+      const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-video.${fileExtension}`
+
+      const { error: videoUploadError } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, newVideoFile)
+
+      if (videoUploadError) {
+        setError(`Video upload failed: ${videoUploadError.message}`)
+        setSaving(false)
+        return
+      }
+
+      const { data: videoUrlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fileName)
+
+      finalVideoUrl = videoUrlData.publicUrl
+    }
+
+    const isMainBag = trimmedUnit.includes('bag');
+    const finalMainUnitCount = isMainBag ? 1 : Number(unitCount);
+
+    const updatePayload = {
+      name: trimmedName,
+      category_id: categoryId,
+      description: trimmedDescription,
+      price: Number(price),
+      unit_count: finalMainUnitCount,
+      unit: trimmedUnit,
+      delivery_price: Number(deliveryPrice || 0),
+      stock_quantity: Number(stock),
+      image_url: finalImages.length > 0 ? finalImages[0] : null,
+      images: finalImages,
+      video_url: finalVideoUrl,
+    }
+
     // Update existing product
-    const { error: updateError } = await supabase
+    let { error: updateError } = await supabase
       .from('products')
-      .update({
-        name: trimmedName,
-        category_id: categoryId,
-        description: trimmedDescription,
-        price: Number(price),
-        unit_count: Number(unitCount),
-        unit: trimmedUnit,
-        delivery_price: Number(deliveryPrice || 0),
-        stock_quantity: Number(stock),
-      })
+      .update(updatePayload)
       .eq('id', params.id)
       .eq('farmer_id', user.id)
+
+    if (updateError && updateError.message && updateError.message.includes('video_url')) {
+      console.warn('video_url column does not exist yet. Retrying update without video_url.');
+      const { video_url, ...fallbackPayload } = updatePayload;
+      const { error: fallbackError } = await supabase
+        .from('products')
+        .update(fallbackPayload)
+        .eq('id', params.id)
+        .eq('farmer_id', user.id);
+      if (!fallbackError) {
+        updateError = null;
+        alert('Product updated! Note: To save videos, run in Supabase SQL editor: ALTER TABLE public.products ADD COLUMN IF NOT EXISTS video_url TEXT;');
+      }
+    }
 
     if (updateError) {
       console.log('UPDATE ERROR:', updateError)
@@ -176,25 +342,39 @@ export default function EditProduct() {
 
     // Insert new variants if any
     if (newVariants.length > 0) {
-      const rowsToInsert = newVariants.map((v) => ({
-        farmer_id: user.id,
-        category_id: categoryId,
-        name: `${trimmedName} - ${v.unitCount} ${v.unit}`,
-        description: trimmedDescription,
-        price: Number(v.price),
-        unit_count: Number(v.unitCount),
-        unit: v.unit,
-        delivery_price: Number(v.deliveryPrice || 0),
-        stock_quantity: Number(stock),
-        image_url: product.image_url,
-        status: 'active',
-        approval_status: 'pending',
-        commission_amount: 0,
-      }))
+      const newProducts = newVariants.map((v) => {
+        const isBag = v.unit.includes('bag');
+        const finalUnitCount = isBag ? 1 : Number(v.unitCount);
+        return {
+          farmer_id: user.id,
+          category_id: categoryId,
+          name: `${trimmedName} - ${isBag ? '' : finalUnitCount + ' '}${v.unit}`,
+          description: trimmedDescription,
+          price: Number(v.price),
+          unit_count: finalUnitCount,
+          unit: v.unit,
+          delivery_price: Number(v.deliveryPrice || 0),
+          stock_quantity: Number(stock),
+          image_url: finalImages.length > 0 ? finalImages[0] : null,
+          images: finalImages,
+          video_url: finalVideoUrl,
+          status: 'active',
+          approval_status: 'pending',
+          commission_amount: 0,
+        }
+      })
 
-      const { error: insertError } = await supabase
+      let { error: insertError } = await supabase
         .from('products')
-        .insert(rowsToInsert)
+        .insert(newProducts)
+
+      if (insertError && insertError.message && insertError.message.includes('video_url')) {
+        const fallbackVariants = newProducts.map(({ video_url, ...rest }) => rest);
+        const { error: fallbackInsertErr } = await supabase.from('products').insert(fallbackVariants);
+        if (!fallbackInsertErr) {
+          insertError = null;
+        }
+      }
 
       if (insertError) {
         console.log('INSERT ERROR:', insertError)
@@ -204,7 +384,10 @@ export default function EditProduct() {
       }
     }
 
-    setSuccess('Product and variants saved successfully!')
+    const successText = 'Your changes are saved! Product updated successfully.'
+    setSuccess(successText)
+    showToast(successText, 'success', 4000)
+    setFlashToast(successText, 'success', 4000)
 
     setTimeout(() => {
       router.push('/farmer/products')
@@ -283,32 +466,130 @@ export default function EditProduct() {
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 sm:px-[16px] sm:py-[13px] rounded-xl mb-[18px] text-sm sm:text-base">
-            ⚠️ {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 sm:px-[16px] sm:py-[13px] rounded-xl mb-[18px] text-sm sm:text-base">
-            ✓ {success}
-          </div>
-        )}
-
         <form onSubmit={handleUpdate} className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-[30px] shadow-sm">
-          {product.image_url ? (
-            <div className="mb-5 sm:mb-[20px]">
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full h-[200px] sm:h-[260px] object-cover rounded-xl block"
-              />
+          
+          {/* MEDIA SECTION (Photos & Video) */}
+          <div className="mb-6 p-4 sm:p-5 bg-gray-50 border border-gray-200 rounded-xl">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="m-0 text-base font-bold text-gray-800">Product Photos & Video</h3>
+              <span className="text-xs text-gray-500 font-semibold">Max 4 images + 1 video</span>
             </div>
-          ) : (
-            <div className="h-[150px] sm:h-[180px] flex justify-center items-center bg-green-50 rounded-xl text-[50px] sm:text-[55px] mb-5 sm:mb-[20px]">
-              🌱
+
+            {/* PHOTOS (Max 4) */}
+            <div className="mb-4">
+              <label className="block mb-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                Photos ({existingImages.length + newImages.length}/4)
+              </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                {/* Existing Images */}
+                {existingImages.map((url, idx) => (
+                  <div key={`exist-${idx}`} className="relative rounded-lg overflow-hidden border border-gray-200 aspect-square bg-white flex items-center justify-center group shadow-sm">
+                    <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExistingImage(idx)}
+                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow hover:bg-red-700 transition-colors cursor-pointer"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                      Saved #{idx + 1}
+                    </span>
+                  </div>
+                ))}
+
+                {/* Newly Selected Images */}
+                {newImages.map((file, idx) => (
+                  <div key={`new-${idx}`} className="relative rounded-lg overflow-hidden border border-green-400 aspect-square bg-white flex items-center justify-center group shadow-sm">
+                    <img src={URL.createObjectURL(file)} alt={`New ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveNewImage(idx)}
+                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow hover:bg-red-700 transition-colors cursor-pointer"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                    <span className="absolute bottom-1 left-1 bg-green-700 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                      New
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {existingImages.length + newImages.length < 4 && (
+                <div>
+                  <input
+                    id="edit-product-images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleNewImagesChange}
+                    className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100 transition-all cursor-pointer"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Add up to {4 - (existingImages.length + newImages.length)} more image(s).
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* VIDEO (Max 1, <= 60s) */}
+            <div className="pt-3 border-t border-gray-200">
+              <label className="block mb-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                Product Video (Max 1 video, up to 1:00 min)
+              </label>
+
+              {newVideoPreview ? (
+                <div className="border border-green-300 rounded-xl p-3 bg-white mb-2 shadow-sm">
+                  <div className="relative rounded-lg overflow-hidden bg-black mb-2">
+                    <video src={newVideoPreview} controls className="w-full max-h-52 object-contain" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-green-700 font-bold">✓ New Video Selected (within 1 min)</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveNewVideo}
+                      className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors cursor-pointer"
+                    >
+                      Remove Video
+                    </button>
+                  </div>
+                </div>
+              ) : existingVideo ? (
+                <div className="border border-gray-200 rounded-xl p-3 bg-white mb-2 shadow-sm">
+                  <div className="relative rounded-lg overflow-hidden bg-black mb-2">
+                    <video src={existingVideo} controls className="w-full max-h-52 object-contain" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-600 font-semibold">Current Saved Video</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveExistingVideo}
+                      className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors cursor-pointer"
+                    >
+                      Remove Video
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    id="edit-product-video"
+                    type="file"
+                    accept="video/*"
+                    onChange={handleNewVideoChange}
+                    className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 transition-all cursor-pointer"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Upload a 1-minute video showcasing your farm produce or harvest.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 sm:mt-[18px]">
             <div>

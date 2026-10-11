@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { showToast } from '../../components/Toast'
 
 export default function AddProduct() {
   const router = useRouter()
@@ -16,6 +17,8 @@ export default function AddProduct() {
   const [stock, setStock] = useState('')
   const [variants, setVariants] = useState([{ price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
   const [images, setImages] = useState([])
+  const [videoFile, setVideoFile] = useState(null)
+  const [videoPreview, setVideoPreview] = useState(null)
 
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -75,6 +78,65 @@ export default function AddProduct() {
     checkFarmerAndLoadCategories()
   }, [router])
 
+  
+  function handleImagesChange(e) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const combined = [...images, ...files].slice(0, 4)
+    if (images.length + files.length > 4) {
+      alert('You can upload a maximum of 4 images.')
+    }
+    setImages(combined)
+    e.target.value = ''
+  }
+
+  function handleRemoveImage(index) {
+    setImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function handleVideoChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('video/')) {
+      alert('Please select a valid video file.')
+      e.target.value = ''
+      return
+    }
+
+    const tempUrl = URL.createObjectURL(file)
+    const videoElem = document.createElement('video')
+    videoElem.preload = 'metadata'
+    videoElem.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(videoElem.src)
+      const duration = videoElem.duration
+      if (duration > 60) {
+        alert(`Video duration must be within 1 minute (60 seconds). Selected video is ${Math.round(duration)} seconds.`)
+        e.target.value = ''
+        setVideoFile(null)
+        setVideoPreview(null)
+      } else {
+        setVideoFile(file)
+        setVideoPreview(tempUrl)
+      }
+    }
+    videoElem.onerror = () => {
+      alert('Unable to load video metadata. Please select another video file.')
+      e.target.value = ''
+    }
+    videoElem.src = tempUrl
+  }
+
+  function handleRemoveVideo() {
+    if (videoPreview) {
+      try { window.URL.revokeObjectURL(videoPreview) } catch (e) {}
+    }
+    setVideoFile(null)
+    setVideoPreview(null)
+    const fileInput = document.getElementById('product-video')
+    if (fileInput) fileInput.value = ''
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
 
@@ -129,6 +191,28 @@ export default function AddProduct() {
       }
     }
 
+    let videoUrl = null
+    if (videoFile) {
+      const fileExtension = videoFile.name.split('.').pop() || 'mp4'
+      const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-video.${fileExtension}`
+
+      const { error: videoUploadError } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, videoFile)
+
+      if (videoUploadError) {
+        setMessage(`Video upload failed: ${videoUploadError.message}`)
+        setSaving(false)
+        return
+      }
+
+      const { data: videoUrlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fileName)
+
+      videoUrl = videoUrlData.publicUrl
+    }
+
     const rowsToInsert = variants.map((v) => {
       const isBag = v.unit.includes('bag');
       const finalUnitCount = isBag ? 1 : Number(v.unitCount);
@@ -145,23 +229,40 @@ export default function AddProduct() {
         stock_quantity: Number(stock),
         image_url: imageUrls.length > 0 ? imageUrls[0] : null,
         images: imageUrls,
+        video_url: videoUrl,
         status: 'active',
         approval_status: 'pending',
         commission_amount: 0,
       }
     })
 
-    const { error: productError } = await supabase
+    let { error: productError } = await supabase
       .from('products')
       .insert(rowsToInsert)
 
+    if (productError && productError.message && productError.message.includes('video_url')) {
+      console.warn('video_url column does not exist yet in products table. Retrying insert without video_url.');
+      const fallbackRows = rowsToInsert.map(({ video_url, ...rest }) => rest);
+      const { error: fallbackError } = await supabase.from('products').insert(fallbackRows);
+      if (fallbackError) {
+        productError = fallbackError;
+      } else {
+        productError = null;
+        alert('Product added! Note: To save videos, run in Supabase SQL editor: ALTER TABLE public.products ADD COLUMN IF NOT EXISTS video_url TEXT;');
+      }
+    }
+
     if (productError) {
-      setMessage(`Product save failed: ${productError.message}`)
+      const err = `Product save failed: ${productError.message}`
+      setMessage(err)
+      showToast(err, 'error')
       setSaving(false)
       return
     }
 
-    setMessage('Products submitted successfully! Waiting for admin approval.')
+    const successMsg = 'Products submitted successfully! Waiting for admin approval.'
+    setMessage(successMsg)
+    showToast(successMsg, 'warning')
 
     setName('')
     setDescription('')
@@ -169,6 +270,8 @@ export default function AddProduct() {
     setStock('')
     setVariants([{ price: '', unitCount: '1', unit: 'kg', deliveryPrice: '' }])
     setImages([])
+    setVideoFile(null)
+    setVideoPreview(null)
 
     const fileInput = document.getElementById('product-image')
 
@@ -369,28 +472,87 @@ export default function AddProduct() {
               ))}
             </div>
 
+            {/* PRODUCT IMAGES (Max 4) */}
             <label className="block mt-4 mb-2 text-sm font-semibold text-gray-700">
               Product Images (Max 4)
             </label>
-            <input
-              id="product-image"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => {
-                const files = Array.from(e.target.files)
-                if (files.length > 4) {
-                  alert("You can only upload up to 4 images.")
-                  setImages(files.slice(0, 4))
-                } else {
-                  setImages(files)
-                }
-              }}
-              className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100 transition-all cursor-pointer"
-            />
+            
             {images.length > 0 && (
-              <p className="mt-2 text-sm text-gray-500">{images.length} image(s) selected.</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                {images.map((img, idx) => (
+                  <div key={idx} className="relative rounded-lg overflow-hidden border border-gray-200 aspect-square bg-gray-50 flex items-center justify-center">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt={`Product ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow hover:bg-red-700 transition-colors"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                      #{idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
+
+            {images.length < 4 && (
+              <input
+                id="product-image"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImagesChange}
+                className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100 transition-all cursor-pointer"
+              />
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              {images.length}/4 image(s) selected.
+            </p>
+
+            {/* PRODUCT VIDEO (Max 1, <= 60s) */}
+            <label className="block mt-5 mb-2 text-sm font-semibold text-gray-700">
+              Product Video (Optional - Max 1 video, within 1:00 min)
+            </label>
+
+            {videoPreview ? (
+              <div className="border border-gray-200 rounded-xl p-3 bg-gray-50 mb-2">
+                <div className="relative rounded-lg overflow-hidden bg-black mb-2">
+                  <video
+                    src={videoPreview}
+                    controls
+                    className="w-full max-h-56 object-contain"
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-green-700 font-semibold">✓ Video attached (within 1 min)</span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveVideo}
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors"
+                  >
+                    Remove Video
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <input
+                id="product-video"
+                type="file"
+                accept="video/*"
+                onChange={handleVideoChange}
+                className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 transition-all cursor-pointer"
+              />
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Upload a farm or product video up to 1:00 min (60 seconds).
+            </p>
 
             <button
               type="submit"
@@ -400,12 +562,6 @@ export default function AddProduct() {
               {saving ? 'Submitting Products...' : 'Submit Products'}
             </button>
           </form>
-
-          {message && (
-            <p className={`mt-5 text-center text-sm font-medium ${message.includes('failed') || message.includes('Please') ? 'text-red-600' : 'text-green-800'}`}>
-              {message}
-            </p>
-          )}
         </div>
       </section>
     </main>

@@ -191,27 +191,39 @@ export default function FarmerDashboard() {
           </div>
         )}
 
-        {/* MAIN STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-6 sm:mt-[25px]">
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-            <div className="text-3xl mb-3">📦</div>
-            <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{productCount}</h3>
-            <p className="m-0 text-gray-500 text-sm">Products</p>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-            <div className="text-3xl mb-3">🛒</div>
-            <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{completedOrderCount}</h3>
-            <p className="m-0 text-gray-500 text-sm">Completed Orders</p>
+        {/* MAIN STATS - SINGLE ROW (3 CARDS) */}
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-5 mt-6 sm:mt-[25px]">
+          <div
+            onClick={() => router.push('/farmer/products')}
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-green-600 transition-all active:scale-95 flex flex-col justify-between"
+          >
+            <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">📦</div>
+            <div>
+              <h3 className="text-lg sm:text-2xl m-0 font-bold text-gray-800 leading-tight">{productCount}</h3>
+              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">Products →</p>
+            </div>
           </div>
 
           <div
-            className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/farmer/orders')}
+            onClick={() => router.push('/farmer/earnings')}
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-green-600 transition-all active:scale-95 flex flex-col justify-between"
           >
-            <div className="text-3xl mb-3">📋</div>
-            <h3 className="text-2xl m-0 mb-1 text-green-800 font-bold">View</h3>
-            <p className="m-0 text-gray-500 text-sm">My Orders →</p>
+            <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">🛒</div>
+            <div>
+              <h3 className="text-lg sm:text-2xl m-0 font-bold text-gray-800 leading-tight">{completedOrderCount}</h3>
+              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">Completed →</p>
+            </div>
+          </div>
+
+          <div
+            onClick={() => router.push('/farmer/orders')}
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-green-600 transition-all active:scale-95 flex flex-col justify-between"
+          >
+            <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">📋</div>
+            <div>
+              <h3 className="text-lg sm:text-2xl m-0 font-bold text-green-800 leading-tight">View</h3>
+              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">Orders →</p>
+            </div>
           </div>
         </div>
 
@@ -247,50 +259,50 @@ export default function FarmerDashboard() {
           Quick Actions
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-5">
           <button
             onClick={() => router.push('/farmer/add-product')}
-            className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
-            <span className="text-3xl mb-1">➕</span>
-            <strong className="text-base sm:text-lg text-gray-800">Add Product</strong>
-            <span className="text-xs sm:text-sm text-gray-500">Add a new farm product</span>
+            <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">➕</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">Add Product</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">Add a new farm product</span>
           </button>
 
           <button
             onClick={() => router.push('/farmer/products')}
-            className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
-            <span className="text-3xl mb-1">📦</span>
-            <strong className="text-base sm:text-lg text-gray-800">My Products</strong>
-            <span className="text-xs sm:text-sm text-gray-500">Manage your products</span>
+            <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">📦</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">My Products</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">Manage your products</span>
           </button>
 
           <button
             onClick={() => router.push('/farmer/orders')}
-            className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
-            <span className="text-3xl mb-1">🛒</span>
-            <strong className="text-base sm:text-lg text-gray-800">Orders</strong>
-            <span className="text-xs sm:text-sm text-gray-500">View customer orders</span>
+            <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">🛒</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">Orders</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">View customer orders</span>
           </button>
 
           <button
             onClick={() => router.push('/farmer/earnings')}
-            className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
-            <span className="text-3xl mb-1">💰</span>
-            <strong className="text-base sm:text-lg text-gray-800">Earnings & Settlements</strong>
-            <span className="text-xs sm:text-sm text-gray-500">View completed orders and settlements</span>
+            <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">💰</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">Earnings</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">View completed orders & settlements</span>
           </button>
 
           <button
             onClick={() => router.push('/farmer/profile')}
-            className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-2 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
-            <span className="text-3xl mb-1">👤</span>
-            <strong className="text-base sm:text-lg text-gray-800">My Profile</strong>
-            <span className="text-xs sm:text-sm text-gray-500">Manage farm details</span>
+            <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">👤</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">My Profile</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">Manage farm details</span>
           </button>
         </div>
       </section>

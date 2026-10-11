@@ -278,34 +278,77 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8f5] text-gray-800 font-sans flex flex-col">
+    <main className="min-h-screen bg-[#f7f8f5] text-gray-800 font-sans flex flex-col pb-20 sm:pb-0">
       {/* =========================
           NAVBAR
       ========================= */}
-      <nav className="min-h-[70px] bg-white flex flex-col sm:flex-row items-center justify-between px-4 sm:px-[7%] py-4 sm:py-0 border-b border-gray-200 sticky top-0 z-50 shadow-sm gap-4 sm:gap-0">
+      <nav className="min-h-[60px] sm:min-h-[70px] bg-white flex items-center justify-between px-3 sm:px-[7%] py-2.5 sm:py-0 border-b border-gray-200 sticky top-0 z-50 shadow-xs">
         <div
-          className="text-xl sm:text-2xl font-bold cursor-pointer whitespace-nowrap"
+          className="text-lg sm:text-2xl font-bold cursor-pointer whitespace-nowrap text-green-950 flex items-center gap-1.5"
           onClick={() => router.push("/")}
         >
-          🌾 Uzhavar Market
+          <span>🌾</span>
+          <span>Uzhavar Market</span>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-          <a href="/" className="hover:text-green-700 transition-colors">Home</a>
-          <a href="#categories" className="hover:text-green-700 transition-colors">Categories</a>
-          <a href="#products" className="hover:text-green-700 transition-colors">Products</a>
+        {/* MOBILE TOP CONTROLS (sm:hidden) */}
+        <div className="flex sm:hidden items-center gap-1.5">
+          {!authLoading && user && role === "farmer" && (
+            <button
+              onClick={() => router.push("/farmer")}
+              className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
+            >
+              <span>🌾</span>
+              <span>Farmer Dashboard</span>
+            </button>
+          )}
+
+          {!authLoading && user && role === "admin" && (
+            <button
+              onClick={() => router.push("/admin")}
+              className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
+            >
+              <span>⚙️</span>
+              <span>Admin</span>
+            </button>
+          )}
+
+          {!authLoading && user && (
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
+            >
+              Logout
+            </button>
+          )}
+
+          {!authLoading && !user && (
+            <button
+              onClick={() => router.push("/login")}
+              className="px-3 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
+            >
+              Login
+            </button>
+          )}
+        </div>
+
+        {/* DESKTOP NAVIGATION (hidden sm:flex) */}
+        <div className="hidden sm:flex items-center gap-6">
+          <a href="/" className="hover:text-green-700 transition-colors font-medium">Home</a>
+          <a href="#categories" className="hover:text-green-700 transition-colors font-medium">Categories</a>
+          <a href="#products" className="hover:text-green-700 transition-colors font-medium">Products</a>
 
           {!authLoading && user && (role === "customer" || role === "farmer") && (
             <>
               <button
                 onClick={() => router.push("/customer/cart")}
-                className="hover:text-green-700 transition-colors"
+                className="hover:text-green-700 transition-colors font-medium"
               >
                 🛒 My Cart
               </button>
               <button
                 onClick={() => router.push("/customer/orders")}
-                className="hover:text-green-700 transition-colors"
+                className="hover:text-green-700 transition-colors font-medium"
               >
                 📦 My Orders
               </button>
@@ -315,7 +358,7 @@ export default function Home() {
           {!authLoading && user && role === "farmer" && (
             <button
               onClick={() => router.push("/farmer")}
-              className="hover:text-green-700 transition-colors"
+              className="hover:text-green-700 transition-colors font-medium"
             >
               🌾 Farmer Dashboard
             </button>
@@ -324,7 +367,7 @@ export default function Home() {
           {!authLoading && user && role === "admin" && (
             <button
               onClick={() => router.push("/admin")}
-              className="hover:text-green-700 transition-colors"
+              className="hover:text-green-700 transition-colors font-medium"
             >
               ⚙️ Admin Dashboard
             </button>
@@ -333,7 +376,7 @@ export default function Home() {
           {!authLoading && !user && (
             <button
               onClick={() => router.push("/login")}
-              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors font-medium"
             >
               Login
             </button>
@@ -342,7 +385,7 @@ export default function Home() {
           {!authLoading && user && (
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors font-medium"
             >
               Logout
             </button>
@@ -522,6 +565,54 @@ export default function Home() {
         <h3 className="text-xl font-bold mb-2">🌾 Uzhavar Market</h3>
         <p className="text-gray-400 text-sm">Connecting farmers directly with customers.</p>
       </footer>
+
+      {/* =========================
+          MOBILE BOTTOM NAVIGATION BAR (sm:hidden)
+      ========================= */}
+      <nav
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-2 py-1.5 flex items-center justify-around"
+        style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))" }}
+      >
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+        >
+          <span className="text-xl leading-none">🏠</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">Home</span>
+        </button>
+
+        <button
+          onClick={() => document.getElementById("categories")?.scrollIntoView({ behavior: "smooth" })}
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+        >
+          <span className="text-xl leading-none">📂</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">Categories</span>
+        </button>
+
+        <button
+          onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+        >
+          <span className="text-xl leading-none">🌾</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">Products</span>
+        </button>
+
+        <button
+          onClick={() => router.push("/customer/cart")}
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+        >
+          <span className="text-xl leading-none">🛒</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">My Cart</span>
+        </button>
+
+        <button
+          onClick={() => router.push(user ? "/customer/orders" : "/login")}
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+        >
+          <span className="text-xl leading-none">📦</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">My Orders</span>
+        </button>
+      </nav>
     </main>
   );
 }

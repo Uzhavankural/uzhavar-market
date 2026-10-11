@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { showToast } from "@/app/components/Toast";
 
 export default function CustomerProfile() {
   const router = useRouter();
@@ -135,12 +136,16 @@ export default function CustomerProfile() {
       // Save Additional to LocalStorage
       localStorage.setItem(`uzhavar_customer_addresses_${user.id}`, JSON.stringify(additionalAddresses));
 
-      setMessage("Addresses saved successfully! ✅");
+      const successMsg = "Your changes are saved! Addresses saved successfully. ✅";
+      setMessage(successMsg);
+      showToast(successMsg, "success", 4000);
     } catch (error) {
       console.error("RAW ERROR OBJECT:", error);
       console.error("Save error keys:", Object.keys(error));
       console.error("Save error stringified:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      setMessage(`Failed to save addresses: ${error.message || JSON.stringify(error)}`);
+      const errMsg = `Failed to save addresses: ${error.message || JSON.stringify(error)}`;
+      setMessage(errMsg);
+      showToast(errMsg, "error", 4000);
     } finally {
       setSaving(false);
     }
@@ -166,12 +171,6 @@ export default function CustomerProfile() {
           </button>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">My Profile</h1>
         </div>
-
-        {message && (
-          <div className="mb-6 p-4 rounded-xl bg-green-50 text-green-800 border border-green-200 font-medium">
-            {message}
-          </div>
-        )}
 
         <form onSubmit={handleSave} className="space-y-8">
           {/* Primary Address */}
