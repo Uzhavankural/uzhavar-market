@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { ensureFarmerAccess } from "../lib/farmerAuth";
 
 export default function Home() {
   const router = useRouter();
@@ -23,6 +24,23 @@ export default function Home() {
     let mounted = true;
 
     async function checkUser() {
+      if (typeof window !== "undefined") {
+        const hash = window.location.hash || "";
+        const search = window.location.search || "";
+        if (
+          hash.includes("access_token") ||
+          search.includes("code=") ||
+          search.includes("type=signup") ||
+          hash.includes("type=signup") ||
+          search.includes("token_hash=") ||
+          hash.includes("token_hash=") ||
+          search.includes("token=")
+        ) {
+          router.replace("/auth/callback" + search + hash);
+          return;
+        }
+      }
+
       const {
         data: { user: currentUser },
       } = await supabase.auth.getUser();
@@ -48,10 +66,10 @@ export default function Home() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
 
   // =========================
-  // GET USER ROLE
+  // GET USER ROLE & JANARANJANA DIRECT ACCESS
   // =========================
   useEffect(() => {
     let mounted = true;
@@ -64,17 +82,19 @@ export default function Home() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("role")
+        .select("*")
         .eq("id", user.id)
         .single();
 
       if (!mounted) return;
 
-      if (error) {
+      const effective = await ensureFarmerAccess(data, user);
+
+      if (error && !effective.role) {
         console.log("Profile role error:", error.message);
         setRole(null);
       } else {
-        setRole(data?.role || null);
+        setRole(effective.role || null);
       }
     }
 
@@ -83,7 +103,7 @@ export default function Home() {
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user, router]);
 
   // =========================
   // GET CATEGORIES + PRODUCTS

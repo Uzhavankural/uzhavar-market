@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import { ensureFarmerAccess } from '../../../lib/farmerAuth'
 
 export default function FarmerProfile() {
   const router = useRouter()
@@ -49,26 +50,20 @@ export default function FarmerProfile() {
         .eq('id', authUser.id)
         .single()
 
-      if (profileError) {
-        console.error('PROFILE LOAD ERROR:', profileError)
-        setMessage('Failed to load profile.')
-        setMessageType('error')
-        setLoading(false)
-        return
-      }
+      const effective = await ensureFarmerAccess(profileData, authUser)
 
-      if (profileData.role !== 'farmer') {
+      if (!effective.isAllowed && effective.role !== 'farmer') {
         router.replace('/login')
         return
       }
 
-      setFullName(profileData.full_name || '')
-      setPhone(profileData.phone || '')
-      setEmail(profileData.email || authUser.email || '')
-      setAddress(profileData.address || '')
-      setVillage(profileData.village || '')
-      setDistrict(profileData.district || '')
-      setPincode(profileData.pincode || '')
+      setFullName(effective.full_name || '')
+      setPhone(effective.phone || '')
+      setEmail(effective.email || authUser.email || '')
+      setAddress(effective.address || '')
+      setVillage(effective.village || '')
+      setDistrict(effective.district || '')
+      setPincode(effective.pincode || '')
 
     } catch (err) {
       console.error(err)

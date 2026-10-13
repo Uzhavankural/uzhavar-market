@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { ensureFarmerAccess } from '../../../lib/farmerAuth'
 
 export default function MyProducts() {
   const router = useRouter()
@@ -36,13 +37,15 @@ export default function MyProducts() {
       return
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('*')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile || profile.role !== 'farmer') {
+    const effective = await ensureFarmerAccess(profile, user)
+
+    if (!effective.isAllowed && effective.role !== 'farmer') {
       router.replace('/')
       return
     }

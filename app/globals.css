@@ -193,3 +193,27 @@ select:focus {
   animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* =====================================================
+   8. HIDE "POWERED BY NETLIFY" BADGE & DRAWER
+   ===================================================== */
+netlify-drawer,
+#netlify-badge,
+.netlify-badge,
+[data-netlify-deploy-preview],
+iframe[src*="netlify.com"],
+iframe[title*="Netlify"],
+[class*="netlify-drawer"],
+[id*="netlify-drawer"],
+a[href*="netlify.com"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  z-index: -9999 !important;
+}
+

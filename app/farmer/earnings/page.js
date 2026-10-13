@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
+import { ensureFarmerAccess } from '../../../lib/farmerAuth'
 
 export default function FarmerEarningsPage() {
   const router = useRouter()
@@ -40,20 +41,16 @@ export default function FarmerEarningsPage() {
         .eq('id', user.id)
         .single()
 
-      if (error || !data) {
-        console.log('PROFILE ERROR:', error)
-        setLoading(false)
-        return
-      }
+      const farmerProfile = await ensureFarmerAccess(data, user)
 
-      if (data.role !== 'farmer') {
-        setProfile(data)
+      if (!farmerProfile.isAllowed && farmerProfile.role !== 'farmer') {
+        setProfile(farmerProfile)
         setAccessDenied(true)
         setLoading(false)
         return
       }
 
-      setProfile(data)
+      setProfile(farmerProfile)
 
       await loadFarmerEarnings(user.id)
     } catch (error) {

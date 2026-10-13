@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import { ensureFarmerAccess } from '../../lib/farmerAuth'
 
 export default function FarmerDashboard() {
   const router = useRouter()
@@ -17,6 +18,22 @@ export default function FarmerDashboard() {
   useEffect(() => {
     async function checkFarmer() {
       try {
+        if (typeof window !== 'undefined') {
+          const hash = window.location.hash || ''
+          const search = window.location.search || ''
+          if (
+            hash.includes('access_token') ||
+            search.includes('code=') ||
+            search.includes('token_hash=') ||
+            search.includes('token=') ||
+            search.includes('type=signup') ||
+            hash.includes('type=signup')
+          ) {
+            router.replace('/auth/callback' + search + hash)
+            return
+          }
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -32,31 +49,32 @@ export default function FarmerDashboard() {
           .eq('id', user.id)
           .single()
 
-        if (error || !data) {
-          console.log('PROFILE ERROR:', error)
-          setLoading(false)
-          return
-        }
+        const farmerProfile = await ensureFarmerAccess(data, user)
 
-        if (data.is_banned) {
+        if (farmerProfile.is_banned) {
           await supabase.auth.signOut()
           router.replace('/login?error=banned')
           return
         }
 
-        if (data.role !== 'farmer') {
-          setProfile(data)
+        if (!farmerProfile.isAllowed && farmerProfile.role !== 'farmer') {
+          setProfile(farmerProfile)
           setAccessDenied(true)
           setLoading(false)
           return
         }
 
-        if (!data.address || !data.village || !data.district || !data.pincode) {
+        if (
+          !farmerProfile.address ||
+          !farmerProfile.village ||
+          !farmerProfile.district ||
+          !farmerProfile.pincode
+        ) {
           router.replace('/farmer/profile')
           return
         }
 
-        setProfile(data)
+        setProfile(farmerProfile)
 
         const { count: productsCount, error: productError } = await supabase
           .from('products')

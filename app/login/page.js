@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import { ensureFarmerAccess } from '../../lib/farmerAuth'
 
 export default function Login() {
   const router = useRouter()
@@ -24,6 +25,51 @@ export default function Login() {
   const [mediaRecorder, setMediaRecorder] = useState(null)
   const [submittingAppeal, setSubmittingAppeal] = useState(false)
 
+  const [resending, setResending] = useState(false)
+  const [showResend, setShowResend] = useState(false)
+
+  // Redirect if already logged in or arriving from email verification
+  useEffect(() => {
+    async function checkExistingAuth() {
+      if (typeof window === 'undefined') return
+      const hash = window.location.hash || ''
+      const search = window.location.search || ''
+
+      if (
+        hash.includes('access_token') ||
+        search.includes('code=') ||
+        search.includes('token_hash=') ||
+        hash.includes('token_hash=') ||
+        search.includes('token=') ||
+        search.includes('type=signup') ||
+        hash.includes('type=signup')
+      ) {
+        router.replace('/auth/callback' + search + hash)
+        return
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        const effective = await ensureFarmerAccess(profile, user)
+        if (effective.role === 'farmer' || user.user_metadata?.role === 'farmer') {
+          router.replace('/farmer')
+        } else if (effective.role === 'admin') {
+          router.replace('/admin')
+        }
+      }
+    }
+    checkExistingAuth()
+  }, [router])
+
   // Live timer for voice recording
   useEffect(() => {
     let interval = null
@@ -43,10 +89,32 @@ export default function Login() {
     }
   }, [isRecording, mediaRecorder])
 
+  async function handleResendConfirmation() {
+    if (!email) {
+      alert('Please enter your email address above to resend confirmation email.')
+      return
+    }
+    setResending(true)
+    const { error: resendErr } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?role=farmer`,
+      },
+    })
+    setResending(false)
+    if (resendErr) {
+      alert('Could not resend email: ' + resendErr.message)
+    } else {
+      alert('Confirmation email sent! Please check your inbox and click the confirm mail link.')
+    }
+  }
+
   async function handleLogin(e) {
     e.preventDefault()
 
     setMessage('')
+    setShowResend(false)
     setLoading(true)
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -55,7 +123,12 @@ export default function Login() {
     })
 
     if (error) {
-      setMessage(error.message)
+      if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+        setMessage('Your email is not confirmed yet. Please check your inbox and click the confirmation link.')
+        setShowResend(true)
+      } else {
+        setMessage(error.message)
+      }
       setLoading(false)
       return
     }
@@ -68,16 +141,11 @@ export default function Login() {
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile) {
-      console.log('PROFILE ERROR:', profileError)
-      setMessage('Profile not found.')
-      setLoading(false)
-      return
-    }
+    const effectiveProfile = await ensureFarmerAccess(profile, user)
 
-    if (profile.is_banned) {
+    if (effectiveProfile.is_banned) {
       setBannedUser(user)
-      setBannedProfile(profile)
+      setBannedProfile(effectiveProfile)
       setLoading(false)
       return
     }
@@ -88,14 +156,14 @@ export default function Login() {
     setPassword('')
     setLoading(false)
 
-    if (profile.role === 'admin') {
-      router.push('/admin')
-    } else if (profile.role === 'farmer') {
+    if (effectiveProfile.role === 'farmer' || user.user_metadata?.role === 'farmer') {
       router.push('/farmer')
-    } else if (profile.role === 'customer') {
+    } else if (effectiveProfile.role === 'admin') {
+      router.push('/admin')
+    } else if (effectiveProfile.role === 'customer') {
       router.push('/customer')
     } else {
-      setMessage('Invalid user role.')
+      router.push('/farmer')
     }
   }
 
@@ -511,6 +579,19 @@ export default function Login() {
           <p className="mt-5 text-center text-sm text-green-800 font-medium">
             {message}
           </p>
+        )}
+
+        {showResend && (
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={handleResendConfirmation}
+              disabled={resending}
+              className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-semibold hover:bg-green-200 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {resending ? 'Sending Email...' : '✉️ Resend Confirmation Email'}
+            </button>
+          </div>
         )}
 
         <p className="text-center mt-6 text-sm text-gray-500">

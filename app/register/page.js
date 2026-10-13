@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { showToast } from '../components/Toast'
 
 export default function Register() {
   const [fullName, setFullName] = useState('')
@@ -24,37 +25,49 @@ export default function Register() {
 
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/
     if (!passwordRegex.test(password)) {
-      setMessage('Password must contain at least one uppercase letter, one number, and one special character.')
+      const pwdMsg = 'Password must contain at least one uppercase letter, one number, and one special character.'
+      setMessage(pwdMsg)
+      showToast(pwdMsg, 'error')
       setLoading(false)
       return
     }
 
 
-   const { data, error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    data: {
-      full_name: fullName,
-      phone: phone,
-      role: role,
-      address: role === 'farmer' ? address : null,
-      village: role === 'farmer' ? village : null,
-      district: role === 'farmer' ? district : null,
-      pincode: role === 'farmer' ? pincode : null,
-    },
-  },
-})
+    const emailRedirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback?role=${encodeURIComponent(role)}`
+      : undefined
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo,
+        data: {
+          full_name: fullName,
+          phone: phone,
+          role: role,
+          address: role === 'farmer' ? address : null,
+          village: role === 'farmer' ? village : null,
+          district: role === 'farmer' ? district : null,
+          pincode: role === 'farmer' ? pincode : null,
+        },
+      },
+    })
 
     if (error) {
       setMessage(error.message)
+      showToast(error.message, 'error')
       setLoading(false)
       return
     }
 
-    setMessage(
-      'Registration successful! Please check your email to confirm your account.'
-    )
+    const successMsg =
+      role === 'farmer'
+        ? 'Registration successful! Please check your email and click the confirm mail link to directly open your Farmer Dashboard.'
+        : 'Registration successful! Please check your email to confirm your account.'
+
+    setMessage(successMsg)
+    showToast(successMsg, 'success', 5000)
 
     setFullName('')
     setPhone('')
