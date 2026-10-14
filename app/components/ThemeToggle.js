@@ -67,7 +67,9 @@ export default function ThemeToggle({ className = '', compact = false }) {
       onClick={toggleTheme}
       title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      className={`relative inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-lg border text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer select-none active:scale-95 ${
+      className={`relative inline-flex items-center justify-center gap-1.5 ${
+        compact ? 'p-1.5 sm:px-2.5 sm:py-1.5' : 'px-2.5 py-1.5 sm:px-3'
+      } rounded-lg border text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer select-none active:scale-95 shrink-0 ${
         isDark
           ? 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700 hover:border-slate-600 shadow-xs'
           : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100 hover:text-gray-900 shadow-xs'

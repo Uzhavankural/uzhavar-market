@@ -311,9 +311,9 @@ export default function Home() {
       {/* =========================
           NAVBAR
       ========================= */}
-      <nav className="min-h-[60px] sm:min-h-[70px] bg-white flex items-center justify-between px-3 sm:px-[7%] py-2.5 sm:py-0 border-b border-gray-200 sticky top-0 z-50 shadow-xs">
+      <nav className="min-h-[58px] sm:min-h-[70px] bg-white flex items-center justify-between px-3 sm:px-[7%] py-2 sm:py-0 border-b border-gray-200 sticky top-0 z-50 shadow-xs gap-2">
         <div
-          className="text-lg sm:text-2xl font-bold cursor-pointer whitespace-nowrap text-green-950 flex items-center gap-1.5"
+          className="text-[15px] sm:text-2xl font-bold cursor-pointer whitespace-nowrap text-green-950 flex items-center gap-1.5 shrink-0"
           onClick={() => router.push("/")}
         >
           <span>🌾</span>
@@ -321,23 +321,23 @@ export default function Home() {
         </div>
 
         {/* MOBILE TOP CONTROLS (sm:hidden) */}
-        <div className="flex sm:hidden items-center gap-1.5">
+        <div className="flex sm:hidden items-center gap-1.5 shrink-0">
           <ThemeToggle compact={true} />
 
           {!authLoading && user && role === "farmer" && (
             <button
               onClick={() => router.push("/farmer")}
-              className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
+              className="px-2 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
             >
               <span>🌾</span>
-              <span>Farmer Dashboard</span>
+              <span>Dashboard</span>
             </button>
           )}
 
           {!authLoading && user && role === "admin" && (
             <button
               onClick={() => router.push("/admin")}
-              className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
+              className="px-2 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
             >
               <span>⚙️</span>
               <span>Admin</span>
@@ -347,7 +347,7 @@ export default function Home() {
           {!authLoading && user && (
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
+              className="px-2.5 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
             >
               Logout
             </button>
@@ -356,7 +356,7 @@ export default function Home() {
           {!authLoading && !user && (
             <button
               onClick={() => router.push("/login")}
-              className="px-3 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
+              className="px-2.5 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
             >
               Login
             </button>
@@ -535,37 +535,41 @@ export default function Home() {
                     {product.description}
                   </p>
 
-                  <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
+                  <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-600 dark:text-slate-300 mb-2 sm:mb-3">
                     <div>
-                      <strong className="text-gray-700">Farmer:</strong>{" "}
-                      {product.profiles?.farm_name || product.profiles?.full_name || "Local Farmer"}
+                      <strong className="text-gray-700 dark:text-slate-400">Farmer:</strong>{" "}
+                      <span className="text-gray-900 dark:text-slate-100 font-medium">
+                        {product.profiles?.farm_name || product.profiles?.full_name || "Local Farmer"}
+                      </span>
                     </div>
                     {product.profiles?.district && (
                       <div>
-                        <strong className="text-gray-700">District:</strong>{" "}
-                        {product.profiles.district}
+                        <strong className="text-gray-700 dark:text-slate-400">District:</strong>{" "}
+                        <span className="text-gray-900 dark:text-slate-100 font-medium">
+                          {product.profiles.district}
+                        </span>
                       </div>
                     )}
                   </div>
 
                   <div className="mt-auto">
                     <div className="flex items-end gap-1 mb-1 sm:mb-2">
-                      <strong className="text-base sm:text-2xl font-bold text-gray-900">
+                      <strong className="text-base sm:text-2xl font-bold text-gray-900 dark:text-white">
                         ₹
                         {(
                           Number(product.price || 0) + Number(product.commission_amount || 0)
                         ).toFixed(2)}
                       </strong>
-                      <span className="text-[10px] sm:text-sm text-gray-500 pb-0.5">/ {product.unit}</span>
+                      <span className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 pb-0.5">/ {product.unit}</span>
                     </div>
-                    <p className="text-[10px] sm:text-sm text-gray-500 mb-2 sm:mb-4">
-                      <span className={product.stock_quantity > 0 ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 mb-2 sm:mb-4">
+                      <span className={product.stock_quantity > 0 ? "text-green-600 dark:text-emerald-400 font-semibold" : "text-red-500 dark:text-rose-400 font-semibold"}>
                         {product.stock_quantity > 0 ? `In Stock: ${product.stock_quantity}` : "Out of Stock"}
                       </span>
                     </p>
                     <div className="flex gap-2">
                       <button
-                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-100 text-green-800 text-xs sm:text-sm font-bold hover:bg-green-200 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-300"
+                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-100 dark:bg-slate-800 text-green-800 dark:text-emerald-400 border border-transparent dark:border-slate-700 text-xs sm:text-sm font-bold hover:bg-green-200 dark:hover:bg-slate-700 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-300"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAddToCart(product);
@@ -574,7 +578,7 @@ export default function Home() {
                         Cart
                       </button>
                       <button
-                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-800 text-white text-xs sm:text-sm font-bold hover:bg-green-700 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-900 shadow-sm"
+                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-800 dark:bg-emerald-600 text-white text-xs sm:text-sm font-bold hover:bg-green-700 dark:hover:bg-emerald-500 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-900 shadow-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleBuyNow(product);
@@ -603,47 +607,47 @@ export default function Home() {
           MOBILE BOTTOM NAVIGATION BAR (sm:hidden)
       ========================= */}
       <nav
-        className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-2 py-1.5 flex items-center justify-around"
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-2 py-1.5 flex items-center justify-around"
         style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))" }}
       >
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">🏠</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">Home</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">Home</span>
         </button>
 
         <button
           onClick={() => document.getElementById("categories")?.scrollIntoView({ behavior: "smooth" })}
-          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">📂</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">Categories</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">Categories</span>
         </button>
 
         <button
           onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
-          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">🌾</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">Products</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">Products</span>
         </button>
 
         <button
           onClick={() => router.push("/customer/cart")}
-          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">🛒</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">My Cart</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">My Cart</span>
         </button>
 
         <button
           onClick={() => router.push(user ? "/customer/orders" : "/login")}
-          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 hover:text-green-800 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">📦</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700">My Orders</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">My Orders</span>
         </button>
       </nav>
     </main>
