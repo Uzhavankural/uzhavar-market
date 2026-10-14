@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { ensureFarmerAccess } from '../../lib/farmerAuth'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function Login() {
   const router = useRouter()
@@ -34,6 +35,14 @@ export default function Login() {
       if (typeof window === 'undefined') return
       const hash = window.location.hash || ''
       const search = window.location.search || ''
+
+      if (
+        hash.includes('type=recovery') ||
+        search.includes('type=recovery')
+      ) {
+        router.replace('/reset-password' + search + hash)
+        return
+      }
 
       if (
         hash.includes('access_token') ||
@@ -462,7 +471,11 @@ export default function Login() {
   // STANDARD LOGIN VIEW
   // ==========================================
   return (
-    <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans">
+    <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
 
         <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6">

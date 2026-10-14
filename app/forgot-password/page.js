@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { showToast } from '../components/Toast'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -14,23 +16,43 @@ export default function ForgotPassword() {
     setMessage('')
     setLoading(true)
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:3000/reset-password',
+    const redirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : 'http://localhost:3000/reset-password'
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
     })
 
     if (error) {
-      setMessage(error.message)
+      const isRateLimit =
+        error.status === 429 ||
+        error.message?.toLowerCase().includes('rate limit') ||
+        error.message?.toLowerCase().includes('over_email_send_rate_limit')
+
+      const displayError = isRateLimit
+        ? 'Email sending limit reached! Supabase free default allows only a few emails per hour. Please wait a few minutes before trying again or configure Custom SMTP in Supabase.'
+        : error.message
+
+      setMessage({ text: displayError, isError: true })
+      showToast(displayError, 'error', 6000)
       setLoading(false)
       return
     }
 
-    setMessage('Password reset link sent! Please check your email.')
+    const successMsg = 'Password reset link sent! Please check your email to set a new password.'
+    setMessage({ text: successMsg, isError: false })
+    showToast(successMsg, 'success', 5000)
     setEmail('')
     setLoading(false)
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans">
+    <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
         <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6">🌾 Uzhavar Market</div>
 
@@ -61,10 +83,16 @@ export default function ForgotPassword() {
           </button>
         </form>
 
-        {message && (
-          <p className="mt-5 text-center text-sm text-green-800 font-medium">
-            {message}
-          </p>
+        {message?.text && (
+          <div
+            className={`mt-5 p-3 rounded-lg text-center text-sm font-medium ${
+              message.isError
+                ? 'bg-red-50 text-red-700 border border-red-200'
+                : 'bg-green-50 text-green-800 border border-green-200'
+            }`}
+          >
+            {message.text}
+          </div>
         )}
 
         <p className="text-center mt-6 text-sm text-gray-500">

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../components/Toast'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -1848,6 +1849,7 @@ async function rejectReview(review) {
           >
             Logout
           </button>
+          <ThemeToggle />
         </div>
       </nav>
 

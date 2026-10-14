@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
+}
+
+html.dark {
+  --background: #0b1120;
+  --foreground: #f8fafc;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -19,6 +28,7 @@
 
 html {
   scroll-behavior: smooth;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body {
@@ -26,12 +36,179 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 input, textarea, select {
   color: #171717 !important;
   background-color: #ffffff !important;
 }
+
+/* =====================================================
+   DARK THEME SYSTEM-WIDE OVERRIDES
+   ===================================================== */
+html.dark body {
+  background-color: #0b1120 !important;
+  color: #f8fafc !important;
+}
+
+/* Page backgrounds */
+html.dark .bg-\[\#f7f8f5\],
+html.dark .bg-\[\#f5f7f5\],
+html.dark .bg-gray-50,
+html.dark .bg-slate-50 {
+  background-color: #0b1120 !important;
+}
+
+/* Cards, Modals, Panels, Navbars */
+html.dark .bg-white {
+  background-color: #1e293b !important;
+  color: #f8fafc;
+}
+
+html.dark .bg-gray-100 {
+  background-color: #1e293b !important;
+}
+
+/* Hero & Promotional Green Sections */
+html.dark .bg-\[\#e9f5e1\] {
+  background-color: #064e3b !important;
+  color: #ecfdf5 !important;
+}
+
+/* Status Badges & Alerts */
+html.dark .bg-green-50,
+html.dark .bg-emerald-50 {
+  background-color: rgba(6, 78, 59, 0.45) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+html.dark .bg-red-50 {
+  background-color: rgba(153, 27, 27, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: rgba(30, 58, 138, 0.35) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-orange-50 {
+  background-color: rgba(120, 53, 15, 0.35) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .bg-purple-50 {
+  background-color: rgba(88, 28, 135, 0.35) !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+/* Green Brand Text in Dark Mode (High visibility emerald) */
+html.dark .text-green-950,
+html.dark .text-green-900,
+html.dark .text-green-800 {
+  color: #86efac !important;
+}
+
+html.dark .text-green-700,
+html.dark .text-emerald-700 {
+  color: #4ade80 !important;
+}
+
+/* Status text */
+html.dark .text-red-700,
+html.dark .text-red-800 {
+  color: #fca5a5 !important;
+}
+
+html.dark .text-blue-700,
+html.dark .text-blue-800 {
+  color: #93c5fd !important;
+}
+
+html.dark .text-amber-700,
+html.dark .text-amber-800,
+html.dark .text-orange-700 {
+  color: #fcd34d !important;
+}
+
+html.dark .text-purple-700 {
+  color: #d8b4fe !important;
+}
+
+/* Gray Text in Dark Mode */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-gray-700 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-gray-400 {
+  color: #64748b !important;
+}
+
+/* Borders */
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-slate-200,
+html.dark .border-gray-100 {
+  border-color: #334155 !important;
+}
+
+/* Inputs, Textareas, Selects */
+html.dark input, 
+html.dark textarea, 
+html.dark select {
+  color: #f8fafc !important;
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+html.dark input::placeholder, 
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Tables in Dark Mode */
+html.dark table th {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+  border-color: #334155 !important;
+}
+
+html.dark table td {
+  border-color: #334155 !important;
+}
+
+/* Toast popup in dark mode */
+html.dark .toast-slide-in {
+  background-color: rgba(30, 41, 59, 0.96) !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .toast-slide-in p.text-gray-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .toast-slide-in p.text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+/* Shadows in dark mode */
+html.dark .shadow-sm,
+html.dark .shadow-xs,
+html.dark .shadow-md,
+html.dark .shadow-lg {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
 
 
 /* =====================================================

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { ensureFarmerAccess } from '../../../lib/farmerAuth'
+import ThemeToggle from '../../components/ThemeToggle'
 
 export default function MyProducts() {
   const router = useRouter()
@@ -154,12 +155,15 @@ export default function MyProducts() {
     <main className="min-h-screen bg-[#f7f8f5] font-sans pb-10">
       <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center gap-4 flex-wrap">
         <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 Uzhavar Market</div>
-        <button
-          onClick={() => router.push('/farmer')}
-          className="px-4 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
-        >
-          ← Dashboard
-        </button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+          <button
+            onClick={() => router.push('/farmer')}
+            className="px-4 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
+          >
+            ← Dashboard
+          </button>
+        </div>
       </nav>
 
       <section className="w-[95%] sm:w-[90%] max-w-[1250px] mx-auto pt-[30px] sm:pt-[40px]">

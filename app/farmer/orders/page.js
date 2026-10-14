@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { ensureFarmerAccess } from '../../../lib/farmerAuth'
+import ThemeToggle from '../../components/ThemeToggle'
 
 export default function FarmerOrders() {
   const router = useRouter()
@@ -379,12 +380,15 @@ export default function FarmerOrders() {
   return (
     <main className="min-h-screen bg-[#f5f7f5] p-5 sm:p-10 font-sans">
       <div className="max-w-[1150px] mx-auto">
-        <button
-          onClick={() => router.push('/farmer')}
-          className="px-4 py-2 border-none bg-white text-gray-700 rounded-lg cursor-pointer font-bold mb-[25px] shadow-sm hover:shadow-md transition-shadow text-sm sm:text-base"
-        >
-          ← Back to Dashboard
-        </button>
+        <div className="flex justify-between items-center mb-[25px]">
+          <button
+            onClick={() => router.push('/farmer')}
+            className="px-4 py-2 border-none bg-white text-gray-700 rounded-lg cursor-pointer font-bold shadow-sm hover:shadow-md transition-shadow text-sm sm:text-base"
+          >
+            ← Back to Dashboard
+          </button>
+          <ThemeToggle />
+        </div>
 
         <div className="bg-green-800 text-white p-[25px] sm:p-[35px] rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-[20px] shadow-md flex-wrap">
           <div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { ensureFarmerAccess } from "../lib/farmerAuth";
+import ThemeToggle from "./components/ThemeToggle";
 
 export default function Home() {
   const router = useRouter();
@@ -27,6 +28,14 @@ export default function Home() {
       if (typeof window !== "undefined") {
         const hash = window.location.hash || "";
         const search = window.location.search || "";
+        if (
+          hash.includes("type=recovery") ||
+          search.includes("type=recovery")
+        ) {
+          router.replace("/reset-password" + search + hash);
+          return;
+        }
+
         if (
           hash.includes("access_token") ||
           search.includes("code=") ||
@@ -313,6 +322,8 @@ export default function Home() {
 
         {/* MOBILE TOP CONTROLS (sm:hidden) */}
         <div className="flex sm:hidden items-center gap-1.5">
+          <ThemeToggle compact={true} />
+
           {!authLoading && user && role === "farmer" && (
             <button
               onClick={() => router.push("/farmer")}
@@ -392,6 +403,8 @@ export default function Home() {
               ⚙️ Admin Dashboard
             </button>
           )}
+
+          <ThemeToggle />
 
           {!authLoading && !user && (
             <button

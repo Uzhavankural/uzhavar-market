@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { ensureFarmerAccess } from '../../lib/farmerAuth'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function FarmerDashboard() {
   const router = useRouter()
@@ -21,6 +22,14 @@ export default function FarmerDashboard() {
         if (typeof window !== 'undefined') {
           const hash = window.location.hash || ''
           const search = window.location.search || ''
+          if (
+            hash.includes('type=recovery') ||
+            search.includes('type=recovery')
+          ) {
+            router.replace('/reset-password' + search + hash)
+            return
+          }
+
           if (
             hash.includes('access_token') ||
             search.includes('code=') ||
@@ -175,12 +184,15 @@ export default function FarmerDashboard() {
         <div className="text-xl sm:text-2xl font-bold text-green-800">
           🌾 Uzhavar Market
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
+          >
+            Logout
+          </button>
+        </div>
       </nav>
 
       <section className="w-[95%] sm:w-[90%] max-w-[1200px] mx-auto pt-6 sm:pt-10">

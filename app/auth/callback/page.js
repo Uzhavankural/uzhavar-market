@@ -130,6 +130,20 @@ export default function AuthCallback() {
           currentUser = userData?.user
         }
 
+        // Check if this is a password recovery flow!
+        const isRecovery =
+          type === 'recovery' ||
+          searchParams.get('type') === 'recovery' ||
+          hashParams.get('type') === 'recovery' ||
+          searchParams.get('next')?.includes('reset-password') ||
+          hash.includes('type=recovery')
+
+        if (currentUser && isRecovery) {
+          setStatusMessage('Redirecting to reset your password...')
+          window.location.replace('/reset-password' + window.location.search + window.location.hash)
+          return
+        }
+
         // If user is already authenticated despite an error parameter (e.g. link clicked twice)
         if (currentUser) {
           setStatusMessage('Preparing Farmer Dashboard...')
