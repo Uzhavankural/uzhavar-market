@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { ensureFarmerAccess } from '../../lib/farmerAuth'
-import ThemeToggle from '../components/ThemeToggle'
 
 export default function FarmerDashboard() {
   const router = useRouter()
@@ -185,7 +184,6 @@ export default function FarmerDashboard() {
           🌾 Uzhavar Market
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
           <button
             onClick={handleLogout}
             className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"

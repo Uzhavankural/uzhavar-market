@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../components/Toast'
-import ThemeToggle from '../components/ThemeToggle'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -49,10 +48,6 @@ export default function ForgotPassword() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-        <ThemeToggle />
-      </div>
-
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
         <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6">🌾 Uzhavar Market</div>
 

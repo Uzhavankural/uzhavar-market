@@ -45,154 +45,356 @@ input, textarea, select {
 }
 
 /* =====================================================
-   DARK THEME SYSTEM-WIDE OVERRIDES
+   DARK THEME SYSTEM-WIDE HIGH-CONTRAST ENGINE
+   Supports Admin, Farmer, Customer panels & all mobile views
    ===================================================== */
 html.dark body {
   background-color: #0b1120 !important;
   color: #f8fafc !important;
 }
 
-/* Page backgrounds */
+/* 1. PAGE-LEVEL BACKGROUNDS */
+html.dark,
+html.dark body,
+html.dark main,
 html.dark .bg-\[\#f7f8f5\],
 html.dark .bg-\[\#f5f7f5\],
+html.dark .bg-\[\#f6f8f5\],
+html.dark .bg-\[\#f6f7f9\],
+html.dark .bg-\[\#fafafa\],
+html.dark .bg-\[\#fafcf9\],
+html.dark .bg-\[\#fafcfa\],
 html.dark .bg-gray-50,
 html.dark .bg-slate-50 {
   background-color: #0b1120 !important;
 }
 
-/* Cards, Modals, Panels, Navbars */
-html.dark .bg-white {
+/* 2. CARDS, PANELS, MODALS, SECTIONS & CONTAINERS */
+html.dark .bg-white,
+html.dark .bg-\[\#ffffff\],
+html.dark .bg-\[\#fff\],
+html.dark .bg-gray-100,
+html.dark .bg-slate-100 {
   background-color: #1e293b !important;
-  color: #f8fafc;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
 }
 
-html.dark .bg-gray-100 {
+/* Inline background overrides (for Admin and custom styles) */
+html.dark [style*="background: #fff"],
+html.dark [style*="background:#fff"],
+html.dark [style*="background: #ffffff"],
+html.dark [style*="background:#ffffff"],
+html.dark [style*="background-color: #fff"],
+html.dark [style*="background-color:#fff"],
+html.dark [style*="background-color: #ffffff"],
+html.dark [style*="background-color:#ffffff"],
+html.dark [style*="background: rgb(255, 255, 255)"],
+html.dark [style*="background-color: rgb(255, 255, 255)"],
+html.dark [style*="background: #f5f7f5"],
+html.dark [style*="background: #f0f7f2"],
+html.dark [style*="background: #f7f8f5"],
+html.dark [style*="background: #f8faf8"],
+html.dark [style*="background: #fafcfa"],
+html.dark [style*="background: #f7faf7"],
+html.dark [style*="background: #f3f4f6"],
+html.dark [style*="background: #f8fafc"],
+html.dark [style*="background: #f0f0f0"],
+html.dark [style*="background: rgb(248, 250, 248)"],
+html.dark [style*="background: rgb(250, 252, 250)"],
+html.dark [style*="background: rgb(247, 250, 247)"],
+html.dark [style*="background: rgb(240, 247, 242)"],
+html.dark [style*="background: rgb(245, 247, 245)"],
+html.dark [style*="background: rgb(243, 244, 246)"],
+html.dark [style*="background: rgb(248, 250, 252)"],
+html.dark [style*="background: rgb(243, 244, 243)"],
+html.dark [style*="background-color: rgb(248, 250, 248)"],
+html.dark [style*="background-color: rgb(250, 252, 250)"],
+html.dark [style*="background-color: rgb(247, 250, 247)"],
+html.dark [style*="background-color: rgb(240, 247, 242)"],
+html.dark [style*="background-color: rgb(245, 247, 245)"],
+html.dark [style*="background-color: rgb(243, 244, 246)"],
+html.dark [style*="background-color: rgb(248, 250, 252)"],
+html.dark [style*="background-color: rgb(243, 244, 243)"] {
   background-color: #1e293b !important;
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
 }
 
-/* Hero & Promotional Green Sections */
-html.dark .bg-\[\#e9f5e1\] {
-  background-color: #064e3b !important;
-  color: #ecfdf5 !important;
-}
-
-/* Status Badges & Alerts */
-html.dark .bg-green-50,
-html.dark .bg-emerald-50 {
-  background-color: rgba(6, 78, 59, 0.45) !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
-}
-
-html.dark .bg-red-50 {
-  background-color: rgba(153, 27, 27, 0.3) !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
-}
-
-html.dark .bg-blue-50 {
-  background-color: rgba(30, 58, 138, 0.35) !important;
-  border-color: rgba(59, 130, 246, 0.3) !important;
-}
-
-html.dark .bg-amber-50,
-html.dark .bg-orange-50 {
-  background-color: rgba(120, 53, 15, 0.35) !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
-}
-
-html.dark .bg-purple-50 {
-  background-color: rgba(88, 28, 135, 0.35) !important;
-  border-color: rgba(168, 85, 247, 0.3) !important;
-}
-
-/* Green Brand Text in Dark Mode (High visibility emerald) */
-html.dark .text-green-950,
-html.dark .text-green-900,
-html.dark .text-green-800 {
-  color: #86efac !important;
-}
-
-html.dark .text-green-700,
-html.dark .text-emerald-700 {
-  color: #4ade80 !important;
-}
-
-/* Status text */
-html.dark .text-red-700,
-html.dark .text-red-800 {
-  color: #fca5a5 !important;
-}
-
-html.dark .text-blue-700,
-html.dark .text-blue-800 {
-  color: #93c5fd !important;
-}
-
-html.dark .text-amber-700,
-html.dark .text-amber-800,
-html.dark .text-orange-700 {
-  color: #fcd34d !important;
-}
-
-html.dark .text-purple-700 {
-  color: #d8b4fe !important;
-}
-
-/* High-Contrast Crisp Typography in Dark Mode */
-html.dark .text-gray-900,
-html.dark .text-gray-800 {
-  color: #ffffff !important;
-}
-
-html.dark .text-gray-700 {
-  color: #f1f5f9 !important;
-}
-
-html.dark .text-gray-600 {
-  color: #e2e8f0 !important;
-}
-
-html.dark .text-gray-500 {
-  color: #cbd5e1 !important;
-}
-
-html.dark .text-gray-400 {
-  color: #94a3b8 !important;
-}
-
-html.dark .text-green-600 {
-  color: #4ade80 !important;
-  font-weight: 600;
-}
-
-html.dark .text-red-500,
-html.dark .text-red-600 {
-  color: #f87171 !important;
-  font-weight: 600;
-}
-
-/* Card Buttons (Cart & Buy) in Dark Mode */
-html.dark .bg-green-100,
-html.dark .bg-emerald-100 {
+/* Inner card boxes, thumbnails & image placeholders */
+html.dark .bg-gray-200,
+html.dark .bg-gray-300,
+html.dark .bg-\[\#f0f2f0\],
+html.dark .bg-\[\#f0f7ef\],
+html.dark .bg-\[\#f0fdf4\],
+html.dark .bg-\[\#f8faf8\],
+html.dark .bg-\[\#f8fafc\],
+html.dark .bg-\[\#f3f4f6\],
+html.dark .bg-\[\#f3f4f3\] {
   background-color: #334155 !important;
-  color: #4ade80 !important;
+  color: #f8fafc !important;
   border-color: #475569 !important;
 }
 
-html.dark .bg-green-100:hover,
-html.dark .bg-emerald-100:hover {
-  background-color: #475569 !important;
+/* 3. HERO & PROMOTIONAL BANNERS */
+html.dark .bg-\[\#e9f5e1\],
+html.dark .bg-\[\#e8f1df\] {
+  background-color: #064e3b !important;
+  color: #ecfdf5 !important;
+  border-color: #047857 !important;
+}
+
+/* 4. ALL TEXT COLORS - HIGH VISIBILITY CRISP TYPOGRAPHY */
+/* Primary text & Headings */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: #ffffff !important;
+}
+
+html.dark strong,
+html.dark b {
+  color: inherit;
+}
+
+html.dark .text-gray-950,
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-black,
+html.dark .text-\[\#1f2937\],
+html.dark .text-\[\#333\] {
+  color: #ffffff !important;
+}
+
+/* Secondary & Body Text */
+html.dark .text-gray-700,
+html.dark .text-slate-700,
+html.dark .text-\[\#374151\],
+html.dark [style*="color: #374151"],
+html.dark [style*="color: #333"] {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-600,
+html.dark .text-slate-600,
+html.dark .text-\[\#4b5563\],
+html.dark .text-\[\#555\],
+html.dark [style*="color: #555"],
+html.dark [style*="color: #666"],
+html.dark [style*="color:#666"] {
+  color: #e2e8f0 !important;
+}
+
+/* Muted / Subtitle Text */
+html.dark .text-gray-500,
+html.dark .text-slate-500,
+html.dark .text-\[\#666\],
+html.dark .text-\[\#777\],
+html.dark .text-\[\#888\],
+html.dark [style*="color: #6b7280"],
+html.dark [style*="color: #64748b"],
+html.dark [style*="color: #777"],
+html.dark [style*="color:#777"],
+html.dark [style*="color: #888"] {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-gray-300 {
+  color: #64748b !important;
+}
+
+/* Form Labels */
+html.dark label {
+  color: #f1f5f9 !important;
+}
+
+/* Green Brand & Farm Accents in Dark Mode */
+html.dark .text-green-950,
+html.dark .text-green-900,
+html.dark .text-green-800,
+html.dark .text-green-700,
+html.dark .text-green-600,
+html.dark .text-emerald-900,
+html.dark .text-emerald-800,
+html.dark .text-emerald-700,
+html.dark .text-\[\#1f7a3f\],
+html.dark .text-\[\#166534\],
+html.dark .text-\[\#155724\],
+html.dark [style*="color: #1f7a3f"],
+html.dark [style*="color: #155724"],
+html.dark [style*="color: #166534"] {
   color: #86efac !important;
 }
 
+html.dark .text-green-500,
+html.dark .text-emerald-500,
+html.dark .text-emerald-400 {
+  color: #4ade80 !important;
+}
+
+/* Yellow / Amber / Orange Status & Badges in Dark Mode */
+html.dark .text-yellow-900,
+html.dark .text-yellow-800,
+html.dark .text-yellow-700,
+html.dark .text-yellow-600,
+html.dark .text-yellow-500,
+html.dark .text-amber-900,
+html.dark .text-amber-800,
+html.dark .text-amber-700,
+html.dark .text-orange-900,
+html.dark .text-orange-800,
+html.dark .text-orange-700,
+html.dark .text-\[\#856404\],
+html.dark [style*="color: #856404"] {
+  color: #fde047 !important;
+}
+
+/* Blue & Info Text in Dark Mode */
+html.dark .text-blue-900,
+html.dark .text-blue-800,
+html.dark .text-blue-700,
+html.dark .text-blue-600,
+html.dark .text-blue-500,
+html.dark .text-\[\#004085\],
+html.dark [style*="color: #004085"] {
+  color: #93c5fd !important;
+}
+
+/* Purple & Commission Text in Dark Mode */
+html.dark .text-purple-900,
+html.dark .text-purple-800,
+html.dark .text-purple-700,
+html.dark .text-purple-600,
+html.dark .text-\[\#6f42c1\],
+html.dark [style*="color: #6f42c1"] {
+  color: #d8b4fe !important;
+}
+
+/* Red / Danger Text in Dark Mode */
+html.dark .text-red-900,
+html.dark .text-red-800,
+html.dark .text-red-700,
+html.dark .text-red-600,
+html.dark .text-red-500,
+html.dark .text-\[\#721c24\],
+html.dark [style*="color: #721c24"] {
+  color: #fca5a5 !important;
+}
+
+/* 5. STATUS BADGES & ALERT BANNERS */
+html.dark .bg-green-50,
+html.dark .bg-emerald-50,
+html.dark .bg-\[\#d4edda\],
+html.dark [style*="background: #d4edda"],
+html.dark [style*="background-color: #d4edda"] {
+  background-color: rgba(6, 78, 59, 0.45) !important;
+  background: rgba(6, 78, 59, 0.45) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #86efac !important;
+}
+
+html.dark .bg-yellow-50,
+html.dark .bg-yellow-100,
+html.dark .bg-amber-50,
+html.dark .bg-amber-100,
+html.dark .bg-orange-50,
+html.dark .bg-\[\#fff3cd\],
+html.dark [style*="background: #fff3cd"],
+html.dark [style*="background-color: #fff3cd"] {
+  background-color: rgba(180, 83, 9, 0.3) !important;
+  background: rgba(180, 83, 9, 0.3) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: #fde047 !important;
+}
+
+html.dark .bg-red-50,
+html.dark .bg-red-100,
+html.dark .bg-\[\#f8d7da\],
+html.dark [style*="background: #f8d7da"],
+html.dark [style*="background-color: #f8d7da"] {
+  background-color: rgba(153, 27, 27, 0.35) !important;
+  background: rgba(153, 27, 27, 0.35) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-100,
+html.dark .bg-\[\#cce5ff\],
+html.dark [style*="background: #cce5ff"],
+html.dark [style*="background-color: #cce5ff"] {
+  background-color: rgba(30, 58, 138, 0.35) !important;
+  background: rgba(30, 58, 138, 0.35) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #93c5fd !important;
+}
+
+html.dark .bg-purple-50,
+html.dark .bg-purple-100 {
+  background-color: rgba(88, 28, 135, 0.35) !important;
+  border-color: rgba(168, 85, 247, 0.4) !important;
+  color: #d8b4fe !important;
+}
+
+/* 6. BUTTONS ACROSS ADMIN, FARMER, AND CUSTOMER */
 html.dark .bg-green-800,
-html.dark .bg-green-700 {
+html.dark .bg-green-700,
+html.dark .bg-\[\#1f7a3f\],
+html.dark .bg-\[\#166534\],
+html.dark .bg-\[\#198754\] {
   background-color: #16a34a !important;
   color: #ffffff !important;
 }
 
 html.dark .bg-green-800:hover,
-html.dark .bg-green-700:hover {
+html.dark .bg-green-700:hover,
+html.dark .bg-\[\#1f7a3f\]:hover {
   background-color: #15803d !important;
+}
+
+/* Action & Secondary buttons */
+html.dark .bg-gray-800,
+html.dark .bg-gray-900,
+html.dark .bg-gray-950 {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-\[\#115e59\],
+html.dark header.bg-\[\#115e59\] {
+  background-color: #0f2d27 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-\[\#d9534f\],
+html.dark [style*="background: #d9534f"],
+html.dark [style*="background-color: #d9534f"] {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-gray-100,
+html.dark .bg-gray-200 {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+html.dark .bg-gray-100:hover,
+html.dark .bg-gray-200:hover {
+  background-color: #475569 !important;
+  color: #ffffff !important;
 }
 
 /* Category Selection Pills in Dark Mode */
@@ -209,29 +411,94 @@ html.dark #categories button.bg-green-100 {
   color: #86efac !important;
 }
 
-/* Bottom Navs across the app */
+/* 7. INPUTS, SELECTS, OPTIONS & TEXTAREAS */
+input, textarea, select, option {
+  color: #171717 !important;
+  background-color: #ffffff !important;
+}
+
+html.dark input, 
+html.dark textarea, 
+html.dark select,
+html.dark option {
+  color: #f8fafc !important;
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+html.dark input::placeholder, 
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* 8. BORDERS & DIVIDERS */
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-slate-200,
+html.dark .border-gray-100,
+html.dark .border-\[\#d1d5db\],
+html.dark .border-\[\#dfe8df\],
+html.dark .border-\[1px_solid_\#d1d5db\],
+html.dark .border-\[1px_\#d1d5db\],
+html.dark .border-\[1px_\#e5e7eb\],
+html.dark [class*="border-\[1px"],
+html.dark [style*="border: 1px solid #e5e5e5"],
+html.dark [style*="border: 1px solid #d1d5db"],
+html.dark [style*="border: 1px solid #e5e7eb"],
+html.dark [style*="border: 1px solid #ddd"],
+html.dark [style*="border: 1px solid #d9ded9"],
+html.dark [style*="border: 1px solid #dfe8df"],
+html.dark [style*="border: 1px solid #e1e8e1"],
+html.dark [style*="border: 1px solid #f0f0f0"],
+html.dark [style*="border-bottom: 1px solid #f0f0f0"],
+html.dark [style*="border-top: 1px solid #f0f0f0"],
+html.dark [style*="border-top: 1px solid #e5e5e5"] {
+  border-color: #334155 !important;
+}
+
+/* 9. TABLES IN ADMIN & FARMER PANELS */
+html.dark table {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark table th,
+html.dark table thead tr {
+  background-color: #0f172a !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+html.dark table td {
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+html.dark table tr:hover td {
+  background-color: #273549 !important;
+}
+
+/* 10. MOBILE BOTTOM NAV & HEADER HIGHLIGHTS */
 html.dark nav[class*="fixed bottom-0"],
 html.dark div[class*="fixed bottom-0"],
 html.dark .bg-white\/95,
 html.dark .bg-white\/90,
 html.dark [class*="bg-white\/"] {
-  background-color: rgba(15, 23, 42, 0.96) !important;
+  background-color: rgba(15, 23, 42, 0.98) !important;
   border-color: #334155 !important;
 }
 
-html.dark nav[class*="fixed bottom-0"] span,
-html.dark div[class*="fixed bottom-0"] span,
-html.dark nav[class*="fixed bottom-0"] button span,
-html.dark div[class*="fixed bottom-0"] a span {
-  color: #cbd5e1 !important;
-}
-
-html.dark nav[class*="fixed bottom-0"] button:hover span,
-html.dark div[class*="fixed bottom-0"] a:hover span {
+html.dark div[class*="fixed bottom-0"] a[class*="text-green-700"],
+html.dark div[class*="fixed bottom-0"] a[class*="dark:text-emerald-400"] {
   color: #4ade80 !important;
 }
 
-/* Footer in Dark Mode */
+html.dark div[class*="fixed bottom-0"] a[class*="text-gray-500"] span {
+  color: #cbd5e1 !important;
+}
+
+/* 11. FOOTER IN DARK MODE */
 html.dark footer,
 html.dark .bg-\[\#17251a\] {
   background-color: #050b14 !important;
@@ -248,40 +515,7 @@ html.dark .bg-\[\#17251a\] p {
   color: #cbd5e1 !important;
 }
 
-/* Borders */
-html.dark .border-gray-200,
-html.dark .border-gray-300,
-html.dark .border-slate-200,
-html.dark .border-gray-100 {
-  border-color: #334155 !important;
-}
-
-/* Inputs, Textareas, Selects */
-html.dark input, 
-html.dark textarea, 
-html.dark select {
-  color: #f8fafc !important;
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-}
-
-html.dark input::placeholder, 
-html.dark textarea::placeholder {
-  color: #64748b !important;
-}
-
-/* Tables in Dark Mode */
-html.dark table th {
-  background-color: #0f172a !important;
-  color: #94a3b8 !important;
-  border-color: #334155 !important;
-}
-
-html.dark table td {
-  border-color: #334155 !important;
-}
-
-/* Toast popup in dark mode */
+/* 12. TOAST POPUP IN DARK MODE */
 html.dark .toast-slide-in {
   background-color: rgba(30, 41, 59, 0.96) !important;
   border-color: #334155 !important;
@@ -302,6 +536,160 @@ html.dark .shadow-xs,
 html.dark .shadow-md,
 html.dark .shadow-lg {
   box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* =====================================================
+   ADMIN ORDER ITEMS & SETTLEMENT HIGH-CONTRAST ENGINE
+   ===================================================== */
+.admin-order-item-card {
+  background-color: #f8faf8 !important;
+  border: 1px solid #e1e8e1 !important;
+  color: #171717 !important;
+}
+
+.admin-settlement-box {
+  background-color: #ffffff !important;
+  border: 1px solid #dfe8df !important;
+}
+
+.admin-order-item-name {
+  color: #111827 !important;
+}
+
+.admin-order-item-farmer {
+  color: #555555 !important;
+}
+
+.admin-order-item-farm {
+  color: #777777 !important;
+}
+
+.admin-item-label {
+  color: #777777 !important;
+}
+
+.admin-item-val {
+  color: #111827 !important;
+}
+
+.admin-settlement-title {
+  color: #374151 !important;
+}
+
+.admin-settlement-amount {
+  color: #1f7a3f !important;
+}
+
+.admin-settlement-paid-text {
+  color: #155724 !important;
+}
+
+.admin-settlement-date {
+  color: #666666 !important;
+}
+
+.admin-settlement-waiting-text {
+  color: #777777 !important;
+}
+
+/* DARK MODE - ADMIN ORDER ITEMS & SETTLEMENTS */
+html.dark .admin-order-item-card {
+  background-color: #0f172a !important;
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .admin-order-item-card h4,
+html.dark .admin-order-item-name {
+  color: #ffffff !important;
+}
+
+html.dark .admin-order-item-card strong,
+html.dark .admin-item-val {
+  color: #ffffff !important;
+}
+
+html.dark .admin-order-item-farmer,
+html.dark .admin-order-item-farm {
+  color: #cbd5e1 !important;
+}
+
+html.dark .admin-item-label {
+  color: #94a3b8 !important;
+}
+
+html.dark .admin-commission-total {
+  color: #d8b4fe !important;
+}
+
+html.dark .admin-item-total {
+  color: #4ade80 !important;
+}
+
+html.dark .admin-settlement-box {
+  background-color: #1e293b !important;
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+html.dark .admin-settlement-title {
+  color: #f1f5f9 !important;
+}
+
+html.dark .admin-settlement-amount {
+  color: #4ade80 !important;
+}
+
+html.dark .admin-settlement-paid-text {
+  color: #86efac !important;
+}
+
+html.dark .admin-settlement-date {
+  color: #cbd5e1 !important;
+}
+
+html.dark .admin-settlement-waiting-text {
+  color: #94a3b8 !important;
+}
+
+/* Inline RGB Text Colors serialized by Chrome / React */
+html.dark [style*="color: rgb(55, 65, 81)"],
+html.dark [style*="color: rgb(31, 41, 55)"],
+html.dark [style*="color: rgb(17, 24, 39)"] {
+  color: #f1f5f9 !important;
+}
+
+html.dark [style*="color: rgb(102, 102, 102)"],
+html.dark [style*="color: rgb(85, 85, 85)"] {
+  color: #e2e8f0 !important;
+}
+
+html.dark [style*="color: rgb(119, 119, 119)"],
+html.dark [style*="color: rgb(136, 136, 136)"],
+html.dark [style*="color: rgb(107, 114, 128)"],
+html.dark [style*="color: rgb(100, 116, 139)"] {
+  color: #cbd5e1 !important;
+}
+
+html.dark [style*="color: rgb(31, 122, 63)"],
+html.dark [style*="color: rgb(21, 87, 36)"],
+html.dark [style*="color: rgb(22, 101, 52)"] {
+  color: #86efac !important;
+}
+
+html.dark [style*="color: rgb(133, 100, 4)"],
+html.dark [style*="color: rgb(245, 158, 11)"] {
+  color: #fde047 !important;
+}
+
+html.dark [style*="color: rgb(111, 66, 193)"] {
+  color: #d8b4fe !important;
+}
+
+html.dark [style*="color: rgb(114, 28, 36)"],
+html.dark [style*="color: rgb(217, 83, 79)"] {
+  color: #fca5a5 !important;
 }
 
 

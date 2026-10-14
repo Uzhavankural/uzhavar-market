@@ -490,7 +490,7 @@ export default function AdminProducts() {
           🌾 Uzhavar Market
         </div>
 
-        <div className="flex gap-[10px] flex-wrap">
+        <div className="flex items-center gap-[10px] flex-wrap">
           <button
             onClick={() =>
               loadProducts(true)

@@ -295,16 +295,18 @@ export default function AddProduct() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] font-sans">
-      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center">
+      <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center flex-wrap gap-3">
         <div className="text-xl sm:text-2xl font-bold text-green-800">
           🌾 Uzhavar Market
         </div>
-        <button
-          onClick={() => router.push('/farmer')}
-          className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
-        >
-          ← Dashboard
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/farmer')}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
+          >
+            ← Dashboard
+          </button>
+        </div>
       </nav>
 
       <section className="w-[95%] sm:w-[90%] max-w-[700px] mx-auto py-8 sm:py-10">

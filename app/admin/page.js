@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../components/Toast'
-import ThemeToggle from '../components/ThemeToggle'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -1849,7 +1848,6 @@ async function rejectReview(review) {
           >
             Logout
           </button>
-          <ThemeToggle />
         </div>
       </nav>
 
@@ -3616,6 +3614,7 @@ async function rejectReview(review) {
                                     key={
                                       item.id
                                     }
+                                    className="admin-order-item-card"
                                     style={
                                       styles.orderItemCard
                                     }
@@ -3630,6 +3629,7 @@ async function rejectReview(review) {
                                     >
 
                                       <h4
+                                        className="admin-order-item-name"
                                         style={
                                           styles.orderItemName
                                         }
@@ -3640,6 +3640,7 @@ async function rejectReview(review) {
                                       </h4>
 
                                       <p
+                                        className="admin-order-item-farmer"
                                         style={
                                           styles.orderItemFarmer
                                         }
@@ -3652,6 +3653,7 @@ async function rejectReview(review) {
 
                                       {item.farm_name && (
                                         <p
+                                          className="admin-order-item-farm"
                                           style={
                                             styles.orderItemFarm
                                           }
@@ -3668,6 +3670,7 @@ async function rejectReview(review) {
                                     {/* ITEM INFO */}
 
                                     <div
+                                      className="admin-order-item-info"
                                       style={
                                         styles.orderItemInfo
                                       }
@@ -3675,6 +3678,7 @@ async function rejectReview(review) {
 
                                       <div>
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3682,7 +3686,7 @@ async function rejectReview(review) {
                                           Quantity
                                         </span>
 
-                                        <strong>
+                                        <strong className="admin-item-val">
                                           {
                                             item.quantity
                                           }{' '}
@@ -3694,6 +3698,7 @@ async function rejectReview(review) {
 
                                       <div>
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3701,7 +3706,7 @@ async function rejectReview(review) {
                                           Customer Price
                                         </span>
 
-                                        <strong>
+                                        <strong className="admin-item-val">
                                           ₹
                                           {customerPrice.toFixed(
                                             2
@@ -3715,6 +3720,7 @@ async function rejectReview(review) {
 
                                       <div>
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3722,7 +3728,7 @@ async function rejectReview(review) {
                                           Farmer Price
                                         </span>
 
-                                        <strong>
+                                        <strong className="admin-item-val">
                                           ₹
                                           {farmerPrice.toFixed(
                                             2
@@ -3736,6 +3742,7 @@ async function rejectReview(review) {
 
                                       <div>
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3743,7 +3750,7 @@ async function rejectReview(review) {
                                           Commission / Unit
                                         </span>
 
-                                        <strong>
+                                        <strong className="admin-item-val">
                                           ₹
                                           {commissionPerUnit.toFixed(
                                             2
@@ -3757,6 +3764,7 @@ async function rejectReview(review) {
 
                                       <div>
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3765,6 +3773,7 @@ async function rejectReview(review) {
                                         </span>
 
                                         <strong
+                                          className="admin-commission-total"
                                           style={
                                             styles.commissionTotal
                                           }
@@ -3778,6 +3787,7 @@ async function rejectReview(review) {
 
                                       <div>
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3786,6 +3796,7 @@ async function rejectReview(review) {
                                         </span>
 
                                         <strong
+                                          className="admin-item-total"
                                           style={
                                             styles.itemTotal
                                           }
@@ -3802,6 +3813,7 @@ async function rejectReview(review) {
                                     {/* SETTLEMENT */}
 
                                     <div
+                                      className="admin-settlement-box"
                                       style={
                                         styles.settlementBox
                                       }
@@ -3814,6 +3826,7 @@ async function rejectReview(review) {
                                       >
 
                                         <span
+                                          className="admin-settlement-title"
                                           style={
                                             styles.settlementTitle
                                           }
@@ -3834,6 +3847,7 @@ async function rejectReview(review) {
                                       <div>
 
                                         <span
+                                          className="admin-item-label"
                                           style={
                                             styles.itemLabel
                                           }
@@ -3842,6 +3856,7 @@ async function rejectReview(review) {
                                         </span>
 
                                         <strong
+                                          className="admin-settlement-amount"
                                           style={
                                             styles.settlementAmount
                                           }
@@ -3857,6 +3872,7 @@ async function rejectReview(review) {
                                       {isPaid ? (
 
                                         <div
+                                          className="admin-settlement-paid-text"
                                           style={
                                             styles.settlementPaidText
                                           }
@@ -3865,6 +3881,7 @@ async function rejectReview(review) {
 
                                           {item.settlement_paid_at && (
                                             <div
+                                              className="admin-settlement-date"
                                               style={
                                                 styles.settlementDate
                                               }
@@ -3896,6 +3913,7 @@ async function rejectReview(review) {
                                       ) : (
 
                                         <div
+                                          className="admin-settlement-waiting-text"
                                           style={
                                             styles.settlementWaitingText
                                           }
@@ -4869,9 +4887,6 @@ const styles = {
       'space-between',
     gap: '20px',
     padding: '14px',
-    background: '#f8faf8',
-    border:
-      '1px solid #e1e8e1',
     borderRadius: '8px',
     flexWrap: 'wrap',
   },
@@ -4924,9 +4939,6 @@ const styles = {
     minWidth: '250px',
     flex: '0 0 250px',
     padding: '12px',
-    background: '#ffffff',
-    border:
-      '1px solid #dfe8df',
     borderRadius: '8px',
     display: 'flex',
     flexDirection: 'column',

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { showToast, setFlashToast } from '../components/Toast'
-import ThemeToggle from '../components/ThemeToggle'
 
 export default function ResetPassword() {
   const router = useRouter()
@@ -219,10 +218,6 @@ export default function ResetPassword() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-        <ThemeToggle />
-      </div>
-
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
         <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6 flex items-center justify-center gap-2">
           <span>🌾</span>

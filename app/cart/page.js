@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import ThemeToggle from '../components/ThemeToggle'
 
 export default function Cart() {
   const router = useRouter()
@@ -80,7 +79,6 @@ export default function Cart() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
           <button
             onClick={() => router.push('/')}
             className="px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg bg-white cursor-pointer font-semibold text-sm sm:text-base hover:bg-gray-50"

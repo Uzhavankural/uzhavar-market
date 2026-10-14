@@ -82,18 +82,19 @@ export default function FarmerProfile() {
       if (!user) throw new Error('User not authenticated')
 
       const updates = {
+        id: user.id,
         full_name: fullName,
         phone: phone,
         address: address,
         village: village,
         district: district,
-        pincode: pincode
+        pincode: pincode,
+        role: 'farmer',
       }
 
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
+        .upsert(updates, { onConflict: 'id' })
 
       if (error) {
         throw new Error(error.message || JSON.stringify(error))

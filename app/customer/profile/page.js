@@ -49,16 +49,15 @@ export default function CustomerProfile() {
         .eq("id", authUser.id)
         .maybeSingle();
 
-      if (profile) {
-        setAddr1({
-          name: profile.full_name || "",
-          phone: profile.phone || profile.mobile || "",
-          address: profile.address || "",
-          village: profile.village || "",
-          district: profile.district || "",
-          pincode: profile.pincode || "",
-        });
-      }
+      const meta = authUser.user_metadata || {};
+      setAddr1({
+        name: profile?.full_name || meta.full_name || "",
+        phone: profile?.phone || profile?.mobile || meta.phone || "",
+        address: profile?.address || meta.address || "",
+        village: profile?.village || meta.village || "",
+        district: profile?.district || meta.district || "",
+        pincode: profile?.pincode || meta.pincode || "",
+      });
 
       // Load Additional Addresses from localStorage
       const localAddresses = localStorage.getItem(`uzhavar_customer_addresses_${authUser.id}`);
@@ -118,18 +117,22 @@ export default function CustomerProfile() {
         }
       }
 
-      // Save Primary to Supabase
+      // Save Primary to Supabase (upsert creates row if it does not exist yet)
       const { error } = await supabase
         .from("profiles")
-        .update({
-          full_name: addr1.name,
-          phone: addr1.phone,
-          address: addr1.address,
-          village: addr1.village,
-          district: addr1.district,
-          pincode: addr1.pincode,
-        })
-        .eq("id", user.id);
+        .upsert(
+          {
+            id: user.id,
+            full_name: addr1.name,
+            phone: addr1.phone,
+            address: addr1.address,
+            village: addr1.village,
+            district: addr1.district,
+            pincode: addr1.pincode,
+            role: "customer",
+          },
+          { onConflict: "id" }
+        );
 
       if (error) throw error;
 

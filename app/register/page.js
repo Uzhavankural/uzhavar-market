@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../components/Toast'
-import ThemeToggle from '../components/ThemeToggle'
 
 export default function Register() {
   const [fullName, setFullName] = useState('')
@@ -72,6 +71,27 @@ export default function Register() {
       return
     }
 
+    if (data?.user && data?.session) {
+      try {
+        await supabase.from('profiles').upsert(
+          {
+            id: data.user.id,
+            full_name: fullName,
+            phone: phone,
+            role: role,
+            is_banned: false,
+            address: role === 'farmer' ? address : null,
+            village: role === 'farmer' ? village : null,
+            district: role === 'farmer' ? district : null,
+            pincode: role === 'farmer' ? pincode : null,
+          },
+          { onConflict: 'id' }
+        )
+      } catch (upsertErr) {
+        console.warn('Direct signup profile upsert notice:', upsertErr)
+      }
+    }
+
     const successMsg =
       role === 'farmer'
         ? 'Registration successful! Please check your email and click the confirm mail link to directly open your Farmer Dashboard.'
@@ -93,10 +113,6 @@ export default function Register() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-        <ThemeToggle />
-      </div>
-
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
         <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6">
           🌾 Uzhavar Market

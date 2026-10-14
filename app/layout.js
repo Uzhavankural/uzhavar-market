@@ -31,14 +31,22 @@ export default function RootLayout({ children }) {
             __html: `
               (function() {
                 try {
-                  var saved = localStorage.getItem('uzhavar_theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (saved === 'dark' || (!saved && prefersDark)) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.setAttribute('data-theme', 'light');
+                  localStorage.removeItem('uzhavar_theme');
+                  var mql = window.matchMedia('(prefers-color-scheme: dark)');
+                  function updateTheme() {
+                    if (mql.matches) {
+                      document.documentElement.classList.add('dark');
+                      document.documentElement.setAttribute('data-theme', 'dark');
+                    } else {
+                      document.documentElement.classList.remove('dark');
+                      document.documentElement.setAttribute('data-theme', 'light');
+                    }
+                  }
+                  updateTheme();
+                  if (mql.addEventListener) {
+                    mql.addEventListener('change', updateTheme);
+                  } else if (mql.addListener) {
+                    mql.addListener(updateTheme);
                   }
                 } catch (e) {}
               })();

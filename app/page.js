@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { ensureFarmerAccess } from "../lib/farmerAuth";
-import ThemeToggle from "./components/ThemeToggle";
 
 export default function Home() {
   const router = useRouter();
@@ -322,8 +321,6 @@ export default function Home() {
 
         {/* MOBILE TOP CONTROLS (sm:hidden) */}
         <div className="flex sm:hidden items-center gap-1.5 shrink-0">
-          <ThemeToggle compact={true} />
-
           {!authLoading && user && role === "farmer" && (
             <button
               onClick={() => router.push("/farmer")}
@@ -403,8 +400,6 @@ export default function Home() {
               ⚙️ Admin Dashboard
             </button>
           )}
-
-          <ThemeToggle />
 
           {!authLoading && !user && (
             <button
