@@ -1843,6 +1843,12 @@ async function rejectReview(review) {
             📦 Manage Products
           </button>
           <button
+            onClick={() => router.push('/admin/categories')}
+            className="px-4 py-2 border border-green-700 rounded-lg bg-green-50 text-green-800 font-semibold hover:bg-green-100 transition-colors text-sm sm:text-base cursor-pointer flex items-center gap-2"
+          >
+            🏷️ Manage Categories
+          </button>
+          <button
             onClick={handleLogout}
             className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base cursor-pointer"
           >
@@ -1924,60 +1930,76 @@ async function rejectReview(review) {
             <h2 className="mt-8 mb-5 text-xl sm:text-2xl text-gray-800 font-bold">
               Marketplace Overview
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-5">
               
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="text-3xl mb-3">💰</div>
-                <h3 className="text-2xl m-0 mb-1 text-green-800 font-bold">₹{totalCommissionEarned.toFixed(2)}</h3>
-                <p className="m-0 text-gray-500 text-sm">Commission Earned</p>
+              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">💰</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-green-800 font-bold break-words">₹{totalCommissionEarned.toFixed(2)}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Commission Earned</p>
               </div>
 
               <div 
-                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
                 onClick={() => setActiveSection('paid-settlements')}
               >
-                <div className="text-3xl mb-3">🌾</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">₹{totalFarmerSettlement.toFixed(2)}</h3>
-                <p className="m-0 text-gray-500 text-sm">Farmer Settlement (Paid) →</p>
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">🌾</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold break-words">₹{totalFarmerSettlement.toFixed(2)}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Farmer Settlement (Paid) →</p>
               </div>
 
               <div 
-                className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
                 onClick={() => setActiveSection('orders')}
               >
-                <div className="text-3xl mb-3">📦</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{orders.length}</h3>
-                <p className="m-0 text-green-700 text-sm font-semibold">Total Orders →</p>
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">📦</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold">{orders.length}</h3>
+                </div>
+                <p className="m-0 text-green-700 text-[11px] sm:text-sm font-semibold leading-tight">Total Orders →</p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="text-3xl mb-3">⏳</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{pendingOrders}</h3>
-                <p className="m-0 text-gray-500 text-sm">Pending Orders</p>
+              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">⏳</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold">{pendingOrders}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Pending Orders</p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="text-3xl mb-3">✅</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{confirmedOrders}</h3>
-                <p className="m-0 text-gray-500 text-sm">Confirmed</p>
+              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">✅</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold">{confirmedOrders}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Confirmed</p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="text-3xl mb-3">🚚</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{shippedOrders}</h3>
-                <p className="m-0 text-gray-500 text-sm">Shipped</p>
+              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">🚚</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold">{shippedOrders}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Shipped</p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="text-3xl mb-3">🏡</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{deliveredOrders}</h3>
-                <p className="m-0 text-gray-500 text-sm">Delivered</p>
+              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">🏡</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold">{deliveredOrders}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Delivered</p>
               </div>
               
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="text-3xl mb-3">💳</div>
-                <h3 className="text-2xl m-0 mb-1 text-gray-800 font-bold">{pendingPayments}</h3>
-                <p className="m-0 text-gray-500 text-sm">Payment Pending</p>
+              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl sm:text-3xl mb-1.5 sm:mb-3">💳</div>
+                  <h3 className="text-base sm:text-2xl m-0 mb-0.5 sm:mb-1 text-gray-800 font-bold">{pendingPayments}</h3>
+                </div>
+                <p className="m-0 text-gray-500 text-[11px] sm:text-sm leading-tight">Payment Pending</p>
               </div>
             </div>
           </>
@@ -2193,6 +2215,22 @@ async function rejectReview(review) {
                 }
               >
                 📦 Manage Products
+              </button>
+
+              <button
+                onClick={() =>
+                  router.push(
+                    '/admin/categories'
+                  )
+                }
+                style={{
+                  ...styles.manageProductsButton,
+                  backgroundColor: '#f0fdf4',
+                  color: '#166534',
+                  border: '1px solid #166534',
+                }}
+              >
+                🏷️ Manage Categories
               </button>
 
               <button

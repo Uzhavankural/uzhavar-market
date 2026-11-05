@@ -72,6 +72,8 @@ export default function Login() {
           router.replace('/farmer')
         } else if (effective.role === 'admin') {
           router.replace('/admin')
+        } else if (effective.role === 'customer') {
+          router.replace('/customer')
         }
       }
     }
@@ -107,7 +109,7 @@ export default function Login() {
       type: 'signup',
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?role=farmer`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     setResending(false)

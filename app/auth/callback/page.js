@@ -8,7 +8,8 @@ import { setFlashToast } from '@/app/components/Toast'
 
 export default function AuthCallback() {
   const router = useRouter()
-  const [statusMessage, setStatusMessage] = useState('Verifying your email and logging in...')
+  const [statusMessage, setStatusMessage] = useState('Verifying your email and setting up your account...')
+  const [detectedRole, setDetectedRole] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -23,6 +24,11 @@ export default function AuthCallback() {
         const hashParams = new URLSearchParams(
           hash.startsWith('#') ? hash.substring(1) : hash
         )
+
+        const roleFromQuery = searchParams.get('role') || hashParams.get('role')
+        if (roleFromQuery) {
+          setDetectedRole(roleFromQuery)
+        }
 
         // 1. Check for error in query or hash (e.g., expired token)
         const errParam = searchParams.get('error') || hashParams.get('error')
@@ -144,11 +150,9 @@ export default function AuthCallback() {
           return
         }
 
-        // If user is already authenticated despite an error parameter (e.g. link clicked twice)
+        // If user is authenticated
         if (currentUser) {
-          setStatusMessage('Preparing Farmer Dashboard...')
-
-          const roleFromQuery = searchParams.get('role') || hashParams.get('role')
+          const roleHint = roleFromQuery || currentUser.user_metadata?.role
 
           // Fetch or sync profile
           const { data: profile } = await supabase
@@ -157,28 +161,25 @@ export default function AuthCallback() {
             .eq('id', currentUser.id)
             .single()
 
-          const effectiveProfile = await ensureFarmerAccess(profile, currentUser, roleFromQuery)
-
-          const isFarmer =
-            effectiveProfile.role === 'farmer' ||
-            currentUser.user_metadata?.role === 'farmer' ||
-            roleFromQuery === 'farmer'
+          const effectiveProfile = await ensureFarmerAccess(profile, currentUser, roleHint)
+          const targetRole = effectiveProfile?.role || roleHint || 'customer'
+          setDetectedRole(targetRole)
 
           if (isCancelled) return
 
-          if (isFarmer) {
-            setStatusMessage('Redirecting to Farmer Dashboard...')
+          if (targetRole === 'farmer') {
+            setStatusMessage('Opening Farmer Dashboard...')
             setFlashToast('Welcome to Uzhavar Market! Your email is verified and you are now logged in as Farmer. 🌾', 'success', 5000)
             window.location.replace('/farmer')
             return
-          } else if (effectiveProfile.role === 'admin') {
-            setStatusMessage('Redirecting to Admin Dashboard...')
+          } else if (targetRole === 'admin') {
+            setStatusMessage('Opening Admin Dashboard...')
             setFlashToast('Welcome Admin! You are logged in. ⚙️', 'success', 4000)
             window.location.replace('/admin')
             return
           } else {
-            setStatusMessage('Redirecting to Customer Dashboard...')
-            setFlashToast('Welcome to Uzhavar Market! Your account is verified. 🛒', 'success', 4000)
+            setStatusMessage('Opening Customer Dashboard...')
+            setFlashToast('Welcome to Uzhavar Market! Your email is verified and you are now logged in. 🛒', 'success', 4000)
             window.location.replace('/customer')
             return
           }
@@ -195,11 +196,18 @@ export default function AuthCallback() {
       } catch (err) {
         console.error('Auth callback exception:', err)
         if (!isCancelled) {
-          // As a safe fallback for farmers, check if we have an active session and redirect
           const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: {} }))
           if (user) {
-            setFlashToast('Welcome to Uzhavar Market! 🌾', 'success', 4000)
-            window.location.replace('/farmer')
+            const role = user.user_metadata?.role || 'customer'
+            if (role === 'farmer') {
+              setFlashToast('Welcome to Uzhavar Market! 🌾', 'success', 4000)
+              window.location.replace('/farmer')
+            } else if (role === 'admin') {
+              window.location.replace('/admin')
+            } else {
+              setFlashToast('Welcome to Uzhavar Market! 🛒', 'success', 4000)
+              window.location.replace('/customer')
+            }
           } else {
             setError('Verification completed. Please login to enter your dashboard.')
           }
@@ -248,16 +256,26 @@ export default function AuthCallback() {
           </div>
         ) : (
           <div>
-            <div className="text-5xl mb-4 animate-bounce">👨‍🌾</div>
+            <div className="text-5xl mb-4 animate-bounce">
+              {detectedRole === 'farmer' ? '👨‍🌾' : detectedRole === 'customer' ? '🛒' : '🌾'}
+            </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Welcome, Farmer!
+              {detectedRole === 'farmer'
+                ? 'Welcome, Farmer!'
+                : detectedRole === 'customer'
+                ? 'Welcome, Customer!'
+                : 'Welcome to Uzhavar Market!'}
             </h1>
             <p className="text-sm text-gray-600 mb-6">
               {statusMessage}
             </p>
             <div className="w-10 h-10 border-4 border-green-800 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-xs text-gray-400">
-              Opening your Farmer Dashboard automatically...
+              {detectedRole === 'farmer'
+                ? 'Opening your Farmer Dashboard automatically...'
+                : detectedRole === 'customer'
+                ? 'Opening your Customer Dashboard automatically...'
+                : 'Opening your dashboard automatically...'}
             </p>
           </div>
         )}

@@ -505,6 +505,15 @@ export default function AdminProducts() {
 
           <button
             onClick={() =>
+              router.push('/admin/categories')
+            }
+            className="py-[9px] px-[16px] border border-green-700 rounded-[8px] bg-green-50 text-green-800 cursor-pointer font-semibold hover:bg-green-100 transition-colors flex items-center gap-1.5"
+          >
+            🏷️ Manage Categories
+          </button>
+
+          <button
+            onClick={() =>
               router.push('/admin')
             }
             className="py-[9px] px-[18px] border border-gray-300 rounded-[8px] bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors"

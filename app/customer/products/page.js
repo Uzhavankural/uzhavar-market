@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import HeroBanner from "@/app/components/HeroBanner";
 
 export default function CustomerProductsPage() {
   const router = useRouter();
@@ -113,8 +114,15 @@ export default function CustomerProductsPage() {
           </button>
         </header>
 
+        {/* ANIMATED HERO BANNER */}
+        <HeroBanner
+          targetScrollId="customer-products-list"
+          containerClassName="mb-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm"
+          className="rounded-2xl overflow-hidden"
+        />
+
         {/* Shop Header */}
-        <section className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <section id="customer-products-list" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="m-0 text-xl sm:text-2xl font-bold text-gray-900">
               🛒 Products

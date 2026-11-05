@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { ensureFarmerAccess } from "../lib/farmerAuth";
+import HeroBanner from "./components/HeroBanner";
 
 export default function Home() {
   const router = useRouter();
@@ -422,29 +423,9 @@ export default function Home() {
       </nav>
 
       {/* =========================
-          HERO
+          ANIMATED HERO BANNER
       ========================= */}
-      <section className="py-16 sm:py-24 px-4 sm:px-[7%] bg-[#e9f5e1] flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
-        <div className="max-w-2xl">
-          <p className="text-xs sm:text-sm font-bold tracking-[2px] mb-4 text-green-900">
-            FARMERS DIRECTLY TO YOU
-          </p>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl leading-tight mb-5 font-bold text-gray-900">
-            Fresh products.<br />Direct from farmers.
-          </h1>
-          <p className="text-base sm:text-lg leading-relaxed mb-6 text-gray-700">
-            Buy farm products directly from farmers and support local agriculture.
-          </p>
-          <button
-            className="px-6 py-3 rounded-lg bg-green-800 text-white text-base font-medium hover:bg-green-700 transition-colors"
-            onClick={() => {
-              document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            Explore Products
-          </button>
-        </div>
-      </section>
+      <HeroBanner targetScrollId="products" />
 
       {/* =========================
           CATEGORIES

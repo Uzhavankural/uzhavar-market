@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../components/Toast'
 
 export default function Register() {
+  const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -17,6 +19,8 @@ export default function Register() {
   const [pincode, setPincode] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [registeredSuccess, setRegisteredSuccess] = useState(null)
+  const [resending, setResending] = useState(false)
 
   async function handleRegister(e) {
     e.preventDefault()
@@ -92,10 +96,20 @@ export default function Register() {
       }
     }
 
+    const currentEmail = email
+    const currentRole = role
+    const currentFullName = fullName
+
+    setRegisteredSuccess({
+      email: currentEmail,
+      role: currentRole,
+      fullName: currentFullName,
+    })
+
     const successMsg =
       role === 'farmer'
-        ? 'Registration successful! Please check your email and click the confirm mail link to directly open your Farmer Dashboard.'
-        : 'Registration successful! Please check your email to confirm your account.'
+        ? 'Registration successful! Please check your email to confirm your account and open your Farmer Dashboard.'
+        : 'Registration successful! Please check your email to confirm your account and open your Customer Dashboard.'
 
     setMessage({ text: successMsg, isError: false })
     showToast(successMsg, 'success', 5000)
@@ -111,6 +125,24 @@ export default function Register() {
     setLoading(false)
   }
 
+  async function handleResendEmail() {
+    if (!registeredSuccess?.email) return
+    setResending(true)
+    const { error: resendErr } = await supabase.auth.resend({
+      type: 'signup',
+      email: registeredSuccess.email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?role=${encodeURIComponent(registeredSuccess.role)}`,
+      },
+    })
+    setResending(false)
+    if (resendErr) {
+      showToast('Could not resend email: ' + resendErr.message, 'error')
+    } else {
+      showToast('Confirmation email resent! Please check your inbox.', 'success')
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
@@ -118,15 +150,76 @@ export default function Register() {
           🌾 Uzhavar Market
         </div>
 
-        <h1 className="text-center text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
-          Create Account
-        </h1>
+        {registeredSuccess ? (
+          <div className="text-center">
+            <div className="text-5xl mb-3">📩</div>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
+              Please Confirm Your Email
+            </h1>
+            <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+              We have sent a confirmation email to:
+              <strong className="text-green-800 block mt-1 text-base font-bold break-all">
+                {registeredSuccess.email}
+              </strong>
+            </p>
 
-        <p className="text-center text-gray-500 mb-8">
-          Join Uzhavar Market
-        </p>
+            <div className="bg-green-50 border border-green-200 text-green-900 p-4 rounded-xl text-left text-sm mb-6">
+              <p className="font-bold mb-1.5 flex items-center gap-1.5 text-green-800">
+                <span>✉️</span> Next Step:
+              </p>
+              <ol className="list-decimal list-inside text-xs sm:text-sm space-y-1.5 text-gray-700">
+                <li>Open your email inbox.</li>
+                <li>Find the email titled <strong>"Please confirm your mail for login in Uzhavar Market"</strong>.</li>
+                <li>Click the <strong>Confirm Mail</strong> button.</li>
+                <li>
+                  You will automatically enter your{' '}
+                  <strong className="text-green-800">
+                    {registeredSuccess.role === 'farmer' ? 'Farmer Dashboard 🌾' : 'Customer Dashboard 🛒'}
+                  </strong>!
+                </li>
+              </ol>
+            </div>
 
-        <form onSubmit={handleRegister}>
+            <div className="flex flex-col gap-3">
+              <a
+                href="https://mail.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full p-3 rounded-lg bg-green-800 text-white text-sm font-semibold hover:bg-green-700 transition-colors shadow-xs flex items-center justify-center gap-2"
+              >
+                <span>📬</span>
+                <span>Open Gmail Inbox</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleResendEmail}
+                disabled={resending}
+                className="w-full p-3 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {resending ? 'Resending email...' : '↻ Resend Confirmation Email'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push('/login')}
+                className="w-full p-2.5 text-xs text-gray-500 hover:text-green-800 font-medium transition-colors cursor-pointer"
+              >
+                Go to Login Page →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-center text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
+              Create Account
+            </h1>
+
+            <p className="text-center text-gray-500 mb-8">
+              Join Uzhavar Market
+            </p>
+
+            <form onSubmit={handleRegister}>
 
           <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
             Full Name
@@ -361,6 +454,8 @@ export default function Register() {
             Login
           </a>
         </p>
+          </>
+        )}
 
       </div>
     </main>
