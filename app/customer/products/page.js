@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import HeroBanner from "@/app/components/HeroBanner";
+import Footer from "@/app/components/Footer";
 
 export default function CustomerProductsPage() {
   const router = useRouter();
@@ -280,6 +281,8 @@ export default function CustomerProductsPage() {
           </section>
         )}
       </div>
+
+      <Footer />
     </main>
   );
 }

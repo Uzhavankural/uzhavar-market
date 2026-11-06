@@ -544,16 +544,42 @@ export default function CheckoutPage() {
               <span>₹{cartTotal.toFixed(2)}</span>
             </div>
 
+            {/* PAYMENT MODE NOTICE */}
+            <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-xl p-3.5 mt-4 text-xs text-emerald-950">
+              <div className="flex items-center gap-2 font-bold mb-1 text-emerald-900">
+                <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Payment: Online Payment Only</span>
+              </div>
+              <p className="m-0 text-emerald-800 leading-relaxed">
+                Cash on Delivery (COD) is not available. All orders are processed securely via Online Payment (UPI / Cards / Net Banking).
+              </p>
+            </div>
+
+            {/* LOGISTICS & PARCEL NOTICE */}
+            <div className="bg-blue-50/80 border border-blue-200/90 rounded-xl p-3.5 mt-3 text-xs text-blue-950">
+              <div className="flex items-center gap-2 font-bold mb-1 text-blue-900">
+                <svg className="w-4 h-4 text-blue-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <span>Dispatched via Parcel / Courier</span>
+              </div>
+              <p className="m-0 text-blue-800 leading-relaxed">
+                Items are safely packaged by farmers and booked at their nearest parcel or courier service (ST Courier, Professional, India Post).
+              </p>
+            </div>
+
             <button
               onClick={handlePlaceOrder}
               disabled={placingOrder}
-              className={`w-full mt-6 p-4 border-none rounded-lg bg-green-700 text-white text-lg font-bold transition-colors ${
+              className={`w-full mt-5 p-4 border-none rounded-lg bg-green-700 text-white text-lg font-bold transition-colors ${
                 placingOrder ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-green-800"
               }`}
             >
               {placingOrder
                 ? "Placing Order..."
-                : `Place Order • ₹${cartTotal.toFixed(2)}`}
+                : `Pay Online & Place Order • ₹${cartTotal.toFixed(2)}`}
             </button>
           </section>
         </div>

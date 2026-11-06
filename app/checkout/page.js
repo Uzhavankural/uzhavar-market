@@ -367,6 +367,16 @@ export default function Checkout() {
                 className="w-full p-3 mb-4 sm:mb-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-green-600 outline-none"
               />
 
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-900 mb-3">
+                <strong>Payment: Online Payment Only</strong>
+                <p className="m-0 mt-0.5 text-emerald-800">Cash on Delivery (COD) is not supported. All orders are processed securely via Online Payment.</p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 mb-4">
+                <strong>Logistics: Dispatched via Parcel / Courier</strong>
+                <p className="m-0 mt-0.5 text-blue-800">Orders are packed by farmers and shipped via regional courier/parcel services to your address.</p>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
@@ -374,7 +384,7 @@ export default function Checkout() {
               >
                 {loading
                   ? 'Placing Order...'
-                  : 'Place Order'}
+                  : 'Pay Online & Place Order'}
               </button>
 
             </form>

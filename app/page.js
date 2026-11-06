@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../lib/supabase";
 import { ensureFarmerAccess } from "../lib/farmerAuth";
 import HeroBanner from "./components/HeroBanner";
+import Footer from "./components/Footer";
 
 export default function Home() {
   const router = useRouter();
@@ -366,6 +368,8 @@ export default function Home() {
           <a href="/" className="hover:text-green-700 transition-colors font-medium">Home</a>
           <a href="#categories" className="hover:text-green-700 transition-colors font-medium">Categories</a>
           <a href="#products" className="hover:text-green-700 transition-colors font-medium">Products</a>
+          <Link href="/about" className="hover:text-green-700 transition-colors font-medium">About Us</Link>
+          <Link href="/contact" className="hover:text-green-700 transition-colors font-medium">Contact</Link>
 
           {!authLoading && user && (role === "customer" || role === "farmer") && (
             <>
@@ -574,10 +578,7 @@ export default function Home() {
       {/* =========================
           FOOTER
       ========================= */}
-      <footer className="py-10 px-4 sm:px-[7%] bg-[#17251a] text-white text-center mt-auto">
-        <h3 className="text-xl font-bold mb-2">🌾 Uzhavar Market</h3>
-        <p className="text-gray-400 text-sm">Connecting farmers directly with customers.</p>
-      </footer>
+      <Footer />
 
       {/* =========================
           MOBILE BOTTOM NAVIGATION BAR (sm:hidden)

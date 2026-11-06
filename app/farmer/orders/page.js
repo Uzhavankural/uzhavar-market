@@ -219,7 +219,7 @@ export default function FarmerOrders() {
 
     if (currentStatus === 'pending') {
       return {
-        text: '🔒 Waiting for Admin Confirmation',
+        text: 'Waiting for Admin Confirmation',
         nextStatus: null,
         disabled: true,
       }
@@ -227,7 +227,7 @@ export default function FarmerOrders() {
 
     if (currentStatus === 'confirmed') {
       return {
-        text: '🚚 Ship Order',
+        text: 'Mark Dispatched via Courier',
         nextStatus: 'shipped',
         disabled: false,
       }
@@ -235,7 +235,7 @@ export default function FarmerOrders() {
 
     if (currentStatus === 'shipped') {
       return {
-        text: '⏳ Waiting for Customer Delivery Confirmation',
+        text: 'In Transit via Courier (Awaiting Customer Confirmation)',
         nextStatus: null,
         disabled: true,
       }
@@ -243,7 +243,7 @@ export default function FarmerOrders() {
 
     if (currentStatus === 'delivered') {
       return {
-        text: '✓ Delivery Confirmed by Customer',
+        text: 'Delivery Confirmed by Customer',
         nextStatus: null,
         disabled: true,
       }
@@ -640,6 +640,10 @@ export default function FarmerOrders() {
                     <div className="bg-gray-50 p-[15px] rounded-lg">
                       <span className="block text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1">Delivery Address</span>
                       <strong className="text-[14px] text-gray-800 font-medium">{order.delivery_address || '-'}</strong>
+                    </div>
+
+                    <div className="mt-3 bg-blue-50/80 border border-blue-200/80 p-3 rounded-lg text-xs text-blue-900">
+                      <strong>Parcel Booking Instruction:</strong> Please pack the items securely in food-grade, leak-proof materials and dispatch via your nearest courier/parcel office (ST Courier, Professional Courier, India Post, or local parcel office) to the above address.
                     </div>
                   </div>
 

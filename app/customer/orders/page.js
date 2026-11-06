@@ -337,9 +337,9 @@ export default function CustomerOrdersPage() {
                     {canConfirmDelivery && (
                       <div className="mt-5 p-4 sm:p-5 bg-yellow-50 border border-yellow-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                          <h3 className="text-yellow-800 text-lg font-bold mb-1 mt-0">📦 Order Received?</h3>
+                          <h3 className="text-yellow-800 text-lg font-bold mb-1 mt-0">Parcel Received?</h3>
                           <p className="text-yellow-900 text-sm m-0 leading-relaxed max-w-xl">
-                            Your order has been shipped. After you receive the products, confirm the delivery below.
+                            Your parcel has been dispatched via courier / parcel service. Once you receive and check the package, please confirm delivery below.
                           </p>
                         </div>
                         <button
