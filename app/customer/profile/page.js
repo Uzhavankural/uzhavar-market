@@ -4,16 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { showToast } from "@/app/components/Toast";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function CustomerProfile() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [user, setUser] = useState(null);
 
-  // Address 1 (Compulsory - saved to Supabase profiles)
   const [addr1, setAddr1] = useState({
     name: "",
     phone: "",
@@ -23,7 +24,6 @@ export default function CustomerProfile() {
     pincode: "",
   });
 
-  // Additional Addresses (Optional - up to 2, saved to localStorage)
   const [additionalAddresses, setAdditionalAddresses] = useState([]);
 
   useEffect(() => {
@@ -42,7 +42,6 @@ export default function CustomerProfile() {
       }
       setUser(authUser);
 
-      // Load Primary Address from Supabase
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -59,7 +58,6 @@ export default function CustomerProfile() {
         pincode: profile?.pincode || meta.pincode || "",
       });
 
-      // Load Additional Addresses from localStorage
       const localAddresses = localStorage.getItem(`uzhavar_customer_addresses_${authUser.id}`);
       if (localAddresses) {
         setAdditionalAddresses(JSON.parse(localAddresses));
@@ -73,7 +71,7 @@ export default function CustomerProfile() {
 
   function handleAddAddress() {
     if (additionalAddresses.length >= 2) {
-      alert("You can only add up to 2 additional addresses.");
+      alert(t("profile.maxAddresses"));
       return;
     }
     setAdditionalAddresses([
@@ -100,24 +98,21 @@ export default function CustomerProfile() {
     setMessage("");
 
     try {
-      // Validate Compulsory Address
       if (!addr1.name || !addr1.address || !addr1.village || !addr1.district || !addr1.pincode) {
-        alert("Please fill all mandatory fields for the primary delivery address.");
+        alert(t("profile.fillMandatoryPrimary"));
         setSaving(false);
         return;
       }
 
-      // Validate Additional Addresses
       for (let i = 0; i < additionalAddresses.length; i++) {
         const ad = additionalAddresses[i];
         if (!ad.name || !ad.address || !ad.village || !ad.district || !ad.pincode) {
-          alert(`Please fill all mandatory fields for Additional Address ${i + 1}.`);
+          alert(t("profile.fillMandatoryAdditional", { n: i + 1 }));
           setSaving(false);
           return;
         }
       }
 
-      // Save Primary to Supabase (upsert creates row if it does not exist yet)
       const { error } = await supabase
         .from("profiles")
         .upsert(
@@ -136,16 +131,13 @@ export default function CustomerProfile() {
 
       if (error) throw error;
 
-      // Save Additional to LocalStorage
       localStorage.setItem(`uzhavar_customer_addresses_${user.id}`, JSON.stringify(additionalAddresses));
 
-      const successMsg = "Your changes are saved! Addresses saved successfully. ✅";
+      const successMsg = `${t("profile.savedSuccess")} ✅`;
       setMessage(successMsg);
       showToast(successMsg, "success", 4000);
     } catch (error) {
       console.error("RAW ERROR OBJECT:", error);
-      console.error("Save error keys:", Object.keys(error));
-      console.error("Save error stringified:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
       const errMsg = `Failed to save addresses: ${error.message || JSON.stringify(error)}`;
       setMessage(errMsg);
       showToast(errMsg, "error", 4000);
@@ -157,7 +149,7 @@ export default function CustomerProfile() {
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <p className="text-lg text-gray-500 animate-pulse">Loading profile...</p>
+        <p className="text-lg text-gray-500 animate-pulse">{t("profile.loadingProfile")}</p>
       </main>
     );
   }
@@ -172,84 +164,97 @@ export default function CustomerProfile() {
           >
             &larr;
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">My Profile</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">{t("profile.title")}</h1>
         </div>
 
         <form onSubmit={handleSave} className="space-y-8">
-          {/* Primary Address */}
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200">
             <h2 className="text-xl font-bold text-gray-800 mb-2 border-b pb-3 border-gray-100 flex items-center gap-2">
-              <span>📍</span> Primary Delivery Address <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded ml-auto">Compulsory</span>
+              <span>📍</span> {t("profile.primaryAddress")}{" "}
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded ml-auto">
+                {t("profile.compulsory")}
+              </span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {t("profile.fullNameLabel")}
+                </label>
                 <input
                   type="text"
                   required
                   value={addr1.name}
                   onChange={(e) => setAddr1({ ...addr1, name: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                  placeholder="Full Name"
+                  placeholder={t("checkout.fullNamePlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {t("profile.phoneLabel")}
+                </label>
                 <input
                   type="text"
                   value={addr1.phone}
                   onChange={(e) => setAddr1({ ...addr1, phone: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                  placeholder="Mobile Number"
+                  placeholder={t("checkout.phonePlaceholder")}
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1">House Address *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {t("profile.houseAddressLabel")}
+                </label>
                 <textarea
                   required
                   value={addr1.address}
                   onChange={(e) => setAddr1({ ...addr1, address: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 min-h-[80px]"
-                  placeholder="Flat, House no., Building, Company, Apartment"
+                  placeholder={t("profile.housePlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Village/Town *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {t("profile.villageLabel")}
+                </label>
                 <input
                   type="text"
                   required
                   value={addr1.village}
                   onChange={(e) => setAddr1({ ...addr1, village: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                  placeholder="Area, Street, Sector, Village"
+                  placeholder={t("profile.villagePlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">District *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {t("profile.districtLabel")}
+                </label>
                 <input
                   type="text"
                   required
                   value={addr1.district}
                   onChange={(e) => setAddr1({ ...addr1, district: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                  placeholder="District / City"
+                  placeholder={t("profile.districtPlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Pincode *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  {t("profile.pincodeLabel")}
+                </label>
                 <input
                   type="text"
                   required
                   value={addr1.pincode}
                   onChange={(e) => setAddr1({ ...addr1, pincode: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                  placeholder="6 digits [0-9] PIN code"
+                  placeholder={t("profile.pincodePlaceholder")}
                 />
               </div>
             </div>
           </div>
 
-          {/* Additional Addresses */}
           {additionalAddresses.map((ad, index) => (
             <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200 relative">
               <button
@@ -257,74 +262,86 @@ export default function CustomerProfile() {
                 onClick={() => handleRemoveAddress(index)}
                 className="absolute top-4 right-4 text-red-500 hover:text-red-700 text-sm font-bold bg-red-50 px-3 py-1 rounded-lg"
               >
-                Remove
+                {t("common.remove")}
               </button>
               <h2 className="text-xl font-bold text-gray-800 mb-2 border-b pb-3 border-gray-100 flex items-center gap-2">
-                <span>📍</span> Additional Address {index + 1}
+                <span>📍</span> {t("profile.additionalAddress", { n: index + 1 })}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Name *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {t("profile.fullNameLabel")}
+                  </label>
                   <input
                     type="text"
                     required
                     value={ad.name}
                     onChange={(e) => handleAdditionalChange(index, "name", e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                    placeholder="Full Name"
+                    placeholder={t("checkout.fullNamePlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {t("profile.phoneLabel")}
+                  </label>
                   <input
                     type="text"
                     value={ad.phone}
                     onChange={(e) => handleAdditionalChange(index, "phone", e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                    placeholder="Mobile Number"
+                    placeholder={t("checkout.phonePlaceholder")}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">House Address *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {t("profile.houseAddressLabel")}
+                  </label>
                   <textarea
                     required
                     value={ad.address}
                     onChange={(e) => handleAdditionalChange(index, "address", e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 min-h-[80px]"
-                    placeholder="Flat, House no., Building, Company, Apartment"
+                    placeholder={t("profile.housePlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Village/Town *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {t("profile.villageLabel")}
+                  </label>
                   <input
                     type="text"
                     required
                     value={ad.village}
                     onChange={(e) => handleAdditionalChange(index, "village", e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                    placeholder="Area, Street, Sector, Village"
+                    placeholder={t("profile.villagePlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">District *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {t("profile.districtLabel")}
+                  </label>
                   <input
                     type="text"
                     required
                     value={ad.district}
                     onChange={(e) => handleAdditionalChange(index, "district", e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                    placeholder="District / City"
+                    placeholder={t("profile.districtPlaceholder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Pincode *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {t("profile.pincodeLabel")}
+                  </label>
                   <input
                     type="text"
                     required
                     value={ad.pincode}
                     onChange={(e) => handleAdditionalChange(index, "pincode", e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1"
-                    placeholder="6 digits [0-9] PIN code"
+                    placeholder={t("profile.pincodePlaceholder")}
                   />
                 </div>
               </div>
@@ -337,7 +354,7 @@ export default function CustomerProfile() {
               onClick={handleAddAddress}
               className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-600 font-bold hover:bg-gray-100 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
             >
-              <span className="text-xl">+</span> Add New Address
+              <span className="text-xl">+</span> {t("profile.addNewAddress")}
             </button>
           )}
 
@@ -348,7 +365,7 @@ export default function CustomerProfile() {
               saving ? "bg-gray-400 cursor-not-allowed" : "bg-green-700 hover:bg-green-800"
             }`}
           >
-            {saving ? "Saving..." : "Save Addresses"}
+            {saving ? t("profile.saving") : t("profile.saveAddresses")}
           </button>
         </form>
       </div>

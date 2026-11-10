@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { ensureFarmerAccess } from '../../../lib/farmerAuth'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
 
 export default function MyProducts() {
   const router = useRouter()
+  const { t, tu } = useLanguage()
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +61,7 @@ export default function MyProducts() {
 
     if (productError) {
       console.log('PRODUCT ERROR:', productError)
-      setError('Products load panna mudiyala. Please try again.')
+      setError('Unable to load products. Please try again.')
       setProducts([])
     } else {
       setProducts(data || [])
@@ -115,10 +118,10 @@ export default function MyProducts() {
   }, [products, search, filter])
 
   function getApprovalLabel(status) {
-    if (status === 'active') return '✓ Approved'
-    if (status === 'rejected') return '✕ Rejected'
-    if (status === 'pending') return '⏳ Pending'
-    return '— Not Set'
+    if (status === 'active') return `✓ ${t('farmer.approvedStatus')}`
+    if (status === 'rejected') return `✕ ${t('farmer.rejectedStatus')}`
+    if (status === 'pending') return `⏳ ${t('farmer.pendingStatus')}`
+    return `— ${t('farmer.notSetStatus')}`
   }
 
   function getApprovalStyle(status) {
@@ -129,7 +132,9 @@ export default function MyProducts() {
   }
 
   function getStatusLabel(status) {
-    return status === 'active' ? '🟢 Active' : '🔴 Inactive'
+    return status === 'active'
+      ? `🟢 ${t('farmer.activeStatus')}`
+      : `🔴 ${t('farmer.inactiveStatus')}`
   }
 
   function getCustomerPrice(product) {
@@ -144,7 +149,7 @@ export default function MyProducts() {
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
         <div className="bg-white p-9 sm:p-12 rounded-2xl border border-gray-200 text-center text-gray-700">
           <div className="text-[40px] mb-2.5">🌾</div>
-          <p className="m-0 text-base">Loading your products...</p>
+          <p className="m-0 text-base">{t('farmer.loadingProducts')}</p>
         </div>
       </main>
     )
@@ -153,13 +158,14 @@ export default function MyProducts() {
   return (
     <main className="min-h-screen bg-[#f7f8f5] font-sans pb-10">
       <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center gap-4 flex-wrap">
-        <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 Uzhavar Market</div>
+        <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 {t('brand')}</div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageToggle variant="compact" />
           <button
             onClick={() => router.push('/farmer')}
             className="px-4 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
-            ← Dashboard
+            ← {t('nav.dashboard')}
           </button>
         </div>
       </nav>
@@ -167,8 +173,10 @@ export default function MyProducts() {
       <section className="w-[95%] sm:w-[90%] max-w-[1250px] mx-auto pt-[30px] sm:pt-[40px]">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-[30px] gap-4 sm:gap-5 flex-wrap">
           <div>
-            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] text-gray-800 font-bold">My Products</h1>
-            <p className="m-0 text-gray-500 text-sm sm:text-base">Manage the products you have added.</p>
+            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] text-gray-800 font-bold">
+              {t('farmer.myProducts')}
+            </h1>
+            <p className="m-0 text-gray-500 text-sm sm:text-base">{t('farmer.myProductsSubtitle')}</p>
           </div>
           <div className="flex gap-2.5 flex-wrap w-full sm:w-auto">
             <button
@@ -178,13 +186,13 @@ export default function MyProducts() {
                 refreshing ? 'opacity-60 cursor-not-allowed' : ''
               }`}
             >
-              {refreshing ? 'Refreshing...' : '↻ Refresh'}
+              {refreshing ? t('common.refreshing') : `↻ ${t('common.refresh')}`}
             </button>
             <button
               onClick={() => router.push('/farmer/add-product')}
               className="flex-1 sm:flex-none px-4 py-2.5 sm:px-[18px] sm:py-[11px] border-none rounded-lg bg-green-800 text-white font-semibold text-sm sm:text-base cursor-pointer hover:bg-green-700 transition-colors"
             >
-              + Add Product
+              + {t('farmer.addProduct')}
             </button>
           </div>
         </div>
@@ -200,28 +208,28 @@ export default function MyProducts() {
             <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">📦</div>
             <div>
               <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.total}</div>
-              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Total Products</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">{t('farmer.totalProducts')}</div>
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
             <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">🟢</div>
             <div>
               <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.active}</div>
-              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Active</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">{t('farmer.activeCountLabel')}</div>
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
             <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">⏳</div>
             <div>
               <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.pending}</div>
-              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Pending Approval</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">{t('farmer.pendingApprovalCountLabel')}</div>
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-[18px] flex items-center gap-3 sm:gap-[14px]">
             <div className="w-10 h-10 sm:w-[45px] sm:h-[45px] rounded-lg bg-green-50 flex justify-center items-center text-xl sm:text-[22px] flex-shrink-0">🔴</div>
             <div>
               <div className="text-xl sm:text-[23px] font-bold text-gray-800 leading-tight">{stats.inactive}</div>
-              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">Inactive</div>
+              <div className="text-[11px] sm:text-[13px] text-gray-500 mt-0.5 sm:mt-1">{t('farmer.inactiveCountLabel')}</div>
             </div>
           </div>
         </div>
@@ -232,7 +240,7 @@ export default function MyProducts() {
               <span className="text-base">🔍</span>
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder={t('farmer.searchProductsPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full border-none outline-none py-2.5 px-2.5 text-[15px] bg-transparent"
@@ -248,7 +256,7 @@ export default function MyProducts() {
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                All ({stats.total})
+                {t('farmer.filterAll', { count: stats.total })}
               </button>
               <button
                 onClick={() => setFilter('active')}
@@ -258,7 +266,7 @@ export default function MyProducts() {
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                Active ({stats.active})
+                {t('farmer.filterActive', { count: stats.active })}
               </button>
               <button
                 onClick={() => setFilter('inactive')}
@@ -268,7 +276,7 @@ export default function MyProducts() {
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                Inactive ({stats.inactive})
+                {t('farmer.filterInactive', { count: stats.inactive })}
               </button>
               <button
                 onClick={() => setFilter('pending')}
@@ -278,7 +286,7 @@ export default function MyProducts() {
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                Pending ({stats.pending})
+                {t('farmer.filterPending', { count: stats.pending })}
               </button>
               <button
                 onClick={() => setFilter('rejected')}
@@ -288,7 +296,7 @@ export default function MyProducts() {
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
-                Rejected ({stats.rejected})
+                {t('farmer.filterRejected', { count: stats.rejected })}
               </button>
             </div>
           </div>
@@ -297,20 +305,24 @@ export default function MyProducts() {
         {products.length === 0 ? (
           <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-[40px_20px] sm:p-[60px_20px] text-center mt-[30px]">
             <div className="text-[50px] mb-[15px]">📦</div>
-            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">No products yet</h2>
-            <p className="m-0 mb-5 text-gray-500 text-[15px]">You haven't added any products yet.</p>
+            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">
+              {t('farmer.noProductsYet')}
+            </h2>
+            <p className="m-0 mb-5 text-gray-500 text-[15px]">{t('farmer.noProductsYetDesc')}</p>
             <button
               onClick={() => router.push('/farmer/add-product')}
               className="px-[20px] py-[12px] border-none rounded-lg bg-green-800 text-white font-bold cursor-pointer hover:bg-green-700 transition-colors"
             >
-              Add Your First Product
+              {t('farmer.addFirstProduct')}
             </button>
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-[40px_20px] sm:p-[60px_20px] text-center mt-[30px]">
             <div className="text-[50px] mb-[15px]">🔍</div>
-            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">No matching products</h2>
-            <p className="m-0 mb-5 text-gray-500 text-[15px]">Search or filter change panni try pannunga.</p>
+            <h2 className="m-0 mb-2.5 text-xl sm:text-[24px] text-gray-800 font-bold">
+              {t('farmer.noMatchingProducts')}
+            </h2>
+            <p className="m-0 mb-5 text-gray-500 text-[15px]">{t('farmer.tryChangingFilter')}</p>
             <button
               onClick={() => {
                 setSearch('')
@@ -318,13 +330,16 @@ export default function MyProducts() {
               }}
               className="px-[20px] py-[12px] border border-gray-300 rounded-lg bg-white text-gray-700 font-bold cursor-pointer hover:bg-gray-50 transition-colors"
             >
-              Reset Filters
+              {t('farmer.resetFilters')}
             </button>
           </div>
         ) : (
           <>
             <div className="mb-4 sm:mb-[15px] text-gray-500 text-sm">
-              Showing {filteredProducts.length} of {products.length} products
+              {t('farmer.showingOfProducts', {
+                shown: filteredProducts.length,
+                total: products.length,
+              })}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
@@ -335,16 +350,17 @@ export default function MyProducts() {
                 const stock = Number(product.stock_quantity || 0)
 
                 return (
-                  <div key={product.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
+                  <div
+                    key={product.id}
+                    className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow"
+                  >
                     {product.image_url ? (
                       <div className="relative">
-
-                        {product.video_url && (
-                          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/75 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold flex items-center gap-1 shadow-md z-10">
-                            🎥 Video
-                          </div>
-                        )}
-                        <img src={product.image_url} alt={product.name} className="w-full h-32 sm:h-[220px] object-cover block" />
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-32 sm:h-[220px] object-cover block"
+                        />
                         <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white px-1.5 py-0.5 sm:px-2.5 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] font-bold shadow-md">
                           {getStatusLabel(product.status)}
                         </div>
@@ -360,44 +376,64 @@ export default function MyProducts() {
 
                     <div className="p-2 sm:p-5 flex flex-col flex-1">
                       <div className="flex justify-between items-start gap-1 sm:gap-2 mb-1 sm:mb-2">
-                        <h2 className="m-0 text-sm sm:text-[20px] text-gray-800 font-bold line-clamp-2 leading-tight">{product.name}</h2>
+                        <h2 className="m-0 text-sm sm:text-[20px] text-gray-800 font-bold line-clamp-2 leading-tight">
+                          {product.name}
+                        </h2>
                       </div>
 
                       <div className="hidden sm:block mb-4 text-[13px] text-gray-500 line-clamp-2 flex-1">
-                        {product.description || 'No description available'}
+                        {product.description || t('farmer.noDescAvailable')}
                       </div>
 
                       <div className="bg-gray-50 border border-gray-200 rounded-lg sm:rounded-xl p-2 sm:p-3 mb-2 sm:mb-4">
                         <div className="hidden sm:flex justify-between text-[13px] text-gray-600 mb-1.5">
-                          <span>Farmer Price</span>
-                          <strong className="text-gray-800">₹{farmerPrice.toLocaleString('en-IN')}{product.unit ? ` / ${product.unit_count || 1} ${product.unit}` : ''}</strong>
+                          <span>{t('farmer.farmerPrice')}</span>
+                          <strong className="text-gray-800">
+                            ₹{farmerPrice.toLocaleString('en-IN')}
+                            {product.unit ? ` / ${product.unit_count || 1} ${tu(product.unit)}` : ''}
+                          </strong>
                         </div>
                         <div className="hidden sm:flex justify-between text-[13px] text-gray-600 mb-1.5">
-                          <span>Commission</span>
+                          <span>{t('farmer.commission')}</span>
                           <span className="text-gray-800">₹{commission.toLocaleString('en-IN')}</span>
                         </div>
                         <div className="hidden sm:flex justify-between text-[13px] text-gray-600 mb-3">
-                          <span>Delivery</span>
-                          <span className="text-gray-800">₹{Number(product.delivery_price || 0).toLocaleString('en-IN')}</span>
+                          <span>{t('farmer.delivery')}</span>
+                          <span className="text-gray-800">
+                            ₹{Number(product.delivery_price || 0).toLocaleString('en-IN')}
+                          </span>
                         </div>
                         <div className="hidden sm:block border-t border-gray-200 my-2" />
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-[11px] sm:text-[14px]">
-                          <span className="text-gray-700 font-semibold hidden sm:inline">Price</span>
-                          <strong className="text-green-800 text-[13px] sm:text-[15px]">₹{customerPrice.toLocaleString('en-IN')}{product.unit ? ` / ${product.unit_count || 1} ${product.unit}` : ''}</strong>
+                          <span className="text-gray-700 font-semibold hidden sm:inline">
+                            {t('common.price')}
+                          </span>
+                          <strong className="text-green-800 text-[13px] sm:text-[15px]">
+                            ₹{customerPrice.toLocaleString('en-IN')}
+                            {product.unit ? ` / ${product.unit_count || 1} ${tu(product.unit)}` : ''}
+                          </strong>
                         </div>
                       </div>
 
                       <div className="flex justify-between items-center mb-2 sm:mb-4 text-[10px] sm:text-[13px]">
                         <div>
-                          <strong className="text-gray-800">{stock} available</strong>
+                          <strong className="text-gray-800">
+                            {t('farmer.availableStock', { stock })}
+                          </strong>
                         </div>
-                        <div className={`px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded font-bold text-[9px] sm:text-[11px] ${stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {stock > 0 ? 'In Stock' : 'Out'}
+                        <div
+                          className={`px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded font-bold text-[9px] sm:text-[11px] ${
+                            stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {stock > 0 ? t('common.inStock') : t('common.outShort')}
                         </div>
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-gray-50 p-1.5 sm:p-2.5 rounded text-[10px] sm:text-[12px] mb-2 sm:mb-4">
-                        <strong className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-[10px] font-bold whitespace-nowrap self-start sm:self-auto ${getApprovalStyle(product.approval_status)}`}>
+                        <strong
+                          className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-[10px] font-bold whitespace-nowrap self-start sm:self-auto ${getApprovalStyle(product.approval_status)}`}
+                        >
                           {getApprovalLabel(product.approval_status)}
                         </strong>
                       </div>
@@ -406,7 +442,7 @@ export default function MyProducts() {
                         onClick={() => router.push(`/farmer/products/edit/${product.id}`)}
                         className="w-full py-1.5 sm:py-2.5 border border-gray-300 rounded-md sm:rounded-lg bg-white text-gray-700 font-bold cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-colors mt-auto text-[11px] sm:text-[14px]"
                       >
-                        ✏️ Edit
+                        ✏️ {t('common.edit')}
                       </button>
                     </div>
                   </div>

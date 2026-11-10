@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { t, tu } = useLanguage();
 
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
@@ -161,32 +163,32 @@ export default function CheckoutPage() {
 
   async function handlePlaceOrder() {
     if (!customerName.trim()) {
-      alert("Please enter your name.");
+      alert(t("checkout.errName"));
       return;
     }
 
     if (!phone.trim()) {
-      alert("Please enter your phone number.");
+      alert(t("checkout.errPhone"));
       return;
     }
 
     if (!address.trim()) {
-      alert("Please enter your house/street address.");
+      alert(t("checkout.errAddress"));
       return;
     }
 
     if (!village.trim()) {
-      alert("Please enter your village/town.");
+      alert(t("checkout.errVillage"));
       return;
     }
 
     if (!district.trim()) {
-      alert("Please enter your district.");
+      alert(t("checkout.errDistrict"));
       return;
     }
 
     if (!pincode.trim()) {
-      alert("Please enter your pincode.");
+      alert(t("checkout.errPincode"));
       return;
     }
 
@@ -199,7 +201,7 @@ export default function CheckoutPage() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        alert("Authentication error.");
+        alert(t("checkout.errAuth"));
         setPlacingOrder(false);
         return;
       }
@@ -252,14 +254,10 @@ export default function CheckoutPage() {
       for (const farmerId in itemsByFarmer) {
         const farmerItems = itemsByFarmer[farmerId];
         let orderTotalAmount = 0;
-        let orderTotalCommission = 0;
 
         farmerItems.forEach((item) => {
           const itemTotal = getItemTotal(item);
           orderTotalAmount += itemTotal;
-
-          const commAmount = Number(item.commission_amount || 0);
-          orderTotalCommission += commAmount * Number(item.quantity || 1);
         });
 
         const { data: newOrder, error: orderError } = await supabase
@@ -310,7 +308,7 @@ export default function CheckoutPage() {
       router.push("/customer/orders");
     } catch (error) {
       console.error("Checkout Error:", error);
-      alert(`Failed to place order: ${error.message || JSON.stringify(error)}`);
+      alert(t("checkout.errPlaceOrder", { msg: error.message || JSON.stringify(error) }));
     } finally {
       setPlacingOrder(false);
     }
@@ -319,7 +317,7 @@ export default function CheckoutPage() {
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#f6f8f5] font-sans">
-        <p className="text-lg text-gray-600 font-medium animate-pulse">Loading checkout...</p>
+        <p className="text-lg text-gray-600 font-medium animate-pulse">{t("checkout.loadingCheckout")}</p>
       </main>
     );
   }
@@ -329,12 +327,12 @@ export default function CheckoutPage() {
       <main className="min-h-screen bg-[#f6f8f5] px-4 py-10 sm:p-10 font-sans">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
-            <h1 className="text-2xl font-bold mb-4">Your cart is empty.</h1>
+            <h1 className="text-2xl font-bold mb-4">{t("checkout.emptyCart")}</h1>
             <button
               onClick={() => router.push("/customer/products")}
               className="px-6 py-3 bg-green-700 text-white rounded-lg font-medium"
             >
-              Go to Products
+              {t("checkout.goToProducts")}
             </button>
           </div>
         </div>
@@ -350,29 +348,29 @@ export default function CheckoutPage() {
             onClick={() => router.push("/customer/cart")}
             className="text-gray-600 hover:text-green-800 font-medium text-sm sm:text-base transition-colors"
           >
-            &larr; Back to Cart
+            &larr; {t("checkout.backToCart")}
           </button>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-4 m-0">
-            Checkout
+            {t("checkout.title")}
           </h1>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <section className="flex-1 w-full bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-xl font-bold mb-6 border-b pb-2 flex justify-between items-center">
-              Delivery Details
+              {t("checkout.deliveryDetails")}
               <button 
                 onClick={() => router.push("/customer/profile")}
                 className="text-sm text-green-700 hover:underline font-medium"
               >
-                Manage Addresses
+                {t("checkout.manageAddresses")}
               </button>
             </h2>
 
             {savedAddresses.length > 0 && (
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Select Delivery Address
+                  {t("checkout.selectAddress")}
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {savedAddresses.map((addr, idx) => (
@@ -388,7 +386,7 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-start mb-1">
                         <strong className="text-gray-900">{addr.name}</strong>
                         {idx === 0 && (
-                          <span className="text-[10px] uppercase font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded">Primary</span>
+                          <span className="text-[10px] uppercase font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded">{t("checkout.primary")}</span>
                         )}
                       </div>
                       <div className="text-sm text-gray-600 line-clamp-2 mb-1">{addr.address}</div>
@@ -405,7 +403,7 @@ export default function CheckoutPage() {
                           : "border-gray-200 hover:border-gray-300 text-gray-600"
                       }`}
                     >
-                      + Deliver to another location
+                      {t("checkout.deliverAnother")}
                     </div>
                   )}
                 </div>
@@ -414,86 +412,86 @@ export default function CheckoutPage() {
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Full Name *
+                {t("checkout.fullName")}
               </label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                placeholder="e.g. John Doe"
+                placeholder={t("checkout.fullNamePlaceholder")}
               />
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone Number *
+                {t("checkout.phoneNumber")}
               </label>
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                placeholder="e.g. 9876543210"
+                placeholder={t("checkout.phonePlaceholder")}
               />
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                House / Street Address *
+                {t("checkout.streetAddress")}
               </label>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg min-h-[80px] outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                placeholder="Enter your house no, street name"
+                placeholder={t("checkout.streetPlaceholder")}
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Village / Town *
+                  {t("checkout.villageTown")}
                 </label>
                 <input
                   type="text"
                   value={village}
                   onChange={(e) => setVillage(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                  placeholder="e.g. Omalur"
+                  placeholder={t("checkout.villagePlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  District *
+                  {t("checkout.district")}
                 </label>
                 <input
                   type="text"
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                  placeholder="e.g. Salem"
+                  placeholder={t("checkout.districtPlaceholder")}
                 />
               </div>
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Pincode *
+                {t("checkout.pincode")}
               </label>
               <input
                 type="text"
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                placeholder="e.g. 636001"
+                placeholder={t("checkout.pincodePlaceholder")}
               />
             </div>
           </section>
 
           <section className="w-full lg:w-[400px] bg-white rounded-xl p-6 shadow-sm border border-gray-100 sticky top-6">
             <h2 className="text-xl font-bold mb-6 border-b pb-2">
-              Order Summary
+              {t("checkout.orderSummary")}
             </h2>
 
             {cart.map((item, index) => (
@@ -516,7 +514,7 @@ export default function CheckoutPage() {
                 <div className="flex-1">
                   <h4 className="m-0 mb-1 font-semibold">{item.name}</h4>
                   <p className="m-0 mb-1 text-gray-600 text-sm">
-                    Qty: {item.quantity} × {item.unit_count || 1} {item.unit || "unit"}
+                    {t("common.qty")}: {item.quantity} × {item.unit_count || 1} {tu(item.unit || "unit")}
                   </p>
                   <strong className="block text-gray-900">
                     ₹{getItemTotal(item).toFixed(2)}
@@ -526,21 +524,21 @@ export default function CheckoutPage() {
             ))}
 
             <div className="flex justify-between mb-3 text-gray-600">
-              <span>Products</span>
+              <span>{t("checkout.products")}</span>
               <span>{cart.length}</span>
             </div>
 
             <div className="flex justify-between mb-3 text-gray-600">
-              <span>Delivery</span>
+              <span>{t("checkout.delivery")}</span>
               {totalDelivery > 0 ? (
                 <span className="text-gray-900 font-medium">₹{totalDelivery.toFixed(2)}</span>
               ) : (
-                <span className="text-green-600 font-medium">Free</span>
+                <span className="text-green-600 font-medium">{t("checkout.free")}</span>
               )}
             </div>
 
             <div className="border-t border-gray-200 pt-4 mt-4 flex justify-between text-xl font-bold">
-              <span>Total</span>
+              <span>{t("checkout.total")}</span>
               <span>₹{cartTotal.toFixed(2)}</span>
             </div>
 
@@ -550,10 +548,10 @@ export default function CheckoutPage() {
                 <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                <span>Payment: Online Payment Only</span>
+                <span>{t("checkout.paymentTitle")}</span>
               </div>
               <p className="m-0 text-emerald-800 leading-relaxed">
-                Cash on Delivery (COD) is not available. All orders are processed securely via Online Payment (UPI / Cards / Net Banking).
+                {t("checkout.paymentDesc")}
               </p>
             </div>
 
@@ -563,10 +561,10 @@ export default function CheckoutPage() {
                 <svg className="w-4 h-4 text-blue-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-                <span>Dispatched via Parcel / Courier</span>
+                <span>{t("checkout.logisticsTitle")}</span>
               </div>
               <p className="m-0 text-blue-800 leading-relaxed">
-                Items are safely packaged by farmers and booked at their nearest parcel or courier service (ST Courier, Professional, India Post).
+                {t("checkout.logisticsDesc")}
               </p>
             </div>
 
@@ -578,8 +576,8 @@ export default function CheckoutPage() {
               }`}
             >
               {placingOrder
-                ? "Placing Order..."
-                : `Pay Online & Place Order • ₹${cartTotal.toFixed(2)}`}
+                ? t("checkout.placingOrder")
+                : t("checkout.payAndPlaceOrder", { total: cartTotal.toFixed(2) })}
             </button>
           </section>
         </div>

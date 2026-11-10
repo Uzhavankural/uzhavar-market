@@ -7,9 +7,38 @@ import { supabase } from "../lib/supabase";
 import { ensureFarmerAccess } from "../lib/farmerAuth";
 import HeroBanner from "./components/HeroBanner";
 import Footer from "./components/Footer";
+import LanguageToggle from "./components/LanguageToggle";
+import { useLanguage } from "./context/LanguageContext";
+
+function readCartFromStorage(cartKey) {
+  try {
+    const storedCart = localStorage.getItem(cartKey);
+    const parsed = storedCart ? JSON.parse(storedCart) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.log("Cart read error:", error);
+    return [];
+  }
+}
+
+function buildCartItem(product, stock) {
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description || "",
+    price: Number(product.price || 0),
+    commission_amount: Number(product.commission_amount || 0),
+    unit: product.unit || "unit",
+    image_url: product.image_url || "",
+    stock_quantity: stock,
+    farmer_id: product.farmer_id,
+    quantity: 1,
+  };
+}
 
 export default function Home() {
   const router = useRouter();
+  const { t, tc, tu } = useLanguage();
 
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -183,129 +212,49 @@ export default function Home() {
   }
 
   // =========================
-  // ADD TO CART
+  // ADD TO CART & BUY NOW
   // =========================
-  function handleAddToCart(product) {
+  function addProductToUserCart(product, { buyNow = false } = {}) {
     if (!user) {
-      alert("Please login to add products to cart.");
+      alert(t(buyNow ? "home.loginToBuy" : "home.loginToCart"));
       router.push("/login");
       return;
     }
 
     const stock = Number(product.stock_quantity || 0);
-
     if (stock <= 0) {
-      alert("This product is currently out of stock.");
+      alert(t("home.outOfStockAlert"));
       return;
     }
 
     const cartKey = `uzhavar_cart_${user.id}`;
-    let existingCart = [];
-
-    try {
-      const storedCart = localStorage.getItem(cartKey);
-      existingCart = storedCart ? JSON.parse(storedCart) : [];
-      if (!Array.isArray(existingCart)) {
-        existingCart = [];
-      }
-    } catch (error) {
-      console.log("Cart read error:", error);
-      existingCart = [];
-    }
-
+    const existingCart = readCartFromStorage(cartKey);
     const existingItem = existingCart.find((item) => item.id === product.id);
     let updatedCart;
 
     if (existingItem) {
       const newQuantity = Number(existingItem.quantity || 0) + 1;
       if (newQuantity > stock) {
-        alert(`Only ${stock} ${product.unit || "unit"} available in stock.`);
-        return;
-      }
-      updatedCart = existingCart.map((item) =>
-        item.id === product.id ? { ...item, quantity: newQuantity } : item
-      );
-    } else {
-      updatedCart = [
-        ...existingCart,
-        {
-          id: product.id,
-          name: product.name,
-          description: product.description || "",
-          price: Number(product.price || 0),
-          commission_amount: Number(product.commission_amount || 0),
-          unit: product.unit || "unit",
-          image_url: product.image_url || "",
-          stock_quantity: stock,
-          farmer_id: product.farmer_id,
-          quantity: 1,
-        },
-      ];
-    }
-
-    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
-    alert("Product added to cart! 🛒");
-  }
-
-  function handleBuyNow(product) {
-    if (!user) {
-      alert("Please login to buy products.");
-      router.push("/login");
-      return;
-    }
-
-    const stock = Number(product.stock_quantity || 0);
-
-    if (stock <= 0) {
-      alert("This product is currently out of stock.");
-      return;
-    }
-
-    const cartKey = `uzhavar_cart_${user.id}`;
-    let existingCart = [];
-
-    try {
-      const storedCart = localStorage.getItem(cartKey);
-      existingCart = storedCart ? JSON.parse(storedCart) : [];
-      if (!Array.isArray(existingCart)) {
-        existingCart = [];
-      }
-    } catch (error) {
-      existingCart = [];
-    }
-
-    const existingItem = existingCart.find((item) => item.id === product.id);
-    let updatedCart;
-
-    if (existingItem) {
-      const newQuantity = Number(existingItem.quantity || 0) + 1;
-      if (newQuantity <= stock) {
+        if (!buyNow) {
+          alert(t("home.stockLimitAlert", { stock, unit: tu(product.unit || "unit") }));
+          return;
+        }
+        updatedCart = existingCart;
+      } else {
         updatedCart = existingCart.map((item) =>
           item.id === product.id ? { ...item, quantity: newQuantity } : item
         );
-      } else {
-        updatedCart = existingCart;
       }
     } else {
-      updatedCart = [
-        ...existingCart,
-        {
-          id: product.id,
-          name: product.name,
-          description: product.description || "",
-          price: Number(product.price || 0),
-          commission_amount: Number(product.commission_amount || 0),
-          unit: product.unit || "unit",
-          image_url: product.image_url || "",
-          stock_quantity: stock,
-          farmer_id: product.farmer_id,
-          quantity: 1,
-        },
-      ];
+      updatedCart = [...existingCart, buildCartItem(product, stock)];
     }
 
     localStorage.setItem(cartKey, JSON.stringify(updatedCart));
-    router.push("/customer/checkout");
+    if (buyNow) {
+      router.push("/customer/checkout");
+    } else {
+      alert(`${t("home.addedToCartAlert")} 🛒`);
+    }
   }
 
   return (
@@ -319,18 +268,20 @@ export default function Home() {
           onClick={() => router.push("/")}
         >
           <span>🌾</span>
-          <span>Uzhavar Market</span>
+          <span>{t("brand")}</span>
         </div>
 
         {/* MOBILE TOP CONTROLS (sm:hidden) */}
         <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+          <LanguageToggle variant="compact" />
+
           {!authLoading && user && role === "farmer" && (
             <button
               onClick={() => router.push("/farmer")}
               className="px-2 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
             >
               <span>🌾</span>
-              <span>Dashboard</span>
+              <span>{t("nav.dashboard")}</span>
             </button>
           )}
 
@@ -340,7 +291,7 @@ export default function Home() {
               className="px-2 py-1.5 rounded-lg bg-green-50 text-green-800 text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors whitespace-nowrap active:scale-95 flex items-center gap-1 shadow-2xs"
             >
               <span>⚙️</span>
-              <span>Admin</span>
+              <span>{t("nav.admin")}</span>
             </button>
           )}
 
@@ -349,7 +300,7 @@ export default function Home() {
               onClick={handleLogout}
               className="px-2.5 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
             >
-              Logout
+              {t("nav.logout")}
             </button>
           )}
 
@@ -358,32 +309,34 @@ export default function Home() {
               onClick={() => router.push("/login")}
               className="px-2.5 py-1.5 rounded-lg bg-green-800 text-white text-xs font-bold hover:bg-green-700 transition-colors whitespace-nowrap active:scale-95 shadow-xs"
             >
-              Login
+              {t("nav.login")}
             </button>
           )}
         </div>
 
         {/* DESKTOP NAVIGATION (hidden sm:flex) */}
-        <div className="hidden sm:flex items-center gap-6">
-          <a href="/" className="hover:text-green-700 transition-colors font-medium">Home</a>
-          <a href="#categories" className="hover:text-green-700 transition-colors font-medium">Categories</a>
-          <a href="#products" className="hover:text-green-700 transition-colors font-medium">Products</a>
-          <Link href="/about" className="hover:text-green-700 transition-colors font-medium">About Us</Link>
-          <Link href="/contact" className="hover:text-green-700 transition-colors font-medium">Contact</Link>
+        <div className="hidden sm:flex items-center gap-4 lg:gap-5 flex-wrap justify-end">
+          <Link href="/" className="hover:text-green-700 transition-colors font-medium whitespace-nowrap">{t("nav.home")}</Link>
+          <a href="#categories" className="hover:text-green-700 transition-colors font-medium whitespace-nowrap">{t("nav.categories")}</a>
+          <a href="#products" className="hover:text-green-700 transition-colors font-medium whitespace-nowrap">{t("nav.products")}</a>
+          <Link href="/about" className="hover:text-green-700 transition-colors font-medium whitespace-nowrap">{t("nav.aboutUs")}</Link>
+          <Link href="/contact" className="hover:text-green-700 transition-colors font-medium whitespace-nowrap">{t("nav.contact")}</Link>
+
+          <LanguageToggle />
 
           {!authLoading && user && (role === "customer" || role === "farmer") && (
             <>
               <button
                 onClick={() => router.push("/customer/cart")}
-                className="hover:text-green-700 transition-colors font-medium"
+                className="hover:text-green-700 transition-colors font-medium whitespace-nowrap"
               >
-                🛒 My Cart
+                🛒 {t("nav.myCart")}
               </button>
               <button
                 onClick={() => router.push("/customer/orders")}
-                className="hover:text-green-700 transition-colors font-medium"
+                className="hover:text-green-700 transition-colors font-medium whitespace-nowrap"
               >
-                📦 My Orders
+                📦 {t("nav.myOrders")}
               </button>
             </>
           )}
@@ -391,36 +344,36 @@ export default function Home() {
           {!authLoading && user && role === "farmer" && (
             <button
               onClick={() => router.push("/farmer")}
-              className="hover:text-green-700 transition-colors font-medium"
+              className="hover:text-green-700 transition-colors font-medium whitespace-nowrap"
             >
-              🌾 Farmer Dashboard
+              🌾 {t("nav.farmerDashboard")}
             </button>
           )}
 
           {!authLoading && user && role === "admin" && (
             <button
               onClick={() => router.push("/admin")}
-              className="hover:text-green-700 transition-colors font-medium"
+              className="hover:text-green-700 transition-colors font-medium whitespace-nowrap"
             >
-              ⚙️ Admin Dashboard
+              ⚙️ {t("nav.adminDashboard")}
             </button>
           )}
 
           {!authLoading && !user && (
             <button
               onClick={() => router.push("/login")}
-              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors font-medium"
+              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors font-medium whitespace-nowrap"
             >
-              Login
+              {t("nav.login")}
             </button>
           )}
 
           {!authLoading && user && (
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors font-medium"
+              className="px-4 py-2 rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors font-medium whitespace-nowrap"
             >
-              Logout
+              {t("nav.logout")}
             </button>
           )}
         </div>
@@ -435,7 +388,7 @@ export default function Home() {
           CATEGORIES
       ========================= */}
       <section id="categories" className="py-12 sm:py-16 px-4 sm:px-[7%]">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center sm:text-left">Shop by Category</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center sm:text-left">{t("home.shopByCategory")}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <button
             className={`p-4 sm:p-6 bg-white border rounded-xl flex flex-col items-center justify-center transition-all ${
@@ -446,7 +399,7 @@ export default function Home() {
             onClick={() => setSelectedCategory("All")}
           >
             <div className="text-3xl mb-2">🛒</div>
-            <span className="text-sm sm:text-base text-center">All Products</span>
+            <span className="text-sm sm:text-base text-center">{t("home.allProducts")}</span>
           </button>
 
           {categories.map((category) => (
@@ -465,7 +418,7 @@ export default function Home() {
               }}
             >
               <div className="text-3xl mb-2">{category.icon || "🌱"}</div>
-              <span className="text-sm sm:text-base text-center">{category.name}</span>
+              <span className="text-sm sm:text-base text-center">{tc(category.name)}</span>
             </button>
           ))}
         </div>
@@ -477,16 +430,16 @@ export default function Home() {
       <section id="products" className="py-12 sm:py-16 px-4 sm:px-[7%] flex-1">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-0">
-            {selectedCategory === "All" ? "Featured Products" : selectedCategory}
+            {selectedCategory === "All" ? t("home.featuredProducts") : tc(selectedCategory)}
           </h2>
           <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            {filteredProducts.length} products
+            {t("home.productsCount", { count: filteredProducts.length })}
           </span>
         </div>
 
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-            <p className="text-gray-500 text-lg">No products available in this category.</p>
+            <p className="text-gray-500 text-lg">{t("home.noProductsInCategory")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
@@ -509,7 +462,7 @@ export default function Home() {
                 </div>
 
                 <div className="p-3 sm:p-5 flex-1 flex flex-col">
-                  <p className="text-[10px] sm:text-xs uppercase text-green-700 font-semibold mb-1">Farm Product</p>
+                  <p className="text-[10px] sm:text-xs uppercase text-green-700 font-semibold mb-1">{t("home.farmProduct")}</p>
                   <h3 className="text-sm sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
                   <p className="hidden sm:block text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-2">
                     {product.description}
@@ -517,14 +470,14 @@ export default function Home() {
 
                   <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-600 dark:text-slate-300 mb-2 sm:mb-3">
                     <div>
-                      <strong className="text-gray-700 dark:text-slate-400">Farmer:</strong>{" "}
+                      <strong className="text-gray-700 dark:text-slate-400">{t("common.farmer")}:</strong>{" "}
                       <span className="text-gray-900 dark:text-slate-100 font-medium">
-                        {product.profiles?.farm_name || product.profiles?.full_name || "Local Farmer"}
+                        {product.profiles?.farm_name || product.profiles?.full_name || t("common.localFarmer")}
                       </span>
                     </div>
                     {product.profiles?.district && (
                       <div>
-                        <strong className="text-gray-700 dark:text-slate-400">District:</strong>{" "}
+                        <strong className="text-gray-700 dark:text-slate-400">{t("common.district")}:</strong>{" "}
                         <span className="text-gray-900 dark:text-slate-100 font-medium">
                           {product.profiles.district}
                         </span>
@@ -540,11 +493,13 @@ export default function Home() {
                           Number(product.price || 0) + Number(product.commission_amount || 0)
                         ).toFixed(2)}
                       </strong>
-                      <span className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 pb-0.5">/ {product.unit}</span>
+                      <span className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 pb-0.5">/ {tu(product.unit)}</span>
                     </div>
                     <p className="text-[10px] sm:text-sm text-gray-500 dark:text-slate-400 mb-2 sm:mb-4">
                       <span className={product.stock_quantity > 0 ? "text-green-600 dark:text-emerald-400 font-semibold" : "text-red-500 dark:text-rose-400 font-semibold"}>
-                        {product.stock_quantity > 0 ? `In Stock: ${product.stock_quantity}` : "Out of Stock"}
+                        {product.stock_quantity > 0
+                          ? t("home.inStockCount", { count: product.stock_quantity })
+                          : t("common.outOfStock")}
                       </span>
                     </p>
                     <div className="flex gap-2">
@@ -552,19 +507,19 @@ export default function Home() {
                         className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-100 dark:bg-slate-800 text-green-800 dark:text-emerald-400 border border-transparent dark:border-slate-700 text-xs sm:text-sm font-bold hover:bg-green-200 dark:hover:bg-slate-700 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-300"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAddToCart(product);
+                          addProductToUserCart(product, { buyNow: false });
                         }}
                       >
-                        Cart
+                        {t("home.cartBtn")}
                       </button>
                       <button
                         className="flex-1 py-2 sm:py-2.5 px-2 sm:px-4 rounded-md sm:rounded-lg bg-green-800 dark:bg-emerald-600 text-white text-xs sm:text-sm font-bold hover:bg-green-700 dark:hover:bg-emerald-500 transition-colors focus:ring-4 focus:ring-green-100 active:bg-green-900 shadow-sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleBuyNow(product);
+                          addProductToUserCart(product, { buyNow: true });
                         }}
                       >
-                        Buy
+                        {t("home.buyBtn")}
                       </button>
                     </div>
                   </div>
@@ -592,7 +547,7 @@ export default function Home() {
           className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">🏠</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">Home</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">{t("bottomNav.home")}</span>
         </button>
 
         <button
@@ -600,7 +555,7 @@ export default function Home() {
           className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">📂</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">Categories</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">{t("bottomNav.categories")}</span>
         </button>
 
         <button
@@ -608,7 +563,7 @@ export default function Home() {
           className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">🌾</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">Products</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">{t("bottomNav.products")}</span>
         </button>
 
         <button
@@ -616,7 +571,7 @@ export default function Home() {
           className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">🛒</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">My Cart</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">{t("bottomNav.myCart")}</span>
         </button>
 
         <button
@@ -624,7 +579,7 @@ export default function Home() {
           className="flex flex-col items-center justify-center flex-1 py-1 px-1 text-gray-600 dark:text-slate-300 hover:text-green-800 dark:hover:text-emerald-400 active:scale-90 transition-transform"
         >
           <span className="text-xl leading-none">📦</span>
-          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">My Orders</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-1 text-gray-700 dark:text-slate-200">{t("bottomNav.myOrders")}</span>
         </button>
       </nav>
     </main>

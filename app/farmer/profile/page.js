@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -8,6 +10,7 @@ import { ensureFarmerAccess } from '../../../lib/farmerAuth'
 
 export default function FarmerProfile() {
   const router = useRouter()
+  const { t } = useLanguage()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -100,7 +103,7 @@ export default function FarmerProfile() {
         throw new Error(error.message || JSON.stringify(error))
       }
 
-      const successText = 'Your changes are saved! Profile updated successfully. ✅'
+      const successText = `${t('farmer.profileSavedMsg')} ✅`
       setMessage(successText)
       setMessageType('success')
       showToast(successText, 'success', 4000)
@@ -117,7 +120,7 @@ export default function FarmerProfile() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center font-sans">
-        <p className="text-gray-500 text-lg animate-pulse">Loading profile...</p>
+        <p className="text-gray-500 text-lg animate-pulse">{t('profile.loadingProfile')}</p>
       </main>
     )
   }
@@ -134,9 +137,10 @@ export default function FarmerProfile() {
             &larr;
           </button>
           <div className="text-xl sm:text-2xl font-bold text-green-800">
-            My Profile
+            {t('farmer.myProfile')}
           </div>
         </div>
+        <LanguageToggle variant="compact" />
       </nav>
 
       <section className="w-[95%] sm:w-[90%] max-w-4xl mx-auto pt-6 sm:pt-10">
@@ -147,8 +151,8 @@ export default function FarmerProfile() {
               👨‍🌾
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 m-0">Farm & Profile Details</h1>
-              <p className="text-gray-500 text-sm mt-1 mb-0">Update your personal and farm location information</p>
+              <h1 className="text-2xl font-bold text-gray-800 m-0">{t('farmer.farmProfileTitle')}</h1>
+              <p className="text-gray-500 text-sm mt-1 mb-0">{t('farmer.farmProfileSubtitle')}</p>
             </div>
           </div>
 
@@ -156,43 +160,45 @@ export default function FarmerProfile() {
             
             {/* Personal Details Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-50 pb-2">Personal Information</h3>
+              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-50 pb-2">
+                {t('farmer.personalInfoSection')}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Farmer Name <span className="text-red-500">*</span>
+                    {t('farmer.farmerNameLabel')}
                   </label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter your full name"
+                    placeholder={t('auth.fullNamePlaceholder')}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Mobile Number <span className="text-red-500">*</span>
+                    {t('farmer.mobileNumberLabel')}
                   </label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter 10-digit mobile number"
+                    placeholder={t('auth.phonePlaceholder')}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
                   />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Email Address <span className="text-gray-400 font-normal">(Optional)</span>
+                    {t('farmer.emailOptionalLabel')} <span className="text-gray-400 font-normal">{t('farmer.optionalTag')}</span>
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email address"
+                    placeholder={t('auth.emailPlaceholder')}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
                   />
                 </div>
@@ -201,18 +207,20 @@ export default function FarmerProfile() {
 
             {/* Location Details Section */}
             <div className="space-y-4 pt-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-50 pb-2">Farm Location / Address</h3>
+              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-50 pb-2">
+                {t('farmer.farmLocationSection')}
+              </h3>
               
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Address <span className="text-red-500">*</span>
+                  {t('auth.addressLabel')} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   required
                   rows="3"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street, House No, Landmark"
+                  placeholder={t('auth.addressPlaceholder')}
                   className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all resize-y min-h-[80px]"
                 ></textarea>
               </div>
@@ -220,40 +228,40 @@ export default function FarmerProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Village / Town <span className="text-red-500">*</span>
+                    {t('auth.villageLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={village}
                     onChange={(e) => setVillage(e.target.value)}
-                    placeholder="E.g., Perundurai"
+                    placeholder={t('auth.villagePlaceholder')}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    District <span className="text-red-500">*</span>
+                    {t('auth.districtLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
-                    placeholder="E.g., Erode"
+                    placeholder={t('auth.districtPlaceholder')}
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
                   />
                 </div>
                 <div className="sm:col-span-2 md:col-span-1">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Pincode <span className="text-red-500">*</span>
+                    {t('auth.pincodeLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value)}
-                    placeholder="6-digit pincode"
+                    placeholder={t('auth.pincodePlaceholder')}
                     pattern="[0-9]{6}"
                     title="Please enter a valid 6-digit pincode"
                     className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
@@ -268,14 +276,14 @@ export default function FarmerProfile() {
                 onClick={() => router.push('/farmer')}
                 className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving}
                 className="px-8 py-3 rounded-lg bg-green-800 text-white font-bold hover:bg-green-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed min-w-[150px] shadow-sm"
               >
-                {saving ? 'Saving...' : 'Save Profile'}
+                {saving ? t('profile.saving') : t('farmer.saveProfileBtn')}
               </button>
             </div>
 

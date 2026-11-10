@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { ensureFarmerAccess } from '../../lib/farmerAuth'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
 
 export default function Login() {
   const router = useRouter()
+  const { t, locale } = useLanguage()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,7 +31,6 @@ export default function Login() {
   const [resending, setResending] = useState(false)
   const [showResend, setShowResend] = useState(false)
 
-  // Redirect if already logged in or arriving from email verification
   useEffect(() => {
     async function checkExistingAuth() {
       if (typeof window === 'undefined') return
@@ -80,7 +82,6 @@ export default function Login() {
     checkExistingAuth()
   }, [router])
 
-  // Live timer for voice recording
   useEffect(() => {
     let interval = null
     if (isRecording) {
@@ -101,7 +102,7 @@ export default function Login() {
 
   async function handleResendConfirmation() {
     if (!email) {
-      alert('Please enter your email address above to resend confirmation email.')
+      alert(t('auth.enterEmailForResend'))
       return
     }
     setResending(true)
@@ -114,9 +115,9 @@ export default function Login() {
     })
     setResending(false)
     if (resendErr) {
-      alert('Could not resend email: ' + resendErr.message)
+      alert(t('auth.resendFailed', { msg: resendErr.message }))
     } else {
-      alert('Confirmation email sent! Please check your inbox and click the confirm mail link.')
+      alert(t('auth.resendSuccess'))
     }
   }
 
@@ -134,7 +135,7 @@ export default function Login() {
 
     if (error) {
       if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
-        setMessage('Your email is not confirmed yet. Please check your inbox and click the confirmation link.')
+        setMessage(t('auth.emailNotConfirmed'))
         setShowResend(true)
       } else {
         setMessage(error.message)
@@ -145,7 +146,7 @@ export default function Login() {
 
     const user = data.user
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
@@ -160,7 +161,7 @@ export default function Login() {
       return
     }
 
-    setMessage('Login successful!')
+    setMessage(t('auth.loginSuccess'))
 
     setEmail('')
     setPassword('')
@@ -177,7 +178,6 @@ export default function Login() {
     }
   }
 
-  // Audio Recording Handlers
   async function startRecording() {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -241,7 +241,7 @@ export default function Login() {
   async function handleSubmitAppeal(e) {
     e.preventDefault()
     if (!appealReason.trim()) {
-      alert('Please enter your reason for the appeal.')
+      alert(t('auth.appealReasonPlaceholder'))
       return
     }
 
@@ -316,93 +316,96 @@ export default function Login() {
   if (bannedProfile) {
     const hasPendingAppeal = bannedProfile.appeal && bannedProfile.appeal.status === 'pending'
     const hasRejectedAppeal = bannedProfile.appeal && bannedProfile.appeal.status === 'rejected'
+    const formattedAppealDate = bannedProfile.appeal?.created_at
+      ? new Date(bannedProfile.appeal.created_at).toLocaleDateString(locale, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : ''
 
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans">
         <div className="w-full max-w-lg bg-white p-6 sm:p-8 rounded-2xl border border-red-200 shadow-xl">
+          <div className="flex justify-end mb-3">
+            <LanguageToggle variant="compact" />
+          </div>
           <div className="text-center text-4xl mb-3">🛑</div>
           <h1 className="text-center text-2xl font-bold text-red-700 mb-1">
-            Account Suspended
+            {t('auth.accountSuspended')}
           </h1>
           <p className="text-center text-gray-600 text-sm mb-6">
-            Hello <span className="font-bold text-gray-800">{bannedProfile.full_name || 'Farmer'}</span>, your account has been removed by the Admin.
+            {t('auth.suspendedDesc', { name: bannedProfile.full_name || t('common.farmer') })}
           </p>
 
-          {/* Pending Appeal View */}
           {hasPendingAppeal ? (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6 text-center">
               <div className="text-3xl mb-2">⏳</div>
-              <h3 className="m-0 text-base font-bold text-amber-900 mb-1">Appeal Under Review</h3>
+              <h3 className="m-0 text-base font-bold text-amber-900 mb-1">{t('auth.appealUnderReview')}</h3>
               <p className="m-0 text-xs text-amber-800 leading-relaxed mb-4">
-                Your appeal was submitted on{' '}
-                <strong className="font-bold">
-                  {new Date(bannedProfile.appeal.created_at).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </strong>
-                . The Admin will review your appeal. Once accepted, your account and products will be reactivated automatically.
+                {t('auth.appealSubmittedOn', { date: formattedAppealDate })}
               </p>
 
               <div className="bg-white/90 p-4 rounded-lg text-left text-xs text-gray-700 border border-amber-100 shadow-sm">
-                <span className="block font-bold text-gray-500 uppercase text-[10px] mb-1">Your Stated Reason:</span>
-                <p className="m-0 text-sm text-gray-800 italic leading-relaxed">"{bannedProfile.appeal.reason}"</p>
+                <span className="block font-bold text-gray-500 uppercase text-[10px] mb-1">
+                  {t('auth.statedReason')}
+                </span>
+                <p className="m-0 text-sm text-gray-800 italic leading-relaxed">&ldquo;{bannedProfile.appeal.reason}&rdquo;</p>
                 {bannedProfile.appeal.voice_url && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
-                    <span className="block font-bold text-gray-500 uppercase text-[10px] mb-1">Attached Voice Note:</span>
+                    <span className="block font-bold text-gray-500 uppercase text-[10px] mb-1">
+                      {t('auth.attachedVoiceNote')}
+                    </span>
                     <audio controls src={bannedProfile.appeal.voice_url} className="w-full mt-1" />
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            /* Appeal Submission Form */
             <form onSubmit={handleSubmitAppeal} className="flex flex-col gap-4 mb-6">
               {hasRejectedAppeal && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 text-xs text-red-800 leading-relaxed">
-                  <strong className="block font-bold mb-0.5">✕ Previous Appeal Rejected</strong>
-                  Admin reviewed and rejected your previous appeal. You may submit a new appeal with additional clarification and a voice note below.
+                  <strong className="block font-bold mb-0.5">✕ {t('auth.prevAppealRejected')}</strong>
+                  {t('auth.prevAppealRejectedDesc')}
                 </div>
               )}
 
               <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-xs text-emerald-800">
-                💡 <span className="font-semibold">Submit an Appeal:</span> Explain why your account should be reactivated. You can also record or attach a voice note for the Admin.
+                💡 {t('auth.submitAppealBanner')}
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Appeal Reason *
+                  {t('auth.appealReasonLabel')}
                 </label>
                 <textarea
                   value={appealReason}
                   onChange={(e) => setAppealReason(e.target.value)}
-                  placeholder="Explain why your account was removed and why it should be reactivated..."
+                  placeholder={t('auth.appealReasonPlaceholder')}
                   rows={4}
                   required
                   className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-700 resize-y"
                 />
               </div>
 
-              {/* Voice Note Section */}
               <div className="border border-gray-200 rounded-xl p-3.5 bg-gray-50/70">
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Voice Note (Optional)
+                  {t('auth.voiceNoteOptional')}
                 </label>
                 <p className="text-[11px] text-gray-500 mb-3">
-                  Record your explanation (up to 2 minutes) or upload an audio file.
+                  {t('auth.voiceNoteDesc')}
                 </p>
 
                 {voicePreview ? (
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-gray-700">Audio Preview:</span>
+                      <span className="text-xs font-semibold text-gray-700">{t('auth.audioPreview')}</span>
                       <button
                         type="button"
                         onClick={removeVoiceNote}
                         className="text-xs text-red-600 hover:text-red-700 font-medium"
                       >
-                        ✕ Remove
+                        ✕ {t('auth.remove')}
                       </button>
                     </div>
                     <audio controls src={voicePreview} className="w-full" />
@@ -417,7 +420,9 @@ export default function Login() {
                           className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 shadow-sm animate-pulse"
                         >
                           <span className="w-2.5 h-2.5 bg-white rounded-full"></span>
-                          Stop Recording ({Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')})
+                          {t('auth.stopRecording', {
+                            time: `${Math.floor(recordingSeconds / 60)}:${(recordingSeconds % 60).toString().padStart(2, '0')}`,
+                          })}
                         </button>
                       ) : (
                         <button
@@ -425,13 +430,13 @@ export default function Login() {
                           onClick={startRecording}
                           className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg text-xs font-bold hover:bg-green-800 shadow-sm transition-colors"
                         >
-                          <span>🎙️</span> Record Voice Note
+                          <span>🎙️</span> {t('auth.recordVoiceNote')}
                         </button>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span className="text-[10px] uppercase font-bold text-gray-400">OR</span>
+                      <span className="text-[10px] uppercase font-bold text-gray-400">{t('auth.or')}</span>
                       <input
                         id="voice-file-input"
                         type="file"
@@ -449,7 +454,7 @@ export default function Login() {
                 disabled={submittingAppeal}
                 className="w-full p-3 rounded-xl bg-green-800 text-white text-sm font-bold hover:bg-green-700 transition-colors disabled:opacity-50 shadow-md mt-1"
               >
-                {submittingAppeal ? 'Submitting Appeal...' : '✉️ Submit Appeal'}
+                {submittingAppeal ? t('auth.submittingAppeal') : `✉️ ${t('auth.submitAppealBtn')}`}
               </button>
             </form>
           )}
@@ -460,7 +465,7 @@ export default function Login() {
               onClick={handleBannedLogout}
               className="text-xs text-gray-500 hover:text-gray-800 font-semibold transition-colors py-1 px-3 rounded hover:bg-gray-100"
             >
-              ← Back to Login / Log Out
+              ← {t('auth.backToLoginLogout')}
             </button>
           </div>
         </div>
@@ -474,45 +479,46 @@ export default function Login() {
   return (
     <main className="min-h-screen bg-[#f7f8f5] flex justify-center items-center p-4 sm:p-8 font-sans relative">
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-lg">
+        <div className="flex justify-end mb-4">
+          <LanguageToggle variant="compact" />
+        </div>
 
         <div className="text-center text-xl sm:text-2xl font-bold text-green-800 mb-6">
-          🌾 Uzhavar Market
+          🌾 {t('brand')}
         </div>
 
         <h1 className="text-center text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
-          Welcome Back
+          {t('auth.welcomeBack')}
         </h1>
 
         <p className="text-center text-gray-500 mb-8">
-          Login to your account
+          {t('auth.loginSubtitle')}
         </p>
 
         <form onSubmit={handleLogin}>
-
           <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
-            Email
+            {t('auth.emailLabel')}
           </label>
 
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
+            placeholder={t('auth.emailPlaceholder')}
             required
             className="w-full p-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600"
           />
 
           <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">
-            Password
+            {t('auth.passwordLabel')}
           </label>
 
-          {/* Password Input with Eye Button */}
           <div className="relative w-full">
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t('auth.passwordPlaceholder')}
               required
               className="w-full h-12 px-3.5 pr-11 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent bg-white"
             />
@@ -522,11 +528,10 @@ export default function Login() {
               onClick={() => setShowPassword(!showPassword)}
               className="eye-toggle-btn absolute inset-y-0 right-0 pr-3.5 flex items-center justify-center cursor-pointer bg-transparent border-0 outline-none text-gray-400 hover:text-green-800 transition-colors z-10"
               style={{ top: 0, bottom: 0, right: 0, transform: 'none' }}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               tabIndex={-1}
             >
               {showPassword ? (
-                /* Eye Slash (Hide Password) */
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-5 h-5 text-green-700"
@@ -542,7 +547,6 @@ export default function Login() {
                   />
                 </svg>
               ) : (
-                /* Eye (Show Password) */
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-5 h-5 text-gray-400 hover:text-gray-600"
@@ -571,7 +575,7 @@ export default function Login() {
               href="/forgot-password"
               className="text-green-800 font-semibold hover:underline"
             >
-              Forgot Password?
+              {t('auth.forgotPasswordLink')}
             </a>
           </p>
 
@@ -580,9 +584,8 @@ export default function Login() {
             disabled={loading}
             className="w-full p-3 mt-5 rounded-lg bg-green-800 text-white text-base font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? t('auth.loggingIn') : t('auth.loginBtn')}
           </button>
-
         </form>
 
         {message && (
@@ -599,22 +602,20 @@ export default function Login() {
               disabled={resending}
               className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-semibold hover:bg-green-200 transition-colors cursor-pointer disabled:opacity-50"
             >
-              {resending ? 'Sending Email...' : '✉️ Resend Confirmation Email'}
+              {resending ? t('auth.sendingEmail') : `✉️ ${t('auth.resendConfirmationBtn')}`}
             </button>
           </div>
         )}
 
         <p className="text-center mt-6 text-sm text-gray-500">
-          Don't have an account?{' '}
-
+          {t('auth.noAccount')}{' '}
           <a
             href="/register"
             className="text-green-800 font-semibold hover:underline"
           >
-            Create Account
+            {t('auth.createAccountLink')}
           </a>
         </p>
-
       </div>
     </main>
   )

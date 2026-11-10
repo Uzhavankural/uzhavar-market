@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/app/context/LanguageContext";
+import LanguageToggle from "@/app/components/LanguageToggle";
 
 const Icons = {
   Back: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>,
@@ -30,17 +32,17 @@ const Icons = {
   ChevronRight: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
 };
 
-function formatTimeAgo(dateString) {
+function formatTimeAgo(dateString, t) {
   if (!dateString) return '';
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now - date) / 1000);
   
-  if (diffInSeconds < 60) return 'Just now';
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+  if (diffInSeconds < 60) return t('productView.justNow');
+  if (diffInSeconds < 3600) return t('productView.minutesAgo', { n: Math.floor(diffInSeconds / 60) });
+  if (diffInSeconds < 86400) return t('productView.hoursAgo', { n: Math.floor(diffInSeconds / 3600) });
+  if (diffInSeconds < 604800) return t('productView.daysAgo', { n: Math.floor(diffInSeconds / 86400) });
+  return t('productView.weeksAgo', { n: Math.floor(diffInSeconds / 604800) });
 }
 
 export default function ProductView({
@@ -54,6 +56,7 @@ export default function ProductView({
   userId
 }) {
   const router = useRouter();
+  const { t, tc, tu } = useLanguage();
   
   const isOrganicComplex = product?.name?.toLowerCase().includes('organic complex');
   const minQty = isOrganicComplex ? 50 : 1;
@@ -65,10 +68,6 @@ export default function ProductView({
   const [isLiked, setIsLiked] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const imagesList = product?.images?.length > 0 ? product.images : (product?.image_url ? [product.image_url] : []);
-  const mediaList = [
-    ...imagesList.map(url => ({ type: 'image', url })),
-    ...(product?.video_url ? [{ type: 'video', url: product.video_url }] : [])
-  ];
 
   useEffect(() => {
     if (userId) {
@@ -95,7 +94,6 @@ export default function ProductView({
 
   const handleAdd = () => {
     onAddToCart(quantity);
-    // Update count immediately for better UX
     setCartCount(prev => prev + quantity);
   };
 
@@ -110,19 +108,19 @@ export default function ProductView({
       try {
         await navigator.share({
           title: product?.name,
-          text: `Check out ${product?.name} on Uzhavar Market!`,
+          text: t('productView.shareText', { name: product?.name }),
           url: url,
         });
       } catch (err) {}
     } else {
       navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
+      alert(t('productView.linkCopied'));
     }
   };
 
   const toggleWishlist = () => {
     if (!userId) {
-      alert("Please login to add to wishlist");
+      alert(t('productView.loginWishlist'));
       router.push("/login");
       return;
     }
@@ -159,29 +157,32 @@ export default function ProductView({
     }
   });
 
+  const translatedUnit = tu(product.unit || 'unit');
+
   return (
     <div className="bg-gray-100 min-h-screen font-sans">
       <div className="max-w-[480px] md:max-w-7xl mx-auto bg-white min-h-screen sm:shadow-lg sm:border-x sm:border-gray-200 relative pb-24 md:pb-12">
         
         {/* Header */}
-        <header className="flex items-center justify-between p-3 bg-[#115e59] text-white sticky top-0 z-20">
-          <button onClick={() => router.back()} className="p-1 hover:bg-white/10 rounded-full cursor-pointer">
+        <header className="flex items-center justify-between p-3 bg-[#115e59] text-white sticky top-0 z-20 gap-2">
+          <button onClick={() => router.back()} className="p-1 hover:bg-white/10 rounded-full cursor-pointer shrink-0">
             <Icons.Back />
           </button>
           
-          <div className="flex-1 px-3 flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 cursor-pointer" onClick={() => router.push('/')}>
              <div className="text-xl">🌾</div>
-             <div className="font-bold whitespace-nowrap hidden sm:block">Uzhavar Market</div>
+             <div className="font-bold whitespace-nowrap hidden sm:block">{t('brand')}</div>
           </div>
           
-          <div className="flex-1 max-w-[200px]">
+          <div className="flex-1 max-w-[180px] hidden sm:block">
             <div className="relative">
-              <input type="text" placeholder="Search products..." className="w-full pl-8 pr-3 py-1.5 rounded bg-white text-gray-800 text-sm outline-none" />
+              <input type="text" placeholder={t('productView.searchPlaceholder')} className="w-full pl-8 pr-3 py-1.5 rounded bg-white text-gray-800 text-sm outline-none" />
               <div className="absolute left-2 top-1.5 text-gray-500"><Icons.Search /></div>
             </div>
           </div>
           
-          <div className="flex items-center gap-3 ml-4">
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+            <LanguageToggle variant="dark" />
             <button className="relative p-1 hover:bg-white/10 rounded-full cursor-pointer" onClick={() => router.push(userId ? '/customer/wishlist' : '/login')}>
               <Icons.Heart />
             </button>
@@ -238,7 +239,7 @@ export default function ProductView({
               <span className="text-6xl">🌱</span>
             )}
             <span className="absolute top-3 left-3 bg-[#166534] text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-semibold">
-              <Icons.Leaf className="w-3 h-3" /> Organic
+              <Icons.Leaf className="w-3 h-3" /> {t('productView.organic')}
             </span>
             <div className="absolute top-3 right-3 flex flex-col gap-2">
               <button onClick={toggleWishlist} className="bg-white p-2.5 rounded-full shadow-sm text-gray-700 hover:text-red-500 cursor-pointer transition-colors">
@@ -259,7 +260,7 @@ export default function ProductView({
                     {idx === 0 && (
                       <>
                         <span className="absolute top-3 left-3 bg-[#166534] text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-semibold">
-                          <Icons.Leaf className="w-3 h-3" /> Organic
+                          <Icons.Leaf className="w-3 h-3" /> {t('productView.organic')}
                         </span>
                         <div className="absolute top-3 right-3 flex flex-col gap-2">
                           <button onClick={toggleWishlist} className="bg-white p-2.5 rounded-full shadow-sm text-gray-700 hover:text-red-500 cursor-pointer transition-colors">
@@ -277,7 +278,7 @@ export default function ProductView({
                 <div className="relative rounded-xl overflow-hidden bg-[#f0fdf4] aspect-[3/4] flex items-center justify-center border border-gray-100 col-span-2">
                   <span className="text-6xl">🌱</span>
                   <span className="absolute top-3 left-3 bg-[#166534] text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-semibold">
-                    <Icons.Leaf className="w-3 h-3" /> Organic
+                    <Icons.Leaf className="w-3 h-3" /> {t('productView.organic')}
                   </span>
                 </div>
               )}
@@ -291,8 +292,8 @@ export default function ProductView({
             <div className="mb-1 text-sm text-gray-500">{farmerName}</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">{product.name}</h1>
           
-          <div className="inline-flex bg-green-50 text-green-800 text-xs px-2.5 py-1 rounded-full mb-3 font-medium items-center gap-1">
-             <Icons.Leaf className="w-3 h-3"/> {categoryName || 'Product'}
+          <div className="inline-flex bg-green-50 text-green-800 text-xs px-2.5 py-1 rounded-full mb-3 font-medium items-center gap-1 self-start">
+             <Icons.Leaf className="w-3 h-3"/> {tc(categoryName || 'Product')}
           </div>
 
           <div className="flex items-center gap-2 mb-4">
@@ -302,17 +303,16 @@ export default function ProductView({
                ))}
              </div>
              <span className="text-sm font-bold text-blue-600">{avgRating.toFixed(1)}</span>
-             <span className="text-sm text-gray-500">({reviews.length} reviews)</span>
+             <span className="text-sm text-gray-500">{t('productView.reviewsCount', { count: reviews.length })}</span>
           </div>
 
           <div className="flex items-end gap-1 mb-1.5">
             <span className="text-3xl font-bold text-[#166534]">₹{Number(price || 0).toFixed(2)}</span>
-            <span className="text-gray-500 font-medium mb-1.5">/ {product.unit || 'unit'}</span>
+            <span className="text-gray-500 font-medium mb-1.5">/ {translatedUnit}</span>
           </div>
           
           <div className="text-sm text-[#166534] font-bold mb-5 flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-[#166534] rounded-full inline-block mask mask-leaf" style={{WebkitMaskImage: 'url(\"data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Cpath d=\'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z\'/%3E%3Cpath d=\'M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12\'/%3E%3C/svg%3E\")', WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat'}}></span>
-            <Icons.Leaf className="w-3.5 h-3.5 fill-current" /> {stock} {product.unit || 'unit'} available
+            <Icons.Leaf className="w-3.5 h-3.5 fill-current" /> {t('productView.availableWithUnit', { stock, unit: translatedUnit })}
           </div>
 
           <div className="flex flex-col gap-3 mb-6">
@@ -327,7 +327,7 @@ export default function ProductView({
                 disabled={stock <= 0}
                 className={`flex-1 rounded-xl font-bold flex items-center justify-center gap-2 h-[48px] transition-colors ${stock > 0 ? 'bg-[#166534] text-white hover:bg-green-900 cursor-pointer' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
               >
-                <Icons.Cart className="w-5 h-5"/> Add to Cart
+                <Icons.Cart className="w-5 h-5"/> {t('productView.addToCart')}
               </button>
             </div>
             <button 
@@ -335,7 +335,7 @@ export default function ProductView({
               disabled={stock <= 0}
               className={`w-full rounded-xl font-bold flex items-center justify-center gap-2 h-[48px] transition-colors ${stock > 0 ? 'bg-[#f59e0b] text-white hover:bg-[#d97706] cursor-pointer' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
             >
-              Buy Now
+              {t('productView.buyNow')}
             </button>
           </div>
 
@@ -343,54 +343,53 @@ export default function ProductView({
           <div className="grid grid-cols-4 gap-2 mb-6 border border-gray-100 rounded-xl p-4 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)]">
             <div className="flex flex-col items-center justify-center text-center gap-1.5">
               <Icons.Leaf className="w-6 h-6 text-gray-600"/>
-              <span className="text-[10px] text-gray-600 font-medium">100% Organic</span>
+              <span className="text-[10px] text-gray-600 font-medium">{t('productView.featOrganic')}</span>
             </div>
             <div className="flex flex-col items-center justify-center text-center gap-1.5">
               <Icons.Shield className="w-6 h-6 text-gray-600"/>
-              <span className="text-[10px] text-gray-600 font-medium">Safe for Soil</span>
+              <span className="text-[10px] text-gray-600 font-medium">{t('productView.featSoil')}</span>
             </div>
             <div className="flex flex-col items-center justify-center text-center gap-1.5">
               <Icons.Plant className="w-6 h-6 text-gray-600"/>
-              <span className="text-[10px] text-gray-600 font-medium">Better Yield</span>
+              <span className="text-[10px] text-gray-600 font-medium">{t('productView.featYield')}</span>
             </div>
             <div className="flex flex-col items-center justify-center text-center gap-1.5">
               <Icons.Truck className="w-6 h-6 text-gray-600"/>
-              <span className="text-[10px] text-gray-600 font-medium">Fast Delivery</span>
+              <span className="text-[10px] text-gray-600 font-medium">{t('productView.featDelivery')}</span>
             </div>
           </div>
 
           {/* Description */}
           <div className="mb-6">
-            <h3 className="font-bold text-gray-900 mb-2 text-base">Product Description</h3>
+            <h3 className="font-bold text-gray-900 mb-2 text-base">{t('productView.descriptionTitle')}</h3>
             <p className={`text-sm text-gray-600 leading-relaxed ${descExpanded ? '' : 'line-clamp-3'}`}>
-              {product.description || 'A natural product made for improving soil health, root development and overall plant growth. Suitable for all types of crops.'}
+              {product.description || t('productView.defaultDesc')}
             </p>
-            {/* Added dummy features from image to make it look accurate if description is short */}
             {descExpanded && (!product.description || product.description.length < 100) && (
               <ul className="text-sm text-gray-600 mt-2 space-y-1 list-disc pl-4">
-                <li>100% Organic</li>
-                <li>Enhances soil fertility</li>
-                <li>Improves plant growth and yield</li>
+                <li>{t('productView.defaultBullet1')}</li>
+                <li>{t('productView.defaultBullet2')}</li>
+                <li>{t('productView.defaultBullet3')}</li>
               </ul>
             )}
             <button 
               onClick={() => setDescExpanded(!descExpanded)} 
               className="text-[#166534] text-sm font-bold flex items-center gap-1 mt-2 cursor-pointer"
             >
-              {descExpanded ? 'Read Less' : 'Read More'} <Icons.ChevronDown />
+              {descExpanded ? t('productView.readLess') : t('productView.readMore')} <Icons.ChevronDown />
             </button>
           </div>
 
           {/* Reviews */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] mb-4">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-bold text-gray-900 text-base">Customer Reviews</h3>
-              {reviews.length > 0 && <button className="text-sm text-gray-500 font-medium flex items-center gap-0.5 cursor-pointer">See All <Icons.ChevronRight /></button>}
+              <h3 className="font-bold text-gray-900 text-base">{t('productView.customerReviews')}</h3>
+              {reviews.length > 0 && <button className="text-sm text-gray-500 font-medium flex items-center gap-0.5 cursor-pointer">{t('productView.seeAll')} <Icons.ChevronRight /></button>}
             </div>
 
             <div className="p-4">
               {reviews.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No reviews yet</p>
+                <p className="text-sm text-gray-500 text-center py-4">{t('productView.noReviewsYet')}</p>
               ) : (
                 <>
                   <div className="flex gap-6 mb-6 items-center">
@@ -401,7 +400,7 @@ export default function ProductView({
                           <Icons.Star key={i} className="w-3.5 h-3.5" filled={i <= Math.floor(avgRating)} half={i === Math.ceil(avgRating) && !Number.isInteger(avgRating)} />
                         ))}
                       </div>
-                      <span className="text-xs text-gray-500">({reviews.length} reviews)</span>
+                      <span className="text-xs text-gray-500">{t('productView.reviewsCount', { count: reviews.length })}</span>
                     </div>
                     
                     <div className="flex-1 flex flex-col gap-1.5">
@@ -427,7 +426,7 @@ export default function ProductView({
                            <div>
                              <div className="flex items-center gap-2">
                                <span className="font-bold text-sm text-gray-900">{review.profiles?.full_name || 'Customer'}</span>
-                               <span className="text-[10px] text-[#166534] font-bold flex items-center gap-0.5"><Icons.Shield className="w-3 h-3"/> Verified Buyer</span>
+                               <span className="text-[10px] text-[#166534] font-bold flex items-center gap-0.5"><Icons.Shield className="w-3 h-3"/> {t('productView.verifiedBuyer')}</span>
                              </div>
                              <div className="flex items-center gap-2 mt-0.5">
                                <div className="flex gap-0.5">
@@ -435,7 +434,7 @@ export default function ProductView({
                                    <Icons.Star key={i} className="w-3 h-3" filled={i <= (review.rating || 0)} />
                                  ))}
                                </div>
-                               <span className="text-xs text-gray-400 font-medium">• {formatTimeAgo(review.created_at)}</span>
+                               <span className="text-xs text-gray-400 font-medium">• {formatTimeAgo(review.created_at, t)}</span>
                              </div>
                            </div>
                          </div>

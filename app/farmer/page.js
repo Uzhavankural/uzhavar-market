@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import { ensureFarmerAccess } from '../../lib/farmerAuth'
 
 export default function FarmerDashboard() {
   const router = useRouter()
+  const { t } = useLanguage()
 
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -138,24 +141,27 @@ export default function FarmerDashboard() {
   if (loading) {
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
-        <p className="text-base text-gray-500">Loading dashboard...</p>
+        <p className="text-base text-gray-500">{t('farmer.loadingDashboard')}</p>
       </main>
     )
   }
 
   if (accessDenied) {
     const dashboardPath = profile?.role === 'admin' ? '/admin' : '/customer'
-    const dashboardText = profile?.role === 'admin' ? 'Go to Admin Dashboard' : 'Go to Customer Dashboard'
+    const dashboardText =
+      profile?.role === 'admin'
+        ? t('nav.goToDashboard', { role: t('nav.admin') })
+        : t('nav.customerDashboard')
 
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans px-4">
         <div className="text-center max-w-[500px] w-full p-8 bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="text-5xl mb-4">🚫</div>
           <h2 className="m-0 mb-2.5 text-gray-800 text-xl font-bold">
-            You don't have access to the Farmer Panel.
+            {t('farmer.noAccessTitle')}
           </h2>
           <p className="m-0 mb-6 text-gray-500 text-[15px]">
-            This panel is available only for farmer users.
+            {t('farmer.noAccessDesc')}
           </p>
           <button
             onClick={() => router.push(dashboardPath)}
@@ -171,7 +177,7 @@ export default function FarmerDashboard() {
   if (!profile) {
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
-        <p className="text-base text-gray-500">Unable to load your farmer profile.</p>
+        <p className="text-base text-gray-500">{t('farmer.unableLoadProfile')}</p>
       </main>
     )
   }
@@ -181,14 +187,15 @@ export default function FarmerDashboard() {
       {/* NAVBAR */}
       <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center flex-wrap gap-4">
         <div className="text-xl sm:text-2xl font-bold text-green-800">
-          🌾 Uzhavar Market
+          🌾 {t('brand')}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageToggle variant="compact" />
           <button
             onClick={handleLogout}
             className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
-            Logout
+            {t('nav.logout')}
           </button>
         </div>
       </nav>
@@ -197,24 +204,26 @@ export default function FarmerDashboard() {
         {/* WELCOME */}
         <div className="bg-green-800 text-white p-6 sm:p-9 rounded-2xl">
           <p className="text-xs sm:text-[13px] font-bold tracking-wider mb-2.5 opacity-90">
-            FARMER DASHBOARD
+            {t('farmer.dashboardBadge')}
           </p>
           <h1 className="text-2xl sm:text-3xl m-0 mb-2.5 font-bold">
-            Welcome, {profile.full_name}! 👨‍🌾
+            {t('farmer.welcomeFarmer', { name: profile.full_name })} 👨‍🌾
           </h1>
           <p className="m-0 opacity-90 text-sm sm:text-base">
-            Manage your farm products, orders and earnings from here.
+            {t('farmer.dashboardSubtitle')}
           </p>
         </div>
 
         {profile.warnings && profile.warnings.length > 0 && (
           <div className="mt-6 bg-red-50 border-l-4 border-red-600 p-4 rounded-r-lg shadow-sm">
-            <h3 className="text-red-800 font-bold mb-2 flex items-center gap-2">⚠️ Admin Warnings ({profile.warnings.length}/2)</h3>
+            <h3 className="text-red-800 font-bold mb-2 flex items-center gap-2">
+              ⚠️ {t('farmer.adminWarningsTitle', { count: profile.warnings.length })}
+            </h3>
             <ul className="list-disc pl-5 text-red-700">
               {profile.warnings.map((w, i) => <li key={i} className="mb-1">{w}</li>)}
             </ul>
             {profile.warnings.length >= 2 && (
-               <p className="mt-2 font-semibold text-red-800 text-sm">You have reached the maximum warning limit. Further violations may result in account suspension.</p>
+               <p className="mt-2 font-semibold text-red-800 text-sm">{t('farmer.maxWarningNotice')}</p>
             )}
           </div>
         )}
@@ -228,7 +237,7 @@ export default function FarmerDashboard() {
             <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">📦</div>
             <div>
               <h3 className="text-lg sm:text-2xl m-0 font-bold text-gray-800 leading-tight">{productCount}</h3>
-              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">Products →</p>
+              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">{t('farmer.productsStat')}</p>
             </div>
           </div>
 
@@ -239,7 +248,7 @@ export default function FarmerDashboard() {
             <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">🛒</div>
             <div>
               <h3 className="text-lg sm:text-2xl m-0 font-bold text-gray-800 leading-tight">{completedOrderCount}</h3>
-              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">Completed →</p>
+              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">{t('farmer.completedStat')}</p>
             </div>
           </div>
 
@@ -249,15 +258,15 @@ export default function FarmerDashboard() {
           >
             <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">📋</div>
             <div>
-              <h3 className="text-lg sm:text-2xl m-0 font-bold text-green-800 leading-tight">View</h3>
-              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">Orders →</p>
+              <h3 className="text-lg sm:text-2xl m-0 font-bold text-green-800 leading-tight">{t('farmer.viewOrdersWord')}</h3>
+              <p className="m-0 text-gray-500 text-[11px] sm:text-sm font-medium leading-tight mt-1">{t('farmer.ordersStat')}</p>
             </div>
           </div>
         </div>
 
         {/* EARNINGS & SETTLEMENTS */}
         <h2 className="mt-8 sm:mt-10 mb-4 sm:mb-5 text-xl sm:text-2xl text-gray-800 font-bold">
-          Earnings & Settlements
+          {t('farmer.earningsSection')}
         </h2>
 
         <button
@@ -270,21 +279,21 @@ export default function FarmerDashboard() {
             </div>
             <div>
               <h3 className="m-0 mb-1 text-lg sm:text-[19px] text-green-800 font-bold">
-                My Earnings & Settlements
+                {t('farmer.myEarningsTitle')}
               </h3>
               <p className="m-0 text-gray-500 text-xs sm:text-[13px] leading-relaxed">
-                View completed orders, farmer earnings, platform commission and settlement status.
+                {t('farmer.myEarningsDesc')}
               </p>
             </div>
           </div>
           <div className="text-green-800 font-bold text-sm whitespace-nowrap self-end sm:self-auto">
-            View Details →
+            {t('farmer.viewDetailsArrow')}
           </div>
         </button>
 
         {/* QUICK ACTIONS */}
         <h2 className="mt-8 sm:mt-10 mb-4 sm:mb-5 text-xl sm:text-2xl text-gray-800 font-bold">
-          Quick Actions
+          {t('farmer.quickActions')}
         </h2>
 
         <div className="grid grid-cols-3 gap-2.5 sm:gap-5">
@@ -293,8 +302,8 @@ export default function FarmerDashboard() {
             className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
             <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">➕</span>
-            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">Add Product</strong>
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">Add a new farm product</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">{t('farmer.addProduct')}</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">{t('farmer.addProductDesc')}</span>
           </button>
 
           <button
@@ -302,8 +311,8 @@ export default function FarmerDashboard() {
             className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
             <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">📦</span>
-            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">My Products</strong>
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">Manage your products</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">{t('farmer.myProducts')}</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">{t('farmer.myProductsDesc')}</span>
           </button>
 
           <button
@@ -311,8 +320,8 @@ export default function FarmerDashboard() {
             className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
             <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">🛒</span>
-            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">Orders</strong>
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">View customer orders</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">{t('farmer.orders')}</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">{t('farmer.ordersDesc')}</span>
           </button>
 
           <button
@@ -320,8 +329,8 @@ export default function FarmerDashboard() {
             className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
             <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">💰</span>
-            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">Earnings</strong>
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">View completed orders & settlements</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">{t('farmer.earnings')}</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">{t('farmer.earningsDesc')}</span>
           </button>
 
           <button
@@ -329,8 +338,8 @@ export default function FarmerDashboard() {
             className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 md:p-6 text-left cursor-pointer flex flex-col gap-1 sm:gap-2 shadow-xs hover:shadow-md hover:border-green-600 transition-all active:scale-95"
           >
             <span className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">👤</span>
-            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">My Profile</strong>
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">Manage farm details</span>
+            <strong className="text-xs sm:text-base md:text-lg text-gray-800 font-bold leading-tight">{t('farmer.myProfile')}</strong>
+            <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 leading-snug line-clamp-2">{t('farmer.myProfileDesc')}</span>
           </button>
         </div>
       </section>

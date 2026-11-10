@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ProductView from "@/app/components/ProductView";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function CustomerProductDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { t, tu } = useLanguage();
 
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -77,12 +79,12 @@ export default function CustomerProductDetailsPage() {
     const stock = Number(product.stock_quantity || 0);
 
     if (stock <= 0) {
-      alert("This product is out of stock.");
+      alert(t("home.outOfStockAlert"));
       return;
     }
 
     if (quantityToAdd > stock) {
-      alert("Selected quantity is not available.");
+      alert(t("home.stockLimitAlert", { stock, unit: tu(product.unit || "unit") }));
       return;
     }
 
@@ -90,7 +92,7 @@ export default function CustomerProductDetailsPage() {
 
     try {
       if (!user) {
-        alert("Please login to add products to cart.");
+        alert(t("home.loginToCart"));
         router.push("/login");
         return;
       }
@@ -116,7 +118,7 @@ export default function CustomerProductDetailsPage() {
         const newQuantity = existingQuantity + quantityToAdd;
 
         if (newQuantity > stock) {
-          alert(`Only ${stock} ${product.unit || "unit"} available in stock.`);
+          alert(t("home.stockLimitAlert", { stock, unit: tu(product.unit || "unit") }));
           return;
         }
 
@@ -160,10 +162,10 @@ export default function CustomerProductDetailsPage() {
       }
 
       localStorage.setItem(cartKey, JSON.stringify(cart));
-      alert(`${product.name} added to cart successfully!`);
+      alert(`${t("home.addedToCartAlert")} 🛒`);
     } catch (error) {
       console.error("Add to cart error:", error);
-      alert("Something went wrong while adding the product to cart.");
+      alert(t("common.somethingWentWrong"));
     } finally {
       setAddingToCart(false);
     }
@@ -173,8 +175,8 @@ export default function CustomerProductDetailsPage() {
     return (
       <main className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-2xl mx-auto bg-white p-12 text-center rounded-xl shadow-sm mt-20">
-          <h2 className="text-xl font-bold">Loading product...</h2>
-          <p className="text-gray-500 mt-2">Please wait.</p>
+          <h2 className="text-xl font-bold">{t("productView.loadingProduct")}</h2>
+          <p className="text-gray-500 mt-2">{t("common.pleaseWait")}</p>
         </div>
       </main>
     );
@@ -184,15 +186,15 @@ export default function CustomerProductDetailsPage() {
     return (
       <main className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-2xl mx-auto bg-white p-12 text-center rounded-xl shadow-sm mt-20">
-          <h2 className="text-xl font-bold mb-4">Product not found</h2>
+          <h2 className="text-xl font-bold mb-4">{t("productView.productNotFound")}</h2>
           <p className="text-gray-500 mb-6">
-            This product may have been removed or is no longer available.
+            {t("productView.productRemovedNotice")}
           </p>
           <button
             className="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold cursor-pointer"
             onClick={() => router.push("/customer/products")}
           >
-            ← Back to Products
+            &larr; {t("nav.backToProducts")}
           </button>
         </div>
       </main>
@@ -203,7 +205,7 @@ export default function CustomerProductDetailsPage() {
   const baseFarmerName =
     product.profiles?.farm_name ||
     product.profiles?.full_name ||
-    "Local Farmer";
+    t("common.localFarmer");
   const place = product.profiles?.district;
   const farmerNameWithPlace = place ? `${baseFarmerName} - ${place}` : baseFarmerName;
 

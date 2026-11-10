@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import ProductView from '@/app/components/ProductView'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function ProductDetails() {
   const params = useParams()
   const router = useRouter()
+  const { t, tu } = useLanguage()
 
   const [product, setProduct] = useState(null)
   const [farmer, setFarmer] = useState(null)
@@ -68,14 +70,14 @@ export default function ProductDetails() {
 
   function handleAddToCart(quantityToAdd) {
     if (!user) {
-      alert("Please login to add products to cart.");
+      alert(t("home.loginToCart"));
       router.push("/login");
       return;
     }
 
     const stock = Number(product.stock_quantity || 0);
     if (stock <= 0) {
-      alert("This product is currently out of stock.");
+      alert(t("home.outOfStockAlert"));
       return;
     }
 
@@ -94,7 +96,7 @@ export default function ProductDetails() {
     if (existingItem) {
       const newQuantity = Number(existingItem.quantity || 0) + quantityToAdd;
       if (newQuantity > stock) {
-        alert(`Only ${stock} ${product.unit || "unit"} available in stock.`);
+        alert(t("home.stockLimitAlert", { stock, unit: tu(product.unit || "unit") }));
         return;
       }
       updatedCart = existingCart.map((item) =>
@@ -118,13 +120,13 @@ export default function ProductDetails() {
       ];
     }
     localStorage.setItem(cartKey, JSON.stringify(updatedCart));
-    alert("Product added to cart! 🛒");
+    alert(`${t("home.addedToCartAlert")} 🛒`);
   }
 
   if (loading) {
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
-        <p className="text-lg text-gray-600 font-medium animate-pulse">Loading product...</p>
+        <p className="text-lg text-gray-600 font-medium animate-pulse">{t('productView.loadingProduct')}</p>
       </main>
     )
   }
@@ -133,12 +135,12 @@ export default function ProductDetails() {
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Product not found</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('productView.productNotFound')}</h2>
           <button
             onClick={() => router.push('/')}
             className="px-5 py-2.5 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-700 font-semibold transition-colors"
           >
-            &larr; Back to Home
+            &larr; {t('nav.backToHome')}
           </button>
         </div>
       </main>
@@ -148,7 +150,7 @@ export default function ProductDetails() {
   return (
     <ProductView
       product={product}
-      farmerName={farmer?.farm_name || farmer?.full_name || 'Local Farmer'}
+      farmerName={farmer?.farm_name || farmer?.full_name || t('common.localFarmer')}
       categoryName={category?.name || 'Product'}
       reviews={reviews}
       price={Number(product.price || 0) + Number(product.commission_amount || 0)}

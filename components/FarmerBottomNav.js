@@ -2,16 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function FarmerBottomNav() {
   const pathname = usePathname()
+  const { t } = useLanguage()
 
   const navItems = [
-    { name: 'Home', href: '/', icon: '🏠' },
-    { name: 'My Products', href: '/farmer/products', icon: '🌾' },
-    { name: 'Orders', href: '/farmer/orders', icon: '📦' },
-    { name: 'Transaction', href: '/farmer/earnings', icon: '💸' },
-    { name: 'My Profile', href: '/farmer/profile', icon: '👤' },
+    { key: 'home', name: t('bottomNav.home'), href: '/', icon: '🏠' },
+    { key: 'products', name: t('bottomNav.myProducts'), href: '/farmer/products', icon: '🌾' },
+    { key: 'orders', name: t('bottomNav.orders'), href: '/farmer/orders', icon: '📦' },
+    { key: 'earnings', name: t('bottomNav.transaction'), href: '/farmer/earnings', icon: '💸' },
+    { key: 'profile', name: t('bottomNav.myProfile'), href: '/farmer/profile', icon: '👤' },
   ]
 
   return (
@@ -20,7 +22,7 @@ export default function FarmerBottomNav() {
         const isActive = pathname === item.href
         return (
           <Link
-            key={item.name}
+            key={item.key}
             href={item.href}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
               isActive ? 'text-green-700 dark:text-emerald-400 font-bold' : 'text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'

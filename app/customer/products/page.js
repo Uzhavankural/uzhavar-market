@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import HeroBanner from "@/app/components/HeroBanner";
 import Footer from "@/app/components/Footer";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function CustomerProductsPage() {
   const router = useRouter();
+  const { t, tc, tu } = useLanguage();
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -101,17 +103,17 @@ export default function CustomerProductsPage() {
         <header className="bg-white p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 shadow-sm">
           <div>
             <h1 className="m-0 text-2xl sm:text-3xl font-bold text-gray-900">
-              🌾 Uzhavar Market
+              🌾 {t("brand")}
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-600">
-              Fresh products directly from farmers
+              {t("customerProducts.subtitle")}
             </p>
           </div>
           <button
             className="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-semibold transition-colors"
             onClick={() => router.push("/customer")}
           >
-            &larr; Dashboard
+            &larr; {t("nav.dashboard")}
           </button>
         </header>
 
@@ -126,17 +128,17 @@ export default function CustomerProductsPage() {
         <section id="customer-products-list" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="m-0 text-xl sm:text-2xl font-bold text-gray-900">
-              🛒 Products
+              🛒 {t("customerProducts.productsTitle")}
             </h2>
             <p className="mt-1 text-sm sm:text-base text-gray-600">
-              Choose fresh products from our farmers
+              {t("customerProducts.chooseSubtitle")}
             </p>
           </div>
           <button
             className="w-full sm:w-auto px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-lg font-semibold transition-colors"
             onClick={loadProducts}
           >
-            🔄 Refresh
+            🔄 {t("common.refresh")}
           </button>
         </section>
 
@@ -144,7 +146,7 @@ export default function CustomerProductsPage() {
         <section className="flex flex-col sm:flex-row gap-4 mb-8">
           <input
             type="text"
-            placeholder="🔍 Search products or farmers..."
+            placeholder={`🔍 ${t("customerProducts.searchPlaceholder")}`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
@@ -154,10 +156,10 @@ export default function CustomerProductsPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="min-w-[220px] bg-white border border-gray-300 rounded-xl px-4 py-3 text-base outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
           >
-            <option value="all">All Categories</option>
+            <option value="all">{t("customerProducts.allCategories")}</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.name}
+                {tc(category.name)}
               </option>
             ))}
           </select>
@@ -166,14 +168,14 @@ export default function CustomerProductsPage() {
         {/* Loading */}
         {loading ? (
           <div className="bg-white p-12 text-center rounded-2xl mt-10">
-            <h3 className="text-xl font-bold text-gray-800">Loading products...</h3>
-            <p className="text-gray-500 mt-2">Please wait.</p>
+            <h3 className="text-xl font-bold text-gray-800">{t("customerProducts.loadingProducts")}</h3>
+            <p className="text-gray-500 mt-2">{t("common.pleaseWait")}</p>
           </div>
         ) : filteredProducts.length === 0 ? (
           /* No Products */
           <div className="bg-white p-12 text-center rounded-2xl mt-10">
-            <h3 className="text-xl font-bold text-gray-800">No products found</h3>
-            <p className="text-gray-500 mt-2">Try another search or category.</p>
+            <h3 className="text-xl font-bold text-gray-800">{t("customerProducts.noProductsFound")}</h3>
+            <p className="text-gray-500 mt-2">{t("customerProducts.tryAnotherSearch")}</p>
           </div>
         ) : (
           /* Products Grid */
@@ -181,13 +183,11 @@ export default function CustomerProductsPage() {
             {filteredProducts.map((product) => {
               const customerPrice = getCustomerPrice(product);
               const stock = Number(product.stock_quantity || 0);
-              let baseFarmerName =
+              const baseFarmerName =
                 product.profiles?.farm_name ||
                 product.profiles?.full_name ||
-                "Local Farmer";
-              
+                t("common.localFarmer");
               const place = product.profiles?.district;
-              const farmerNameWithPlace = place ? `${baseFarmerName} - ${place}` : baseFarmerName;
 
               return (
                 <div
@@ -211,7 +211,7 @@ export default function CustomerProductsPage() {
                   {/* Product Content */}
                   <div className="p-3 sm:p-5 flex-1 flex flex-col">
                     <div className="inline-block self-start bg-green-50 text-green-800 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold mb-2">
-                      {product.categories?.name || "General"}
+                      {tc(product.categories?.name || "General")}
                     </div>
 
                     <h3 className="text-sm sm:text-lg font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">
@@ -219,12 +219,12 @@ export default function CustomerProductsPage() {
                     </h3>
 
                     <p className="hidden sm:block text-xs sm:text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-2">
-                      {product.description || "Fresh farm product"}
+                      {product.description || t("customerProducts.freshFarmProduct")}
                     </p>
 
                     <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
-                      <div><strong className="text-gray-700">Farmer:</strong> {baseFarmerName}</div>
-                      {place && <div><strong className="text-gray-700">District:</strong> {place}</div>}
+                      <div><strong className="text-gray-700">{t("common.farmer")}:</strong> {baseFarmerName}</div>
+                      {place && <div><strong className="text-gray-700">{t("common.district")}:</strong> {place}</div>}
                     </div>
 
                     <div className="mt-auto">
@@ -233,27 +233,27 @@ export default function CustomerProductsPage() {
                           ₹{customerPrice.toFixed(2)}
                         </strong>
                         <span className="text-[10px] sm:text-xs text-gray-500 pb-0.5">
-                          / {product.unit_count || 1} {product.unit || "unit"}
+                          / {product.unit_count || 1} {tu(product.unit || "unit")}
                         </span>
                       </div>
                       
                       {Number(product.delivery_price) > 0 ? (
                         <div className="text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-2">
-                          + ₹{Number(product.delivery_price).toFixed(2)} delivery
+                          {t("common.deliveryFee", { amount: Number(product.delivery_price).toFixed(2) })}
                         </div>
                       ) : (
                         <div className="text-[10px] sm:text-xs text-green-600 font-medium mb-1 sm:mb-2">
-                          Free delivery
+                          {t("common.freeDelivery")}
                         </div>
                       )}
 
                       {stock > 0 ? (
                         <div className="text-[10px] sm:text-xs font-medium text-green-700 mb-2 sm:mb-3">
-                          ✓ {stock} available
+                          ✓ {t("customerProducts.availableCount", { count: stock })}
                         </div>
                       ) : (
                         <div className="text-[10px] sm:text-xs font-medium text-red-600 mb-2 sm:mb-3">
-                          Out of Stock
+                          {t("common.outOfStock")}
                         </div>
                       )}
 
@@ -271,7 +271,7 @@ export default function CustomerProductsPage() {
                           }
                         }}
                       >
-                        {stock > 0 ? "View Product" : "Out of Stock"}
+                        {stock > 0 ? t("customerProducts.viewProduct") : t("common.outOfStock")}
                       </button>
                     </div>
                   </div>

@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
+import Footer from '@/app/components/Footer'
 
 export default function Cart() {
   const router = useRouter()
+  const { t, tu } = useLanguage()
 
   const [cart, setCart] = useState([])
 
@@ -72,18 +76,20 @@ export default function Cart() {
     <main className="min-h-screen bg-[#f7f8f5] font-sans text-gray-800 flex flex-col">
 
       {/* Navbar */}
-      <nav className="min-h-[70px] bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-[7%]">
+      <nav className="min-h-[70px] bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-[7%] gap-2">
 
-        <div className="text-xl sm:text-2xl font-bold text-green-800">
-          🌾 Uzhavar Market
+        <div className="text-xl sm:text-2xl font-bold text-green-800 cursor-pointer" onClick={() => router.push('/')}>
+          🌾 {t('brand')}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageToggle variant="compact" className="sm:hidden" />
+          <LanguageToggle className="hidden sm:inline-flex" />
           <button
             onClick={() => router.push('/')}
             className="px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg bg-white cursor-pointer font-semibold text-sm sm:text-base hover:bg-gray-50"
           >
-            ← Continue Shopping
+            ← {t('cart.continueShopping')}
           </button>
         </div>
 
@@ -94,7 +100,7 @@ export default function Cart() {
       <section className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
 
         <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">
-          🛒 Your Cart
+          🛒 {t('cart.title')}
         </h1>
 
         {cart.length === 0 ? (
@@ -106,18 +112,18 @@ export default function Cart() {
             </div>
 
             <h2 className="text-xl sm:text-2xl font-semibold mb-2">
-              Your cart is empty
+              {t('cart.emptyTitle')}
             </h2>
 
             <p className="text-gray-500 mb-6">
-              Add some farm products to your cart.
+              {t('cart.emptyDesc')}
             </p>
 
             <button
               onClick={() => router.push('/')}
               className="px-6 py-3 bg-green-800 text-white font-semibold rounded-lg hover:bg-green-700"
             >
-              Start Shopping
+              {t('cart.startShopping')}
             </button>
 
           </div>
@@ -166,7 +172,7 @@ export default function Cart() {
                     </h2>
 
                     <p className="text-gray-500 mb-3 sm:mb-4">
-                      ₹{item.price} / {item.unit}
+                      ₹{item.price} / {tu(item.unit)}
                     </p>
 
 
@@ -214,7 +220,7 @@ export default function Cart() {
                       }
                       className="text-red-600 font-semibold hover:text-red-700"
                     >
-                      Remove
+                      {t('common.remove')}
                     </button>
 
                   </div>
@@ -230,13 +236,13 @@ export default function Cart() {
             <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:sticky lg:top-24">
 
               <h2 className="text-lg sm:text-xl font-semibold mb-6">
-                Order Summary
+                {t('cart.orderSummary')}
               </h2>
 
               <div className="flex justify-between mb-4 text-gray-600">
 
                 <span>
-                  Items
+                  {t('cart.items')}
                 </span>
 
                 <span>
@@ -252,7 +258,7 @@ export default function Cart() {
               <div className="flex justify-between mb-4 text-gray-600">
 
                 <span>
-                  Subtotal
+                  {t('cart.subtotal')}
                 </span>
 
                 <span>
@@ -266,7 +272,7 @@ export default function Cart() {
               <div className="flex justify-between text-lg sm:text-xl font-bold text-green-800">
 
                 <strong>
-                  Total
+                  {t('cart.total')}
                 </strong>
 
                 <strong>
@@ -279,7 +285,7 @@ export default function Cart() {
                 onClick={() => router.push('/checkout')}
                 className="w-full mt-6 py-3 sm:py-4 bg-green-800 text-white font-bold rounded-lg hover:bg-green-700"
               >
-                Proceed to Checkout
+                {t('cart.proceedToCheckout')}
               </button>
 
             </div>
@@ -290,19 +296,7 @@ export default function Cart() {
 
       </section>
 
-
-      {/* Footer */}
-      <footer className="py-10 px-4 sm:px-[7%] bg-[#17251a] text-white text-center mt-auto">
-
-        <h3 className="text-lg font-semibold mb-2">
-          🌾 Uzhavar Market
-        </h3>
-
-        <p className="text-gray-400">
-          Connecting farmers directly with customers.
-        </p>
-
-      </footer>
+      <Footer />
 
     </main>
   )

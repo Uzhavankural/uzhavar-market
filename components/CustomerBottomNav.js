@@ -2,16 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function CustomerBottomNav() {
   const pathname = usePathname()
+  const { t } = useLanguage()
 
   const navItems = [
-    { name: 'Home', href: '/customer', icon: '🏠' },
-    { name: 'Search', href: '/customer/products', icon: '🔍' },
-    { name: 'Cart', href: '/customer/cart', icon: '🛒' },
-    { name: 'Orders', href: '/customer/orders', icon: '📦' },
-    { name: 'Profile', href: '/customer/profile', icon: '👤' },
+    { key: 'home', name: t('bottomNav.home'), href: '/customer', icon: '🏠' },
+    { key: 'search', name: t('bottomNav.search'), href: '/customer/products', icon: '🔍' },
+    { key: 'cart', name: t('bottomNav.cart'), href: '/customer/cart', icon: '🛒' },
+    { key: 'orders', name: t('bottomNav.orders'), href: '/customer/orders', icon: '📦' },
+    { key: 'profile', name: t('bottomNav.profile'), href: '/customer/profile', icon: '👤' },
   ]
 
   return (
@@ -20,14 +22,14 @@ export default function CustomerBottomNav() {
         const isActive = pathname === item.href
         return (
           <Link
-            key={item.name}
+            key={item.key}
             href={item.href}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
               isActive ? 'text-green-700 dark:text-emerald-400 font-bold' : 'text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <span className="text-xl">{item.icon}</span>
-            <span className="text-[10px] font-semibold">{item.name}</span>
+            <span className="text-[10px] font-semibold leading-tight text-center">{item.name}</span>
           </Link>
         )
       })}

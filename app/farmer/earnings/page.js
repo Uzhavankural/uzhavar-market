@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import { ensureFarmerAccess } from '../../../lib/farmerAuth'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
 
 export default function FarmerEarningsPage() {
   const router = useRouter()
+  const { t, tu, locale } = useLanguage()
 
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -35,7 +38,7 @@ export default function FarmerEarningsPage() {
         return
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -211,7 +214,7 @@ export default function FarmerEarningsPage() {
 
   function formatDate(date) {
     if (!date) return '-'
-    return new Date(date).toLocaleDateString('en-IN', {
+    return new Date(date).toLocaleDateString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -220,7 +223,7 @@ export default function FarmerEarningsPage() {
 
   function formatDateTime(date) {
     if (!date) return '-'
-    return new Date(date).toLocaleString('en-IN', {
+    return new Date(date).toLocaleString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -287,7 +290,7 @@ export default function FarmerEarningsPage() {
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
         <div className="text-center">
           <div className="text-[45px] mb-2.5">🌾</div>
-          <p className="text-base text-gray-500">Loading earnings...</p>
+          <p className="text-base text-gray-500">{t('farmer.loadingEarnings')}</p>
         </div>
       </main>
     )
@@ -295,18 +298,19 @@ export default function FarmerEarningsPage() {
 
   if (accessDenied) {
     const dashboardPath = profile?.role === 'admin' ? '/admin' : '/customer'
-    const dashboardText = profile?.role === 'admin' ? 'Go to Admin Dashboard' : 'Go to Customer Dashboard'
+    const dashboardText =
+      profile?.role === 'admin'
+        ? t('nav.goToDashboard', { role: t('nav.admin') })
+        : t('nav.customerDashboard')
 
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
         <div className="text-center max-w-[500px] w-full p-[30px]">
           <div className="text-[50px] mb-[15px]">🚫</div>
           <h2 className="m-0 mb-2.5 text-gray-800 text-xl font-bold">
-            You don't have access to the Farmer Earnings Panel.
+            {t('farmer.noAccessTitle')}
           </h2>
-          <p className="m-0 mb-6 text-gray-500 text-[15px]">
-            This page is available only for farmer users.
-          </p>
+          <p className="m-0 mb-6 text-gray-500 text-[15px]">{t('farmer.noAccessDesc')}</p>
           <button
             onClick={() => router.push(dashboardPath)}
             className="px-5 py-3 border-none rounded-lg bg-green-800 text-white cursor-pointer font-semibold w-full sm:w-auto hover:bg-green-700 transition-colors"
@@ -321,7 +325,7 @@ export default function FarmerEarningsPage() {
   if (!profile) {
     return (
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
-        <p className="text-base text-gray-500">Unable to load your farmer profile.</p>
+        <p className="text-base text-gray-500">{t('farmer.unableLoadProfile')}</p>
       </main>
     )
   }
@@ -333,20 +337,21 @@ export default function FarmerEarningsPage() {
           onClick={() => router.push('/farmer')}
           className="border-none bg-transparent text-green-800 text-xl sm:text-[22px] font-bold cursor-pointer p-0"
         >
-          🌾 Uzhavar Market
+          🌾 {t('brand')}
         </button>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <LanguageToggle variant="compact" />
           <button
             onClick={() => router.push('/farmer')}
             className="px-3 py-2 sm:px-[15px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
-            ← Dashboard
+            ← {t('nav.dashboard')}
           </button>
           <button
             onClick={handleLogout}
             className="px-3 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
-            Logout
+            {t('nav.logout')}
           </button>
         </div>
       </nav>
@@ -355,13 +360,13 @@ export default function FarmerEarningsPage() {
         <div className="bg-green-800 text-white p-6 sm:p-[30px] rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-4 flex-wrap shadow-md">
           <div>
             <p className="text-xs font-bold tracking-wider m-0 mb-2 opacity-85">
-              FARMER FINANCE
+              {t('farmer.financeBadge')}
             </p>
             <h1 className="text-2xl sm:text-[30px] m-0 mb-2 font-bold">
-              My Earnings & Settlements 💰
+              {t('farmer.myEarningsTitle')} 💰
             </h1>
             <p className="m-0 opacity-90 text-sm sm:text-[15px]">
-              View your completed orders, farmer earnings and settlement status.
+              {t('farmer.earningsSubtitleLong')}
             </p>
           </div>
           <button
@@ -371,54 +376,72 @@ export default function FarmerEarningsPage() {
               refreshing ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
-            {refreshing ? '⏳ Refreshing...' : '🔄 Refresh'}
+            {refreshing ? `⏳ ${t('common.refreshing')}` : `🔄 ${t('common.refresh')}`}
           </button>
         </div>
 
         <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 mt-6 sm:mt-[22px]">
           <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
             <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">🛒</span>
-            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Completed Orders</p>
-            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">{completedOrderIds.size}</h2>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">
+              {t('farmer.completedOrdersStat')}
+            </p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">
+              {completedOrderIds.size}
+            </h2>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
             <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">💰</span>
-            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Farmer Earnings</p>
-            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-green-800 font-bold truncate">₹{formatMoney(totalFarmerEarnings)}</h2>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">
+              {t('farmer.farmerEarningsLabel')}
+            </p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-green-800 font-bold truncate">
+              ₹{formatMoney(totalFarmerEarnings)}
+            </h2>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
             <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">💼</span>
-            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Platform Commission</p>
-            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">₹{formatMoney(totalCommission)}</h2>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">
+              {t('farmer.platformCommission')}
+            </p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">
+              ₹{formatMoney(totalCommission)}
+            </h2>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-5 shadow-sm">
             <span className="text-xl sm:text-[27px] block mb-1 sm:mb-0">🌾</span>
-            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">Customer Sales</p>
-            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">₹{formatMoney(totalSales)}</h2>
+            <p className="m-0 mt-1 sm:mt-2 mb-0.5 sm:mb-1 text-[10px] sm:text-xs text-gray-500 font-medium">
+              {t('farmer.customerSalesStat')}
+            </p>
+            <h2 className="m-0 text-base sm:text-xl lg:text-[23px] text-gray-800 font-bold truncate">
+              ₹{formatMoney(totalSales)}
+            </h2>
           </div>
         </div>
 
         <div className="mt-5 bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5 flex-wrap">
           <div>
-            <p className="m-0 text-gray-500 text-xs font-medium">Settlement Overview</p>
-            <h2 className="m-0 mt-1 text-lg sm:text-[20px] text-gray-800 font-bold">Farmer Settlement</h2>
+            <p className="m-0 text-gray-500 text-xs font-medium">{t('farmer.settlementOverview')}</p>
+            <h2 className="m-0 mt-1 text-lg sm:text-[20px] text-gray-800 font-bold">
+              {t('farmer.farmerSettlement')}
+            </h2>
           </div>
           <div className="flex flex-wrap gap-4 sm:gap-[30px]">
             <div className="flex flex-col gap-1">
               <span className="text-base sm:text-[19px] font-bold text-green-800">₹{formatMoney(totalPaid)}</span>
-              <span className="text-xs text-gray-500 font-medium">Paid</span>
+              <span className="text-xs text-gray-500 font-medium">{t('farmer.paidStat')}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-base sm:text-[19px] font-bold text-yellow-600">₹{formatMoney(totalPending)}</span>
-              <span className="text-xs text-gray-500 font-medium">Pending</span>
+              <span className="text-xs text-gray-500 font-medium">{t('farmer.pendingStat')}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-base sm:text-[19px] font-bold text-gray-800">{paidOrderIds.size}</span>
-              <span className="text-xs text-gray-500 font-medium">Paid Orders</span>
+              <span className="text-xs text-gray-500 font-medium">{t('farmer.paidOrdersCount')}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-base sm:text-[19px] font-bold text-gray-800">{pendingOrderIds.size}</span>
-              <span className="text-xs text-gray-500 font-medium">Pending Orders</span>
+              <span className="text-xs text-gray-500 font-medium">{t('farmer.pendingOrdersCount')}</span>
             </div>
           </div>
         </div>
@@ -428,7 +451,7 @@ export default function FarmerEarningsPage() {
             <span className="text-[17px]">🔍</span>
             <input
               type="text"
-              placeholder="Search customer, product or order ID..."
+              placeholder={t('farmer.searchOrdersPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border-none outline-none py-2.5 px-2.5 text-sm bg-transparent"
@@ -443,7 +466,7 @@ export default function FarmerEarningsPage() {
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              All
+              {t('farmer.allOrdersFilter', { count: settlements.length })}
             </button>
             <button
               onClick={() => setStatusFilter('paid')}
@@ -453,7 +476,7 @@ export default function FarmerEarningsPage() {
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              ✓ Paid
+              ✓ {t('farmer.paidStat')}
             </button>
             <button
               onClick={() => setStatusFilter('pending')}
@@ -463,16 +486,21 @@ export default function FarmerEarningsPage() {
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              ⏳ Pending
+              ⏳ {t('farmer.pendingStat')}
             </button>
           </div>
         </div>
 
         <div className="mt-[30px]">
           <div>
-            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">Completed Orders</h2>
+            <h2 className="m-0 text-xl sm:text-[23px] text-gray-800 font-bold">
+              {t('farmer.completedOrdersTitle')}
+            </h2>
             <p className="m-0 mt-1.5 text-sm sm:text-[13px] text-gray-500">
-              Showing {filteredSettlements.length} of {settlements.length} completed order items
+              {t('farmer.showingCompletedItems', {
+                shown: filteredSettlements.length,
+                total: settlements.length,
+              })}
             </p>
           </div>
         </div>
@@ -481,12 +509,12 @@ export default function FarmerEarningsPage() {
           <div className="mt-[18px] p-[30px] sm:p-[50px] px-5 text-center bg-white border border-dashed border-gray-300 rounded-xl sm:rounded-2xl">
             <div className="text-[45px] mb-2">🌱</div>
             <h3 className="m-0 my-1.5 text-gray-700 font-bold text-lg">
-              {settlements.length === 0 ? 'No completed orders yet' : 'No matching orders'}
+              {settlements.length === 0 ? t('farmer.noCompletedOrders') : t('farmer.noMatchingOrders')}
             </h3>
             <p className="m-0 text-gray-500 text-[13px]">
               {settlements.length === 0
-                ? 'Your earnings and settlement details will appear here after an order is delivered.'
-                : 'Try changing the search or settlement filter.'}
+                ? t('farmer.noCompletedOrdersDesc')
+                : t('farmer.noMatchingOrdersDesc')}
             </p>
           </div>
         ) : (
@@ -495,30 +523,33 @@ export default function FarmerEarningsPage() {
               const isPaid = item.settlement_status === 'paid'
 
               return (
-                <div key={item.id} className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  {/* Top Bar: Order ID, Date, Status */}
+                <div
+                  key={item.id}
+                  className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
                   <div className="bg-[#fafcf9] border-b border-gray-200 p-3.5 sm:p-[15px_18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-[15px] flex-wrap">
                     <div>
-                      <p className="m-0 text-sm font-bold text-gray-800">Order #{item.order_id.slice(0, 8)}</p>
+                      <p className="m-0 text-sm font-bold text-gray-800">
+                        {t('orders.orderSingular')} #{item.order_id.slice(0, 8)}
+                      </p>
                       <p className="m-0 mt-0.5 text-[11px] text-gray-400 font-medium">
                         {formatDate(item.order_created_at)}
                       </p>
                     </div>
                     <div className="flex gap-1.5 flex-wrap">
                       <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800">
-                        ✓ Delivered
+                        ✓ {t('orders.stepDelivered')}
                       </span>
                       <span
                         className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                           isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
-                        {isPaid ? '✓ Settlement Paid' : '⏳ Settlement Pending'}
+                        {isPaid ? `✓ ${t('farmer.settlementPaid')}` : `⏳ ${t('farmer.settlementPending')}`}
                       </span>
                     </div>
                   </div>
 
-                  {/* Customer Info (Name and Phone) & View Details Action */}
                   <div className="p-4 sm:p-[18px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-full bg-green-50 text-green-800 border border-green-200 flex items-center justify-center text-lg flex-shrink-0">
@@ -534,7 +565,7 @@ export default function FarmerEarningsPage() {
                             <span>📱</span> {item.customer_phone}
                           </a>
                         ) : (
-                          <p className="m-0 mt-1 text-xs text-gray-400">No phone provided</p>
+                          <p className="m-0 mt-1 text-xs text-gray-400">-</p>
                         )}
                       </div>
                     </div>
@@ -543,7 +574,7 @@ export default function FarmerEarningsPage() {
                       onClick={() => setSelectedItem(item)}
                       className="w-full sm:w-auto px-4 py-2 bg-green-800 text-white rounded-lg text-xs sm:text-sm font-bold hover:bg-green-700 transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                     >
-                      <span>👁️</span> View Details
+                      <span>👁️</span> {t('farmer.viewDetails')}
                     </button>
                   </div>
                 </div>
@@ -551,17 +582,18 @@ export default function FarmerEarningsPage() {
             })}
           </div>
         )}
-        {/* ORDER DETAILS MODAL */}
+
         {selectedItem && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
-              
-              {/* Modal Header */}
               <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-5 flex justify-between items-center z-10">
                 <div>
-                  <h3 className="m-0 text-base sm:text-lg font-bold text-gray-800">Order Details</h3>
+                  <h3 className="m-0 text-base sm:text-lg font-bold text-gray-800">
+                    {t('farmer.orderDetailsModal')}
+                  </h3>
                   <p className="m-0 text-xs text-gray-500 mt-0.5">
-                    Order #{selectedItem.order_id.slice(0, 8)} • {formatDate(selectedItem.order_created_at)}
+                    {t('orders.orderSingular')} #{selectedItem.order_id.slice(0, 8)} •{' '}
+                    {formatDate(selectedItem.order_created_at)}
                   </p>
                 </div>
                 <button
@@ -572,19 +604,21 @@ export default function FarmerEarningsPage() {
                 </button>
               </div>
 
-              {/* Modal Body */}
               <div className="p-4 sm:p-5 flex flex-col gap-4">
-                
-                {/* Customer Details Box */}
                 <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-green-100 text-green-800 flex items-center justify-center text-lg flex-shrink-0">
                     👤
                   </div>
                   <div className="flex-1">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Customer</span>
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">
+                      {t('orders.customer')}
+                    </span>
                     <h4 className="m-0 text-base font-bold text-gray-800">{selectedItem.customer_name}</h4>
                     {selectedItem.customer_phone && (
-                      <a href={`tel:${selectedItem.customer_phone}`} className="inline-flex items-center gap-1 text-xs text-green-800 font-semibold mt-1 hover:underline">
+                      <a
+                        href={`tel:${selectedItem.customer_phone}`}
+                        className="inline-flex items-center gap-1 text-xs text-green-800 font-semibold mt-1 hover:underline"
+                      >
                         📱 {selectedItem.customer_phone}
                       </a>
                     )}
@@ -596,35 +630,43 @@ export default function FarmerEarningsPage() {
                   </div>
                 </div>
 
-                {/* Product Box */}
                 <div className="p-3.5 border border-gray-200 rounded-xl bg-white shadow-xs">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">Product Ordered</span>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">
+                    {t('farmer.productOrdered')}
+                  </span>
                   <h4 className="m-0 text-base font-bold text-gray-800 flex items-center gap-1.5">
                     🌾 {selectedItem.product_name}
                   </h4>
                   <p className="m-0 mt-1 text-xs sm:text-sm font-semibold text-green-800">
-                    Quantity: {selectedItem.quantity} {selectedItem.unit || 'unit'}
+                    {t('common.quantity')}: {selectedItem.quantity} {tu(selectedItem.unit || 'unit')}
                   </p>
                 </div>
 
-                {/* Price Breakdown */}
                 <div>
-                  <span className="text-[11px] uppercase font-bold text-gray-500 tracking-wider block mb-2">Price Breakdown (Per Unit)</span>
+                  <span className="text-[11px] uppercase font-bold text-gray-500 tracking-wider block mb-2">
+                    {t('farmer.priceBreakdownPerUnit')}
+                  </span>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-center">
-                      <span className="block text-[10px] text-gray-500 font-semibold uppercase">Customer</span>
+                      <span className="block text-[10px] text-gray-500 font-semibold uppercase">
+                        {t('farmer.customerCol')}
+                      </span>
                       <strong className="text-xs text-gray-800 font-bold block mt-0.5">
                         ₹{formatMoney(selectedItem.price)}
                       </strong>
                     </div>
                     <div className="bg-green-50 p-2.5 rounded-lg border border-green-200 text-center">
-                      <span className="block text-[10px] text-green-700 font-semibold uppercase">Farmer</span>
+                      <span className="block text-[10px] text-green-700 font-semibold uppercase">
+                        {t('farmer.farmerCol')}
+                      </span>
                       <strong className="text-xs text-green-800 font-bold block mt-0.5">
                         ₹{formatMoney(selectedItem.farmer_price)}
                       </strong>
                     </div>
                     <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-center">
-                      <span className="block text-[10px] text-gray-500 font-semibold uppercase">Commission</span>
+                      <span className="block text-[10px] text-gray-500 font-semibold uppercase">
+                        {t('farmer.commissionCol')}
+                      </span>
                       <strong className="text-xs text-gray-800 font-bold block mt-0.5">
                         ₹{formatMoney(selectedItem.commission_per_unit)}
                       </strong>
@@ -632,59 +674,78 @@ export default function FarmerEarningsPage() {
                   </div>
                 </div>
 
-                {/* Totals Summary */}
                 <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex flex-col gap-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-500">Customer Total:</span>
-                    <strong className="text-gray-800">₹{formatMoney(selectedItem.calculated_customer_total)}</strong>
+                    <span className="text-gray-500">{t('farmer.customerTotalLabel')}</span>
+                    <strong className="text-gray-800">
+                      ₹{formatMoney(selectedItem.calculated_customer_total)}
+                    </strong>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-500">Platform Commission:</span>
+                    <span className="text-gray-500">{t('farmer.platformCommission')}:</span>
                     <strong className="text-gray-800">₹{formatMoney(selectedItem.calculated_commission)}</strong>
                   </div>
                   <div className="border-t border-gray-200 pt-2 flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-800">Farmer Earnings:</span>
-                    <strong className="font-bold text-green-800 text-base">₹{formatMoney(selectedItem.calculated_farmer_amount)}</strong>
+                    <span className="font-bold text-gray-800">{t('farmer.farmerEarningsLabel')}:</span>
+                    <strong className="font-bold text-green-800 text-base">
+                      ₹{formatMoney(selectedItem.calculated_farmer_amount)}
+                    </strong>
                   </div>
                 </div>
 
-                {/* Settlement Info Card */}
-                <div className={`p-3.5 sm:p-4 rounded-xl border ${selectedItem.settlement_status === 'paid' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <div
+                  className={`p-3.5 sm:p-4 rounded-xl border ${
+                    selectedItem.settlement_status === 'paid'
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-yellow-50 border-yellow-200'
+                  }`}
+                >
                   <div className="flex justify-between items-center mb-1">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${selectedItem.settlement_status === 'paid' ? 'text-green-700' : 'text-yellow-700'}`}>
-                      Settlement Amount
+                    <span
+                      className={`text-xs font-bold uppercase tracking-wider ${
+                        selectedItem.settlement_status === 'paid' ? 'text-green-700' : 'text-yellow-700'
+                      }`}
+                    >
+                      {t('farmer.settlementAmount')}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.settlement_status === 'paid' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
-                      {selectedItem.settlement_status === 'paid' ? '✓ Settlement Paid' : '⏳ Settlement Pending'}
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        selectedItem.settlement_status === 'paid'
+                          ? 'bg-green-200 text-green-800'
+                          : 'bg-yellow-200 text-yellow-800'
+                      }`}
+                    >
+                      {selectedItem.settlement_status === 'paid'
+                        ? `✓ ${t('farmer.settlementPaid')}`
+                        : `⏳ ${t('farmer.settlementPending')}`}
                     </span>
                   </div>
-                  <h3 className={`m-0 text-xl font-bold ${selectedItem.settlement_status === 'paid' ? 'text-green-800' : 'text-yellow-800'}`}>
+                  <h3
+                    className={`m-0 text-xl font-bold ${
+                      selectedItem.settlement_status === 'paid' ? 'text-green-800' : 'text-yellow-800'
+                    }`}
+                  >
                     ₹{formatMoney(selectedItem.final_settlement_amount)}
                   </h3>
                   {selectedItem.settlement_status === 'paid' && selectedItem.settlement_paid_at && (
                     <p className="m-0 mt-1.5 text-xs text-green-700">
-                      Paid on: {formatDateTime(selectedItem.settlement_paid_at)}
+                      {t('farmer.paidOn', { date: formatDateTime(selectedItem.settlement_paid_at) })}
                     </p>
                   )}
                 </div>
-
               </div>
 
-              {/* Modal Footer */}
               <div className="p-4 border-t border-gray-200 flex justify-end">
                 <button
                   onClick={() => setSelectedItem(null)}
                   className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors cursor-pointer"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
-
             </div>
           </div>
         )}
-
-
       </section>
     </main>
   )

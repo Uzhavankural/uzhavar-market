@@ -1,10 +1,14 @@
 "use client";
 
+import { useLanguage } from "@/app/context/LanguageContext";
+
 export default function HeroBanner({
   targetScrollId = "products",
   className = "",
   containerClassName = "",
 }) {
+  const { t } = useLanguage();
+
   const handleScroll = () => {
     const el = document.getElementById(targetScrollId);
     if (el) {
@@ -25,7 +29,7 @@ export default function HeroBanner({
           {/* Main Hero Image */}
           <img
             src="/hero-banner.jpg"
-            alt="Fresh products. Direct from farmers. Buy farm products directly from farmers and support local agriculture."
+            alt={t("hero.alt")}
             className="w-full h-full object-cover block"
           />
 
@@ -37,7 +41,7 @@ export default function HeroBanner({
               handleScroll();
             }}
             className="absolute left-1/2 -translate-x-1/2 top-[66.5%] -translate-y-1/2 w-[28%] max-w-[240px] h-[11%] max-h-[52px] rounded-full cursor-pointer outline-none border-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none bg-transparent"
-            aria-label="Explore Products"
+            aria-label={t("hero.exploreAria")}
           />
         </div>
       </div>

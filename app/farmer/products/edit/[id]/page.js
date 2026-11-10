@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useLanguage } from '@/app/context/LanguageContext'
+import LanguageToggle from '@/app/components/LanguageToggle'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { showToast, setFlashToast } from '@/app/components/Toast'
@@ -9,6 +11,7 @@ import { ensureFarmerAccess } from '@/lib/farmerAuth'
 export default function EditProduct() {
   const router = useRouter()
   const params = useParams()
+  const { t, tc, tu } = useLanguage()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -26,9 +29,6 @@ export default function EditProduct() {
   const [deliveryPrice, setDeliveryPrice] = useState('')
   const [existingImages, setExistingImages] = useState([])
   const [newImages, setNewImages] = useState([])
-  const [existingVideo, setExistingVideo] = useState(null)
-  const [newVideoFile, setNewVideoFile] = useState(null)
-  const [newVideoPreview, setNewVideoPreview] = useState(null)
 
   
   const [newVariants, setNewVariants] = useState([])
@@ -51,83 +51,79 @@ export default function EditProduct() {
   }
 
   useEffect(() => {
-    if (params?.id) {
-      loadProduct()
-    }
-  }, [params?.id])
+    if (!params?.id) return
 
-  async function loadProduct() {
-    setLoading(true)
-    setError('')
+    async function loadProduct() {
+      setLoading(true)
+      setError('')
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-    if (!user) {
-      router.replace('/login')
-      return
-    }
+      if (!user) {
+        router.replace('/login')
+        return
+      }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
 
-    const effective = await ensureFarmerAccess(profile, user)
+      const effective = await ensureFarmerAccess(profile, user)
 
-    if (!effective.isAllowed && effective.role !== 'farmer') {
-      router.replace('/')
-      return
-    }
+      if (!effective.isAllowed && effective.role !== 'farmer') {
+        router.replace('/')
+        return
+      }
 
-    const { data: productData, error: productError } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', params.id)
-      .eq('farmer_id', user.id)
-      .single()
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', params.id)
+        .eq('farmer_id', user.id)
+        .single()
 
-    if (productError || !productData) {
-      setError('Product not found or you do not have permission to edit it.')
+      if (productError || !productData) {
+        setError('Product not found or you do not have permission to edit it.')
+        setLoading(false)
+        return
+      }
+
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name')
+
+      if (categoryError) {
+        console.log('CATEGORY ERROR:', categoryError)
+      }
+
+      setProduct(productData)
+      setCategories(categoryData || [])
+
+      setName(productData.name || '')
+      setCategoryId(productData.category_id || '')
+      setDescription(productData.description || '')
+      setPrice(productData.price ?? '')
+      setUnitCount(productData.unit_count ?? '1')
+      setUnit(productData.unit || '')
+      setStock(productData.stock_quantity ?? '')
+      setDeliveryPrice(productData.delivery_price ?? '0')
+
+      const initialImages = Array.isArray(productData.images) && productData.images.length > 0
+        ? productData.images
+        : (productData.image_url ? [productData.image_url] : [])
+      setExistingImages(initialImages)
+      setNewImages([])
+
       setLoading(false)
-      return
     }
 
-    const { data: categoryData, error: categoryError } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name')
-
-    if (categoryError) {
-      console.log('CATEGORY ERROR:', categoryError)
-    }
-
-    setProduct(productData)
-    setCategories(categoryData || [])
-
-    setName(productData.name || '')
-    setCategoryId(productData.category_id || '')
-    setDescription(productData.description || '')
-    setPrice(productData.price ?? '')
-    setUnitCount(productData.unit_count ?? '1')
-    setUnit(productData.unit || '')
-    setStock(productData.stock_quantity ?? '')
-    setDeliveryPrice(productData.delivery_price ?? '0')
-
-    const initialImages = Array.isArray(productData.images) && productData.images.length > 0
-      ? productData.images
-      : (productData.image_url ? [productData.image_url] : [])
-    setExistingImages(initialImages)
-    setExistingVideo(productData.video_url || null)
-    setNewImages([])
-    setNewVideoFile(null)
-    setNewVideoPreview(null)
-
-
-    setLoading(false)
-  }
+    loadProduct()
+  }, [params?.id, router])
 
   const commission = useMemo(() => {
     return Number(product?.commission_amount || 0)
@@ -165,53 +161,6 @@ export default function EditProduct() {
 
   function handleRemoveNewImage(index) {
     setNewImages(prev => prev.filter((_, i) => i !== index))
-  }
-
-  function handleNewVideoChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('video/')) {
-      alert('Please select a valid video file.')
-      e.target.value = ''
-      return
-    }
-
-    const tempUrl = URL.createObjectURL(file)
-    const videoElem = document.createElement('video')
-    videoElem.preload = 'metadata'
-    videoElem.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(videoElem.src)
-      const duration = videoElem.duration
-      if (duration > 60) {
-        alert(`Video duration is ${Math.round(duration)} seconds. Maximum allowed duration is 1 minute (60 seconds).`)
-        e.target.value = ''
-        setNewVideoFile(null)
-        setNewVideoPreview(null)
-      } else {
-        setNewVideoFile(file)
-        setNewVideoPreview(tempUrl)
-      }
-    }
-    videoElem.onerror = () => {
-      alert('Unable to load video metadata. Please select another video file.')
-      e.target.value = ''
-    }
-    videoElem.src = tempUrl
-  }
-
-  function handleRemoveExistingVideo() {
-    setExistingVideo(null)
-  }
-
-  function handleRemoveNewVideo() {
-    if (newVideoPreview) {
-      try { window.URL.revokeObjectURL(newVideoPreview) } catch (e) {}
-    }
-    setNewVideoFile(null)
-    setNewVideoPreview(null)
-    const input = document.getElementById('edit-product-video')
-    if (input) input.value = ''
   }
 
   async function handleUpdate(e) {
@@ -275,29 +224,6 @@ export default function EditProduct() {
 
     const finalImages = [...existingImages, ...uploadedNewImages].slice(0, 4)
 
-    // Upload new video if any
-    let finalVideoUrl = existingVideo
-    if (newVideoFile) {
-      const fileExtension = newVideoFile.name.split('.').pop() || 'mp4'
-      const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-video.${fileExtension}`
-
-      const { error: videoUploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, newVideoFile)
-
-      if (videoUploadError) {
-        setError(`Video upload failed: ${videoUploadError.message}`)
-        setSaving(false)
-        return
-      }
-
-      const { data: videoUrlData } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName)
-
-      finalVideoUrl = videoUrlData.publicUrl
-    }
-
     const isMainBag = trimmedUnit.includes('bag');
     const finalMainUnitCount = isMainBag ? 1 : Number(unitCount);
 
@@ -312,29 +238,14 @@ export default function EditProduct() {
       stock_quantity: Number(stock),
       image_url: finalImages.length > 0 ? finalImages[0] : null,
       images: finalImages,
-      video_url: finalVideoUrl,
     }
 
     // Update existing product
-    let { error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('products')
       .update(updatePayload)
       .eq('id', params.id)
       .eq('farmer_id', user.id)
-
-    if (updateError && updateError.message && updateError.message.includes('video_url')) {
-      console.warn('video_url column does not exist yet. Retrying update without video_url.');
-      const { video_url, ...fallbackPayload } = updatePayload;
-      const { error: fallbackError } = await supabase
-        .from('products')
-        .update(fallbackPayload)
-        .eq('id', params.id)
-        .eq('farmer_id', user.id);
-      if (!fallbackError) {
-        updateError = null;
-        alert('Product updated! Note: To save videos, run in Supabase SQL editor: ALTER TABLE public.products ADD COLUMN IF NOT EXISTS video_url TEXT;');
-      }
-    }
 
     if (updateError) {
       console.log('UPDATE ERROR:', updateError)
@@ -360,24 +271,15 @@ export default function EditProduct() {
           stock_quantity: Number(stock),
           image_url: finalImages.length > 0 ? finalImages[0] : null,
           images: finalImages,
-          video_url: finalVideoUrl,
           status: 'active',
           approval_status: 'pending',
           commission_amount: 0,
         }
       })
 
-      let { error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('products')
         .insert(newProducts)
-
-      if (insertError && insertError.message && insertError.message.includes('video_url')) {
-        const fallbackVariants = newProducts.map(({ video_url, ...rest }) => rest);
-        const { error: fallbackInsertErr } = await supabase.from('products').insert(fallbackVariants);
-        if (!fallbackInsertErr) {
-          insertError = null;
-        }
-      }
 
       if (insertError) {
         console.log('INSERT ERROR:', insertError)
@@ -398,11 +300,11 @@ export default function EditProduct() {
   }
 
   function getApprovalLabel(status) {
-    if (status === 'active') return '✓ Approved'
-    if (status === 'pending') return '⏳ Pending'
-    if (status === 'rejected') return '✕ Rejected'
+    if (status === 'active') return `✓ ${t('farmer.approvedStatus')}`
+    if (status === 'pending') return `⏳ ${t('farmer.pendingStatus')}`
+    if (status === 'rejected') return `✕ ${t('farmer.rejectedStatus')}`
 
-    return '— Not Set'
+    return `— ${t('farmer.notSetStatus')}`
   }
 
   function getApprovalStyle(status) {
@@ -423,7 +325,7 @@ export default function EditProduct() {
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
         <div className="bg-white p-9 sm:p-12 rounded-2xl border border-gray-200 text-center text-gray-700">
           <div className="text-[40px] mb-2.5">🌾</div>
-          <p className="m-0 text-base">Loading product...</p>
+          <p className="m-0 text-base">{t('common.loading')}</p>
         </div>
       </main>
     )
@@ -434,12 +336,12 @@ export default function EditProduct() {
       <main className="min-h-screen flex justify-center items-center bg-[#f7f8f5] font-sans">
         <div className="bg-white p-9 sm:p-12 rounded-2xl border border-gray-200 text-center text-gray-700">
           <div className="text-[40px] mb-2.5">⚠️</div>
-          <p className="mb-5 text-gray-500">{error || 'Product not found.'}</p>
+          <p className="mb-5 text-gray-500">{error || t('common.somethingWentWrong')}</p>
           <button
             onClick={() => router.push('/farmer/products')}
             className="px-[18px] py-[10px] border-none rounded-lg bg-green-800 text-white cursor-pointer font-semibold"
           >
-            ← My Products
+            ← {t('farmer.myProducts')}
           </button>
         </div>
       </main>
@@ -449,13 +351,14 @@ export default function EditProduct() {
   return (
     <main className="min-h-screen bg-[#f7f8f5] font-sans pb-10">
       <nav className="bg-white border-b border-gray-200 py-4 px-4 sm:px-[6%] flex justify-between items-center gap-4 flex-wrap">
-        <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 Uzhavar Market</div>
-        <div className="flex items-center gap-3">
+        <div className="text-xl sm:text-[22px] font-bold text-green-800">🌾 {t('brand')}</div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageToggle variant="compact" />
           <button
             onClick={() => router.push('/farmer/products')}
             className="px-4 py-2 sm:px-[18px] sm:py-[9px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base"
           >
-            ← My Products
+            ← {t('farmer.myProducts')}
           </button>
         </div>
       </nav>
@@ -463,8 +366,8 @@ export default function EditProduct() {
       <section className="w-[95%] sm:w-[90%] max-w-[800px] mx-auto pt-[30px] sm:pt-[40px]">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-[15px] mb-[25px] flex-wrap">
           <div>
-            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] text-gray-800 font-bold">Edit Product</h1>
-            <p className="m-0 text-gray-500 text-sm sm:text-base">Update your product details or add new variants.</p>
+            <h1 className="m-0 mb-2 text-2xl sm:text-[32px] text-gray-800 font-bold">{t('farmer.editProductTitle')}</h1>
+            <p className="m-0 text-gray-500 text-sm sm:text-base">{t('farmer.editProductSubtitle')}</p>
           </div>
           <div className={`px-3 py-1.5 rounded-full font-bold text-xs shadow-sm ${getApprovalStyle(product.approval_status)}`}>
             {getApprovalLabel(product.approval_status)}
@@ -473,17 +376,17 @@ export default function EditProduct() {
 
         <form onSubmit={handleUpdate} className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-[30px] shadow-sm">
           
-          {/* MEDIA SECTION (Photos & Video) */}
+          {/* PHOTOS SECTION (Max 4) */}
           <div className="mb-6 p-4 sm:p-5 bg-gray-50 border border-gray-200 rounded-xl">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="m-0 text-base font-bold text-gray-800">Product Photos & Video</h3>
-              <span className="text-xs text-gray-500 font-semibold">Max 4 images + 1 video</span>
+              <h3 className="m-0 text-base font-bold text-gray-800">{t('farmer.photosTitle')}</h3>
+              <span className="text-xs text-gray-500 font-semibold">{t('farmer.maxImagesHint')}</span>
             </div>
 
             {/* PHOTOS (Max 4) */}
-            <div className="mb-4">
+            <div>
               <label className="block mb-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
-                Photos ({existingImages.length + newImages.length}/4)
+                {t('farmer.photosCount', { count: existingImages.length + newImages.length })}
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
@@ -495,12 +398,12 @@ export default function EditProduct() {
                       type="button"
                       onClick={() => handleRemoveExistingImage(idx)}
                       className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow hover:bg-red-700 transition-colors cursor-pointer"
-                      title="Remove image"
+                      title={t('common.remove')}
                     >
                       ✕
                     </button>
                     <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
-                      Saved #{idx + 1}
+                      #{idx + 1}
                     </span>
                   </div>
                 ))}
@@ -513,12 +416,12 @@ export default function EditProduct() {
                       type="button"
                       onClick={() => handleRemoveNewImage(idx)}
                       className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow hover:bg-red-700 transition-colors cursor-pointer"
-                      title="Remove image"
+                      title={t('common.remove')}
                     >
                       ✕
                     </button>
                     <span className="absolute bottom-1 left-1 bg-green-700 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-                      New
+                      +
                     </span>
                   </div>
                 ))}
@@ -535,61 +438,7 @@ export default function EditProduct() {
                     className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100 transition-all cursor-pointer"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Add up to {4 - (existingImages.length + newImages.length)} more image(s).
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* VIDEO (Max 1, <= 60s) */}
-            <div className="pt-3 border-t border-gray-200">
-              <label className="block mb-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
-                Product Video (Max 1 video, up to 1:00 min)
-              </label>
-
-              {newVideoPreview ? (
-                <div className="border border-green-300 rounded-xl p-3 bg-white mb-2 shadow-sm">
-                  <div className="relative rounded-lg overflow-hidden bg-black mb-2">
-                    <video src={newVideoPreview} controls className="w-full max-h-52 object-contain" />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-green-700 font-bold">✓ New Video Selected (within 1 min)</span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveNewVideo}
-                      className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors cursor-pointer"
-                    >
-                      Remove Video
-                    </button>
-                  </div>
-                </div>
-              ) : existingVideo ? (
-                <div className="border border-gray-200 rounded-xl p-3 bg-white mb-2 shadow-sm">
-                  <div className="relative rounded-lg overflow-hidden bg-black mb-2">
-                    <video src={existingVideo} controls className="w-full max-h-52 object-contain" />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-600 font-semibold">Current Saved Video</span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveExistingVideo}
-                      className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors cursor-pointer"
-                    >
-                      Remove Video
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <input
-                    id="edit-product-video"
-                    type="file"
-                    accept="video/*"
-                    onChange={handleNewVideoChange}
-                    className="w-full py-2 text-sm text-gray-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 transition-all cursor-pointer"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Upload a 1-minute video showcasing your farm produce or harvest.
+                    {t('farmer.addMoreImages', { count: 4 - (existingImages.length + newImages.length) })}
                   </p>
                 </div>
               )}
@@ -598,17 +447,17 @@ export default function EditProduct() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 sm:mt-[18px]">
             <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Product Name *</label>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.productNameLabel')}</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
-                placeholder="Enter product name"
+                placeholder={t('farmer.productNamePlaceholder')}
               />
             </div>
             <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Total Stock Quantity *</label>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.stockQtyLabel')}</label>
               <input
                 type="number"
                 value={stock}
@@ -621,30 +470,30 @@ export default function EditProduct() {
             </div>
           </div>
 
-          <label className="block mb-2 mt-4 sm:mt-[18px] font-semibold text-gray-700 text-sm sm:text-base">Category *</label>
+          <label className="block mb-2 mt-4 sm:mt-[18px] font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.categoryLabel')}</label>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
             className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
           >
-            <option value="">Select category</option>
+            <option value="">{t('farmer.selectCategory')}</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.icon ? `${category.icon} ` : ''}
-                {category.name}
+                {tc(category.name)}
               </option>
             ))}
           </select>
 
-          <label className="block mb-2 mt-4 sm:mt-[18px] font-semibold text-gray-700 text-sm sm:text-base">Description</label>
+          <label className="block mb-2 mt-4 sm:mt-[18px] font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.descriptionLabel')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full min-h-[100px] sm:min-h-[120px] p-2.5 sm:p-3 border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none resize-y focus:border-green-600 focus:ring-1 focus:ring-green-600 font-sans"
-            placeholder="Describe your product"
+            placeholder={t('farmer.descriptionPlaceholder')}
           />
 
-          <div className="mt-8 mb-2 font-bold text-lg border-b pb-2">Main Variant</div>
+          <div className="mt-8 mb-2 font-bold text-lg border-b pb-2">{t('farmer.mainVariantTitle')}</div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-[15px] mt-4 sm:mt-[18px]">
             <div>
               <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Farmer Price *</label>
@@ -662,7 +511,7 @@ export default function EditProduct() {
               </div>
             </div>
             {!unit.includes('bag') && <div>
-                <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit Count *</label>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.unitCountLabel')}</label>
               <input
                 type="number"
                 value={unitCount}
@@ -674,29 +523,29 @@ export default function EditProduct() {
                 />
               </div>}
               <div>
-                <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Unit *</label>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.unitLabel')}</label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 className="w-full p-2.5 sm:p-[13px_10px] border border-gray-300 rounded-lg text-sm sm:text-[15px] bg-white outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
               >
-                <option value="kg">kg</option>
-                <option value="g">gram</option>
-                <option value="litre">litre</option>
-                <option value="ml">ml</option>
-                <option value="piece">piece</option>
-                <option value="packet">packet</option>
-                <option value="box">box</option>
-                          <option value="bag">bag</option>
-                          <option value="5kg bag">5kg bag</option>
-                          <option value="10kg bag">10kg bag</option>
-                          <option value="25kg bag">25kg bag</option>
-                          <option value="50kg bag">50kg bag</option>
-                <option value="dozen">dozen</option>
+                <option value="kg">{tu('kg')}</option>
+                <option value="g">{tu('gram')}</option>
+                <option value="litre">{tu('litre')}</option>
+                <option value="ml">{tu('ml')}</option>
+                <option value="piece">{tu('piece')}</option>
+                <option value="packet">{tu('packet')}</option>
+                <option value="box">{tu('box')}</option>
+                          <option value="bag">{tu('bag')}</option>
+                          <option value="5kg bag">{tu('5kg bag')}</option>
+                          <option value="10kg bag">{tu('10kg bag')}</option>
+                          <option value="25kg bag">{tu('25kg bag')}</option>
+                          <option value="50kg bag">{tu('50kg bag')}</option>
+                <option value="dozen">{tu('dozen')}</option>
               </select>
             </div>
             <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">Delivery Price</label>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm sm:text-base">{t('farmer.delivery')}</label>
               <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white focus-within:border-green-600 focus-within:ring-1 focus-within:ring-green-600">
                 <span className="pl-3 text-gray-500 font-semibold text-sm sm:text-base">₹</span>
                 <input
@@ -714,13 +563,13 @@ export default function EditProduct() {
 
           <div className="mt-8 mb-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800 m-0">Add New Variants</h3>
+              <h3 className="text-lg font-bold text-gray-800 m-0">{t('farmer.addVariantBtn')}</h3>
               <button
                 type="button"
                 onClick={addNewVariant}
                 className="px-3 py-1.5 bg-green-100 text-green-800 rounded-md text-sm font-bold hover:bg-green-200 transition-colors"
               >
-                + Add Variant
+                {t('farmer.addVariantBtn')}
               </button>
             </div>
             
@@ -731,21 +580,21 @@ export default function EditProduct() {
                   onClick={() => removeNewVariant(index)}
                   className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xs font-bold"
                 >
-                  ✕ Remove
+                  ✕ {t('common.remove')}
                 </button>
                 
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
-                  New Variant {index + 1}
+                  {t('farmer.variantNum', { n: index + 1 })}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Price *</label>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">{t('farmer.priceStarLabel')}</label>
                     <input
                       type="number"
                       value={v.price}
                       onChange={(e) => handleNewVariantChange(index, 'price', e.target.value)}
-                      placeholder="Price"
+                      placeholder={t('common.price')}
                       min="0"
                       step="0.01"
                       className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
@@ -753,7 +602,7 @@ export default function EditProduct() {
                     />
                   </div>
                   {!v.unit.includes('bag') && <div>
-                      <label className="block mb-2 text-sm font-semibold text-gray-700">Unit Count *</label>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">{t('farmer.unitCountLabel')}</label>
                     <input
                       type="number"
                       value={v.unitCount}
@@ -766,26 +615,26 @@ export default function EditProduct() {
                       />
                     </div>}
                     <div>
-                      <label className="block mb-2 text-sm font-semibold text-gray-700">Unit *</label>
+                      <label className="block mb-2 text-sm font-semibold text-gray-700">{t('farmer.unitLabel')}</label>
                     <select
                       value={v.unit}
                       onChange={(e) => handleNewVariantChange(index, 'unit', e.target.value)}
                       className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-green-800"
                       required
                     >
-                      <option value="kg">kg</option>
-                      <option value="g">gram</option>
-                      <option value="litre">litre</option>
-                      <option value="ml">ml</option>
-                      <option value="piece">piece</option>
-                      <option value="packet">packet</option>
-                      <option value="box">box</option>
-                          <option value="bag">bag</option>
-                      <option value="dozen">dozen</option>
+                      <option value="kg">{tu('kg')}</option>
+                      <option value="g">{tu('gram')}</option>
+                      <option value="litre">{tu('litre')}</option>
+                      <option value="ml">{tu('ml')}</option>
+                      <option value="piece">{tu('piece')}</option>
+                      <option value="packet">{tu('packet')}</option>
+                      <option value="box">{tu('box')}</option>
+                          <option value="bag">{tu('bag')}</option>
+                      <option value="dozen">{tu('dozen')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-semibold text-gray-700">Delivery Price *</label>
+                    <label className="block mb-2 text-sm font-semibold text-gray-700">{t('farmer.deliveryPriceLabel')}</label>
                     <input
                       type="number"
                       value={v.deliveryPrice}
@@ -803,35 +652,35 @@ export default function EditProduct() {
           </div>
 
           <div className="mt-6 sm:mt-[25px] bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-[16px]">
-            <h3 className="m-0 mb-3 sm:mb-[15px] text-base font-bold text-gray-800">Main Variant Summary</h3>
+            <h3 className="m-0 mb-3 sm:mb-[15px] text-base font-bold text-gray-800">{t('farmer.mainVariantTitle')}</h3>
             <div className="flex justify-between gap-4 text-gray-500 text-sm mb-2 sm:mb-[9px]">
-              <span>Farmer Price</span>
-              <strong className="text-gray-800">₹{Number(price || 0).toLocaleString('en-IN')}{unit ? ` / ${unitCount && unitCount != 1 ? unitCount + ' ' : ''}${unit}` : ''}</strong>
+              <span>{t('farmer.farmerPrice')}</span>
+              <strong className="text-gray-800">₹{Number(price || 0).toLocaleString('en-IN')}{unit ? ` / ${unitCount && unitCount != 1 ? unitCount + ' ' : ''}${tu(unit)}` : ''}</strong>
             </div>
             <div className="flex justify-between gap-4 text-gray-500 text-sm mb-2 sm:mb-[9px]">
-              <span>Platform Commission</span>
+              <span>{t('farmer.platformCommission')}</span>
               <strong className="text-gray-800">₹{commission.toLocaleString('en-IN')}</strong>
             </div>
             <div className="border-t border-gray-200 my-3 sm:my-[12px]" />
             <div className="flex justify-between gap-4 text-green-800 text-base font-bold">
-              <span>Customer Price</span>
-              <strong>₹{customerPrice.toLocaleString('en-IN')}{unit ? ` / ${unitCount && unitCount != 1 ? unitCount + ' ' : ''}${unit}` : ''}</strong>
+              <span>{t('farmer.customerPrice')}</span>
+              <strong>₹{customerPrice.toLocaleString('en-IN')}{unit ? ` / ${unitCount && unitCount != 1 ? unitCount + ' ' : ''}${tu(unit)}` : ''}</strong>
             </div>
           </div>
 
           <div className="mt-5 sm:mt-[20px] p-4 sm:p-[15px] border border-gray-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-[15px] bg-white">
             <div>
-              <span className="block mb-1 sm:mb-[6px] text-xs sm:text-[13px] text-gray-500 font-bold uppercase tracking-wider">Product Status</span>
-              <strong className="text-gray-800 text-sm sm:text-base">{product.status === 'active' ? '🟢 Active' : '🔴 Inactive'}</strong>
+              <span className="block mb-1 sm:mb-[6px] text-xs sm:text-[13px] text-gray-500 font-bold uppercase tracking-wider">{t('farmer.activeCountLabel')}</span>
+              <strong className="text-gray-800 text-sm sm:text-base">{product.status === 'active' ? `🟢 ${t('farmer.activeStatus')}` : `🔴 ${t('farmer.inactiveStatus')}`}</strong>
             </div>
             <div>
-              <span className="block mb-1 sm:mb-[6px] text-xs sm:text-[13px] text-gray-500 font-bold uppercase tracking-wider">Approval Status</span>
+              <span className="block mb-1 sm:mb-[6px] text-xs sm:text-[13px] text-gray-500 font-bold uppercase tracking-wider">{t('farmer.pendingApprovalCountLabel')}</span>
               <strong className="text-gray-800 text-sm sm:text-base">{getApprovalLabel(product.approval_status)}</strong>
             </div>
           </div>
 
           <div className="mt-4 sm:mt-[15px] p-3 sm:p-[12px_15px] bg-blue-50 border border-blue-100 rounded-lg text-blue-800 text-xs sm:text-[14px] flex gap-2">
-            <span>ℹ️</span> <span>Commission and approval status are managed by the platform admin.</span>
+            <span>ℹ️</span> <span>{t('farmer.myProductsSubtitle')}</span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-[15px] mt-[30px] pt-[20px] border-t border-gray-200">
@@ -841,7 +690,7 @@ export default function EditProduct() {
               disabled={saving}
               className="flex-1 px-[20px] py-[12px] border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer font-bold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -850,7 +699,7 @@ export default function EditProduct() {
                 saving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
               }`}
             >
-              {saving ? 'Saving...' : '✓ Save Changes'}
+              {saving ? t('farmer.savingProduct') : `✓ ${t('farmer.saveProductBtn')}`}
             </button>
           </div>
         </form>

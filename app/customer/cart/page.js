@@ -3,17 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function CustomerCartPage() {
   const router = useRouter();
+  const { t, tu } = useLanguage();
 
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // =========================
-  // LOAD USER + CART
-  // =========================
   useEffect(() => {
     const loadCart = async () => {
       try {
@@ -45,9 +44,6 @@ export default function CustomerCartPage() {
     loadCart();
   }, [router]);
 
-  // =========================
-  // SAVE CART
-  // =========================
   useEffect(() => {
     if (!user) return;
 
@@ -57,9 +53,6 @@ export default function CustomerCartPage() {
     );
   }, [cart, user]);
 
-  // =========================
-  // UPDATE QUANTITY
-  // =========================
   const updateQuantity = (index, newQuantity) => {
     const item = cart[index];
     const isOrganicComplex = item?.name?.toLowerCase().includes("organic complex");
@@ -70,7 +63,7 @@ export default function CustomerCartPage() {
       item.stock_quantity !== null &&
       newQuantity > Number(item.stock_quantity)
     ) {
-      alert(`Only ${item.stock_quantity} ${item.unit || "unit"} available.`);
+      alert(t("cart.onlyAvailableAlert", { stock: item.stock_quantity, unit: tu(item.unit || "unit") }));
       return;
     }
 
@@ -84,14 +77,11 @@ export default function CustomerCartPage() {
     setCart(updatedCart);
   };
 
-  // =========================
-  // REMOVE ITEM
-  // =========================
   const removeItem = (index) => {
     const item = cart[index];
 
     const confirmRemove = confirm(
-      `Remove "${item.name}" from cart?`
+      t("cart.confirmRemove", { name: item.name })
     );
 
     if (!confirmRemove) return;
@@ -101,24 +91,16 @@ export default function CustomerCartPage() {
     setCart(updatedCart);
   };
 
-  // =========================
-  // CLEAR CART
-  // =========================
   const clearCart = () => {
     if (cart.length === 0) return;
 
-    const confirmClear = confirm(
-      "Are you sure you want to clear the cart?"
-    );
+    const confirmClear = confirm(t("cart.confirmClear"));
 
     if (!confirmClear) return;
 
     setCart([]);
   };
 
-  // =========================
-  // CALCULATIONS
-  // =========================
   const getItemPrice = (item) => {
     return (
       Number(item.price || 0) +
@@ -140,32 +122,23 @@ export default function CustomerCartPage() {
     0
   );
 
-  // =========================
-  // CHECKOUT
-  // =========================
   const handleCheckout = () => {
     if (cart.length === 0) {
-      alert("Your cart is empty.");
+      alert(t("cart.cartEmptyAlert"));
       return;
     }
 
     router.push("/customer/checkout");
   };
 
-  // =========================
-  // LOADING
-  // =========================
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#f6f8f5] font-sans">
-        <p className="text-lg text-gray-600 font-medium animate-pulse">Loading cart...</p>
+        <p className="text-lg text-gray-600 font-medium animate-pulse">{t("cart.loadingCart")}</p>
       </main>
     );
   }
 
-  // =========================
-  // EMPTY CART
-  // =========================
   if (cart.length === 0) {
     return (
       <main className="min-h-screen bg-[#f6f8f5] px-4 py-10 sm:p-10 font-sans">
@@ -174,22 +147,22 @@ export default function CustomerCartPage() {
             onClick={() => router.push("/customer/products")}
             className="mb-8 text-gray-700 font-medium hover:text-green-800 transition-colors"
           >
-            &larr; Continue Shopping
+            &larr; {t("cart.continueShopping")}
           </button>
 
           <div className="bg-white rounded-2xl p-10 sm:p-16 text-center shadow-sm border border-gray-100">
             <div className="text-7xl sm:text-8xl mb-6">🛒</div>
             <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3">
-              Your Cart is Empty
+              {t("cart.emptyTitle")}
             </h1>
             <p className="text-gray-500 mb-8 text-sm sm:text-base">
-              Add fresh products from our farmers to your cart.
+              {t("cart.emptyDesc")}
             </p>
             <button
               onClick={() => router.push("/customer/products")}
               className="bg-green-800 hover:bg-green-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base transition-colors shadow-sm"
             >
-              Browse Products
+              {t("cart.browseProducts")}
             </button>
           </div>
         </div>
@@ -197,9 +170,6 @@ export default function CustomerCartPage() {
     );
   }
 
-  // =========================
-  // CART PAGE
-  // =========================
   return (
     <main className="min-h-screen bg-[#f6f8f5] px-4 py-8 sm:p-10 font-sans">
       <div className="max-w-6xl mx-auto">
@@ -210,20 +180,22 @@ export default function CustomerCartPage() {
               onClick={() => router.push("/customer/products")}
               className="text-gray-600 hover:text-green-800 font-medium text-sm sm:text-base mb-3 transition-colors"
             >
-              &larr; Continue Shopping
+              &larr; {t("cart.continueShopping")}
             </button>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 m-0">
-              🛒 My Cart
+              🛒 {t("cart.title")}
             </h1>
             <p className="text-gray-500 mt-2 text-sm sm:text-base">
-              {totalItems} item{totalItems !== 1 ? "s" : ""} in your cart
+              {totalItems === 1
+                ? t("cart.itemsInCartSingular")
+                : t("cart.itemsInCartPlural", { count: totalItems })}
             </p>
           </div>
           <button
             onClick={clearCart}
             className="bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 px-4 py-2.5 rounded-lg font-medium text-sm sm:text-base transition-colors w-full sm:w-auto"
           >
-            Clear Cart
+            {t("cart.clearCart")}
           </button>
         </div>
 
@@ -264,19 +236,19 @@ export default function CustomerCartPage() {
                       </p>
                     )}
                     <p className="text-green-800 font-bold mb-1">
-                      ₹{price.toFixed(2)} <span className="text-gray-500 text-sm font-normal">/ {item.unit_count || 1} {item.unit || "unit"}</span>
+                      ₹{price.toFixed(2)} <span className="text-gray-500 text-sm font-normal">/ {item.unit_count || 1} {tu(item.unit || "unit")}</span>
                     </p>
                     {Number(item.delivery_price) > 0 ? (
                       <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                        + ₹{Number(item.delivery_price).toFixed(2)} delivery
+                        {t("common.deliveryFee", { amount: Number(item.delivery_price).toFixed(2) })}
                       </p>
                     ) : (
                       <p className="text-xs sm:text-sm text-green-600 font-medium mb-1">
-                        Free delivery
+                        {t("common.freeDelivery")}
                       </p>
                     )}
                     <p className="text-xs sm:text-sm text-gray-500">
-                      Stock: {item.stock_quantity ?? "Available"}
+                      {t("cart.stockLabel", { stock: item.stock_quantity ?? t("cart.stockAvailable") })}
                     </p>
                   </div>
 
@@ -315,7 +287,7 @@ export default function CustomerCartPage() {
                         onClick={() => removeItem(index)}
                         className="text-red-500 hover:text-red-700 text-xs sm:text-sm font-medium mt-1 sm:mt-2 transition-colors absolute top-4 right-4 sm:static"
                       >
-                        Remove
+                        {t("common.remove")}
                       </button>
                     </div>
                   </div>
@@ -327,21 +299,21 @@ export default function CustomerCartPage() {
           {/* ORDER SUMMARY */}
           <div className="w-full lg:w-80 xl:w-96 bg-white rounded-xl p-6 shadow-sm border border-gray-100 sticky top-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
-              Order Summary
+              {t("cart.orderSummary")}
             </h2>
             <div className="flex justify-between items-center text-gray-600 mb-3 text-sm sm:text-base">
-              <span>Items</span>
+              <span>{t("cart.items")}</span>
               <span className="font-medium text-gray-900">{totalItems}</span>
             </div>
             <div className="flex justify-between items-center text-gray-600 mb-5 text-sm sm:text-base">
-              <span>Subtotal</span>
+              <span>{t("cart.subtotal")}</span>
               <span className="font-medium text-gray-900">₹{cartTotal.toFixed(2)}</span>
             </div>
             
             <hr className="border-t border-gray-100 my-5" />
             
             <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-6">
-              <span className="text-gray-900">Total</span>
+              <span className="text-gray-900">{t("cart.total")}</span>
               <span className="text-green-800">₹{cartTotal.toFixed(2)}</span>
             </div>
 
@@ -350,13 +322,13 @@ export default function CustomerCartPage() {
                 onClick={handleCheckout}
                 className="w-full bg-green-800 hover:bg-green-700 text-white py-3.5 rounded-xl font-bold text-base transition-colors focus:ring-4 focus:ring-green-100 shadow-sm"
               >
-                Proceed to Checkout &rarr;
+                {t("cart.proceedToCheckout")} &rarr;
               </button>
               <button
                 onClick={() => router.push("/customer/products")}
                 className="w-full bg-white hover:bg-gray-50 text-green-800 border border-green-800 py-3 rounded-xl font-semibold text-sm sm:text-base transition-colors"
               >
-                Continue Shopping
+                {t("cart.continueShopping")}
               </button>
             </div>
           </div>

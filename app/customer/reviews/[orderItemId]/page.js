@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function CustomerReviewPage() {
   const params = useParams();
   const router = useRouter();
+  const { t, tu } = useLanguage();
 
   const orderItemId = params?.orderItemId;
 
@@ -104,7 +106,7 @@ export default function CustomerReviewPage() {
     }
 
     if (rating < 1 || rating > 5) {
-      setError("Please select a rating from 1 to 5 stars.");
+      setError(t("review.selectRating"));
       return;
     }
 
@@ -134,7 +136,7 @@ export default function CustomerReviewPage() {
       }
 
       setExistingReview(data);
-      setMessage("⭐ Your review has been submitted successfully. It is waiting for admin approval.");
+      setMessage(`⭐ ${t("orders.reviewSubmittedTitle")}. ${t("orders.reviewWaitingApproval")}`);
     } catch (err) {
       console.error("Submit review error:", err);
       setError(err?.message || "Unable to submit your review.");
@@ -156,9 +158,7 @@ export default function CustomerReviewPage() {
             disabled={!!existingReview}
             className={`text-4xl leading-none p-1 border-none bg-transparent outline-none focus:outline-none transition-colors ${
               star <= rating ? "text-yellow-500" : "text-gray-300"
-            } ${
-              existingReview ? "cursor-default opacity-90" : "cursor-pointer hover:scale-110"
-            }`}
+            } ${existingReview ? "cursor-default opacity-90" : "cursor-pointer hover:scale-110"}`}
             aria-label={`${star} star`}
           >
             {star <= rating ? "★" : "☆"}
@@ -173,8 +173,8 @@ export default function CustomerReviewPage() {
       <main className="min-h-screen bg-gray-50 p-6 flex flex-col items-center">
         <div className="mt-20 bg-white p-10 rounded-2xl shadow-sm text-center max-w-md w-full">
           <div className="text-4xl mb-3">⭐</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading Review...</h2>
-          <p className="text-gray-500">Please wait.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("review.loading")}</h2>
+          <p className="text-gray-500">{t("common.pleaseWait")}</p>
         </div>
       </main>
     );
@@ -185,13 +185,13 @@ export default function CustomerReviewPage() {
       <main className="min-h-screen bg-gray-50 p-6 flex flex-col items-center">
         <div className="mt-20 bg-white p-10 rounded-2xl shadow-sm text-center max-w-md w-full border border-red-100">
           <div className="text-4xl mb-3">⚠️</div>
-          <h2 className="text-2xl font-bold text-red-700 mb-2">Unable to Open Review</h2>
+          <h2 className="text-2xl font-bold text-red-700 mb-2">{t("review.unableTitle")}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => router.push("/customer/orders")}
             className="bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-colors"
           >
-            ← Back to My Orders
+            ← {t("orders.backToMyOrders")}
           </button>
         </div>
       </main>
@@ -206,12 +206,10 @@ export default function CustomerReviewPage() {
             onClick={() => router.push("/customer/orders")}
             className="text-green-700 font-bold mb-4 hover:underline bg-transparent border-none p-0 cursor-pointer"
           >
-            ← My Orders
+            ← {t("orders.title")}
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">⭐ Write a Review</h1>
-          <p className="text-gray-500 text-sm sm:text-base">
-            Share your experience with the product you received.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">⭐ {t("review.writeTitle")}</h1>
+          <p className="text-gray-500 text-sm sm:text-base">{t("review.writeSubtitle")}</p>
         </div>
 
         {orderItem && (
@@ -222,14 +220,14 @@ export default function CustomerReviewPage() {
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-bold text-gray-900 mb-1 truncate">{orderItem.product_name}</h2>
               <p className="text-sm text-gray-500 mb-1">
-                Quantity: {orderItem.quantity} {orderItem.unit || ""}
+                {t("common.quantity")}: {orderItem.quantity} {tu(orderItem.unit || "")}
               </p>
               <p className="text-sm text-gray-500">
-                Order ID: {String(orderItem.order_id).slice(0, 8)}...
+                {t("orders.orderId")}: {String(orderItem.order_id).slice(0, 8)}...
               </p>
             </div>
             <div className="bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap hidden sm:block">
-              ✓ Delivered
+              ✓ {t("orders.stepDelivered")}
             </div>
           </div>
         )}
@@ -240,7 +238,7 @@ export default function CustomerReviewPage() {
               ✓
             </div>
             <div>
-              <strong className="block text-green-800 mb-1">Review Submitted</strong>
+              <strong className="block text-green-800 mb-1">{t("orders.reviewSubmittedTitle")}</strong>
               <p className="text-sm text-green-700 m-0 leading-relaxed">{message}</p>
             </div>
           </div>
@@ -255,7 +253,7 @@ export default function CustomerReviewPage() {
         {existingReview ? (
           <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 m-0">Your Review</h2>
+              <h2 className="text-xl font-bold text-gray-900 m-0">{t("review.yourReview")}</h2>
               <span
                 className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap self-start sm:self-auto ${
                   existingReview.approval_status === "approved"
@@ -266,10 +264,10 @@ export default function CustomerReviewPage() {
                 }`}
               >
                 {existingReview.approval_status === "approved"
-                  ? "✓ Approved"
+                  ? `✓ ${t("review.approved")}`
                   : existingReview.approval_status === "rejected"
-                  ? "Rejected"
-                  : "Pending Approval"}
+                  ? t("review.rejected")
+                  : t("review.pendingApproval")}
               </span>
             </div>
 
@@ -277,66 +275,62 @@ export default function CustomerReviewPage() {
 
             {existingReview.review_text && (
               <div className="bg-gray-50 rounded-xl p-4 text-gray-700 text-sm leading-relaxed mb-4 border border-gray-100">
-                "{existingReview.review_text}"
+                &ldquo;{existingReview.review_text}&rdquo;
               </div>
             )}
 
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
               {existingReview.approval_status === "approved"
-                ? "Your review has been approved and can be displayed on the product page."
+                ? t("review.approved")
                 : existingReview.approval_status === "rejected"
-                ? "This review was rejected by admin."
-                : "Your review is waiting for admin approval."}
+                ? t("review.rejected")
+                : t("orders.reviewWaitingApproval")}
             </p>
 
             <button
               onClick={() => router.push("/customer/orders")}
               className="bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-800 transition-colors w-full sm:w-auto cursor-pointer"
             >
-              ← Back to My Orders
+              ← {t("orders.backToMyOrders")}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmitReview} className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">How was this product?</h2>
-            <p className="text-sm text-gray-500 mb-7">
-              Your feedback helps other customers understand the product better.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{t("review.howWasProduct")}</h2>
+            <p className="text-sm text-gray-500 mb-7">{t("review.feedbackHelps")}</p>
 
             <div className="mb-7">
-              <label className="block font-bold text-gray-700 text-sm mb-3">Your Rating</label>
+              <label className="block font-bold text-gray-700 text-sm mb-3">{t("review.yourRating")}</label>
               {renderStars()}
               <p className="text-xs text-gray-500 mt-2">
                 {rating === 0
-                  ? "Select a rating"
+                  ? t("review.selectRating")
                   : rating === 1
-                  ? "Poor"
+                  ? t("review.r1")
                   : rating === 2
-                  ? "Fair"
+                  ? t("review.r2")
                   : rating === 3
-                  ? "Good"
+                  ? t("review.r3")
                   : rating === 4
-                  ? "Very Good"
-                  : "Excellent"}
+                  ? t("review.r4")
+                  : t("review.r5")}
               </p>
             </div>
 
             <div className="mb-6">
               <label htmlFor="reviewText" className="block font-bold text-gray-700 text-sm mb-2">
-                Your Review
+                {t("review.yourReview")}
               </label>
               <textarea
                 id="reviewText"
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="Tell us about the product quality, packaging, delivery experience, or anything else..."
+                placeholder={t("review.reviewPlaceholder")}
                 rows={5}
                 maxLength={1000}
                 className="w-full p-4 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-green-500 focus:border-green-500 resize-y outline-none"
               />
-              <div className="text-right text-xs text-gray-400 mt-1.5">
-                {reviewText.length}/1000
-              </div>
+              <div className="text-right text-xs text-gray-400 mt-1.5">{reviewText.length}/1000</div>
             </div>
 
             <button
@@ -348,12 +342,10 @@ export default function CustomerReviewPage() {
                   : "bg-green-700 hover:bg-green-800 cursor-pointer"
               }`}
             >
-              {submitting ? "Submitting Review..." : "⭐ Submit Review"}
+              {submitting ? t("orders.submitting") : `⭐ ${t("review.submitReviewBtn")}`}
             </button>
 
-            <p className="text-center text-xs text-gray-500 mt-4">
-              Your review will be visible after admin approval.
-            </p>
+            <p className="text-center text-xs text-gray-500 mt-4">{t("review.visibleAfterApproval")}</p>
           </form>
         )}
       </div>

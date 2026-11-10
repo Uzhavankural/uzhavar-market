@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function ContactPage() {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -38,13 +40,13 @@ export default function ContactPage() {
       <section className="bg-gradient-to-b from-[#15341c] to-[#1c4826] text-white py-14 sm:py-20 px-4 sm:px-[6%] text-center">
         <div className="max-w-3xl mx-auto">
           <span className="inline-flex items-center gap-1.5 bg-green-900/80 border border-green-700/60 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-green-300 mb-4">
-            Official Support Desk
+            {t('contact.badge')}
           </span>
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            Contact Uzhavar Market
+            {t('contact.heroTitle')}
           </h1>
           <p className="text-sm sm:text-base text-gray-200 max-w-xl mx-auto leading-relaxed">
-            Have questions regarding an order, farmer onboarding, parcel tracking, or product details? Reach our dedicated email desk.
+            {t('contact.heroDesc')}
           </p>
         </div>
       </section>
@@ -66,7 +68,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider m-0">
-                  Email Support
+                  {t('contact.emailTitle')}
                 </h2>
                 <a 
                   href="mailto:uzhavankural.3@gmail.com" 
@@ -75,7 +77,7 @@ export default function ContactPage() {
                   uzhavankural.3@gmail.com
                 </a>
                 <p className="text-xs text-gray-500 m-0">
-                  Direct email assistance with ticket tracking
+                  {t('contact.emailSub')}
                 </p>
               </div>
             </div>
@@ -89,13 +91,13 @@ export default function ContactPage() {
               </div>
               <div>
                 <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider m-0">
-                  Response Hours
+                  {t('contact.hoursTitle')}
                 </h2>
                 <p className="text-sm font-bold text-gray-900 mt-1 mb-0.5">
-                  Monday – Saturday: 8:00 AM – 7:00 PM
+                  {t('contact.hoursVal')}
                 </p>
                 <p className="text-xs text-gray-500 m-0 leading-relaxed">
-                  Queries are reviewed and answered within 2 to 4 business hours.
+                  {t('contact.hoursSub')}
                 </p>
               </div>
             </div>
@@ -107,17 +109,17 @@ export default function ContactPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h3 className="text-sm font-bold text-green-950 m-0">
-                  Farmer Registration & Queries
+                  {t('contact.farmerTitle')}
                 </h3>
               </div>
               <p className="text-xs text-green-900 leading-relaxed m-0">
-                Are you a local cultivator in Tamil Nadu looking to list your native rice, millets, cold-pressed oils, pure honey, or spices? Email your details to <strong className="font-semibold underline">uzhavankural.3@gmail.com</strong> or submit this form.
+                {t('contact.farmerDesc')}
               </p>
             </div>
 
             {/* NO SPAM NOTICE */}
             <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-xs text-gray-600 leading-relaxed">
-              <strong>Notice:</strong> To maintain authenticated records, avoid spam, and protect user privacy, we operate through digital email communications. We do not provide phone support.
+              {t('contact.noSpamNotice')}
             </div>
 
           </div>
@@ -133,10 +135,10 @@ export default function ContactPage() {
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Thank You for Reaching Out
+                  {t('contact.thankYouTitle')}
                 </h2>
                 <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto mb-6 leading-relaxed">
-                  We have received your enquiry. Our team will review your message and reply directly to <strong className="text-gray-900">{formData.email}</strong> within <strong>2 to 4 business hours</strong>.
+                  {t('contact.thankYouDesc', { email: formData.email })}
                 </p>
                 <button
                   type="button"
@@ -152,16 +154,16 @@ export default function ContactPage() {
                   }}
                   className="px-6 py-2.5 rounded-xl bg-green-800 text-white text-sm font-bold hover:bg-green-700 transition-colors"
                 >
-                  Send Another Message
+                  {t('contact.sendAnother')}
                 </button>
               </div>
             ) : (
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                  Send Us a Message
+                  {t('contact.formTitle')}
                 </h2>
                 <p className="text-sm text-gray-500 mb-6">
-                  Submit your query below and our team will get back to your email address promptly.
+                  {t('contact.formSubtitle')}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -169,7 +171,7 @@ export default function ContactPage() {
                   {/* USER TYPE SELECTION */}
                   <fieldset className="border border-gray-200 rounded-xl p-3.5 mb-4 bg-gray-50/50">
                     <legend className="text-xs font-bold text-gray-700 px-2 uppercase tracking-wider">
-                      I am contacting as:
+                      {t('contact.contactingAs')}
                     </legend>
                     <div className="flex gap-6 mt-1">
                       <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-800">
@@ -181,7 +183,7 @@ export default function ContactPage() {
                           onChange={handleChange}
                           className="accent-green-700 w-4 h-4"
                         />
-                        <span>Customer / Buyer</span>
+                        <span>{t('contact.customerOpt')}</span>
                       </label>
 
                       <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-800">
@@ -193,7 +195,7 @@ export default function ContactPage() {
                           onChange={handleChange}
                           className="accent-green-700 w-4 h-4"
                         />
-                        <span>Farmer / Producer</span>
+                        <span>{t('contact.farmerOpt')}</span>
                       </label>
                     </div>
                   </fieldset>
@@ -202,7 +204,7 @@ export default function ContactPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
-                        Your Full Name <span className="text-red-500">*</span>
+                        {t('contact.nameLabel')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -212,14 +214,14 @@ export default function ContactPage() {
                         autoComplete="name"
                         value={formData.name}
                         onChange={handleChange}
-                        placeholder="e.g. Ramesh Kumar"
+                        placeholder={t('contact.namePlaceholder')}
                         className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="email" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
-                        Email Address <span className="text-red-500">*</span>
+                        {t('contact.emailLabel')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="email"
@@ -229,7 +231,7 @@ export default function ContactPage() {
                         autoComplete="email"
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="name@example.com"
+                        placeholder={t('contact.emailPlaceholder')}
                         className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
                       />
                     </div>
@@ -238,7 +240,7 @@ export default function ContactPage() {
                   {/* SUBJECT */}
                   <div>
                     <label htmlFor="subject" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
-                      Subject <span className="text-red-500">*</span>
+                      {t('contact.subjectLabel')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -247,7 +249,7 @@ export default function ContactPage() {
                       required
                       value={formData.subject}
                       onChange={handleChange}
-                      placeholder="e.g. Order Delivery Query / Product Inquiry / Farmer Onboarding"
+                      placeholder={t('contact.subjectPlaceholder')}
                       className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
                     />
                   </div>
@@ -255,7 +257,7 @@ export default function ContactPage() {
                   {/* MESSAGE */}
                   <div>
                     <label htmlFor="message" className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
-                      Message / Enquiry Details <span className="text-red-500">*</span>
+                      {t('contact.messageLabel')} <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="message"
@@ -264,7 +266,7 @@ export default function ContactPage() {
                       required
                       value={formData.message}
                       onChange={handleChange}
-                      placeholder="Please describe your query or requirement in detail..."
+                      placeholder={t('contact.messagePlaceholder')}
                       className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
                     />
                   </div>
@@ -274,7 +276,7 @@ export default function ContactPage() {
                     disabled={loading}
                     className="w-full py-3.5 px-6 rounded-xl bg-green-800 text-white font-bold text-sm hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                   >
-                    {loading ? 'Submitting Message...' : 'Submit Message'}
+                    {loading ? t('contact.submitting') : t('contact.submitBtn')}
                   </button>
 
                 </form>

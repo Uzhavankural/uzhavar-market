@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TactileFeedback from "./components/TactileFeedback";
 import ToastContainer from "./components/Toast";
+import { LanguageProvider } from "./context/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,9 +56,11 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <TactileFeedback />
-        <ToastContainer />
-        {children}
+        <LanguageProvider>
+          <TactileFeedback />
+          <ToastContainer />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );
